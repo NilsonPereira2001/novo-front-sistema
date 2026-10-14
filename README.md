@@ -47,14 +47,14 @@ src/
 ## Identidade visual
 
 - Cores, fontes, raios e sombras: `src/styles/_tokens.scss`.
-- Nome do sistema, empresa contratante e assinatura da WorkTec: `branding` em `src/environments/environment.ts`.
+- Nome do sistema, empresa contratante e assinatura da WorkTec: `branding` em `src/environments/environment.base.ts`.
 - Logomarca da contratante: coloque o arquivo em `public/branding/` e informe o caminho em `branding.tenant.logoUrl`. Sem logo, aparece um símbolo provisório.
 
 ## ⚠️ Pendências antes da integração real
 
 O contrato de autenticação do backend ainda **não foi confirmado**. Tudo o que depende dele está isolado em dois lugares:
 
-1. `src/environments/environment.ts` → `api.auth`
+1. `src/environments/environment.base.ts` → `api.auth`
    - `loginPath` — caminho do endpoint de login (provisório: `/auth/login`)
    - `sessionPath` — endpoint que devolve o usuário logado (para manter a sessão ao recarregar)
    - `logoutPath` — endpoint de logout, se existir

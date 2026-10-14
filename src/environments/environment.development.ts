@@ -1,5 +1,5 @@
+import { baseEnvironment } from './environment.base';
 import { Environment } from './environment.model';
-import { environment as production } from './environment';
 
 /**
  * Configuração de desenvolvimento.
@@ -9,10 +9,6 @@ import { environment as production } from './environment';
  * de CORS nem de cookies entre portas diferentes durante o desenvolvimento.
  */
 export const environment: Environment = {
-  ...production,
+  ...baseEnvironment,
   production: false,
-  api: {
-    ...production.api,
-    baseUrl: '/api',
-  },
 };
