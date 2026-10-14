@@ -2,14 +2,28 @@ import { Routes } from '@angular/router';
 
 import { authGuard } from './core/auth/guards/auth.guard';
 import { guestGuard } from './core/auth/guards/guest.guard';
+import { NAV_ITEMS } from './core/navigation/navigation';
+
+const APP_TITLE = 'Gestão de Associados';
+
+/**
+ * Rotas provisórias dos módulos ainda não construídos: todas abrem a página
+ * "em breve". Ao implementar um módulo, marque `available: true` no menu e
+ * declare a rota real dele aqui.
+ */
+const comingSoonRoutes: Routes = NAV_ITEMS.filter((item) => !item.available).map((item) => ({
+  path: item.path,
+  title: `${item.label} | ${APP_TITLE}`,
+  data: { navPath: item.path },
+  loadComponent: () => import('./features/coming-soon/coming-soon').then((m) => m.ComingSoon),
+}));
 
 /**
  * Rotas da aplicação.
  *
  * - Área pública (layout de autenticação): login.
- * - Área protegida (layout principal): por enquanto só a página inicial
- *   provisória. Os módulos futuros (pessoas, financeiro, jurídico...) entram
- *   como filhos desta rota, cada um carregado sob demanda, por exemplo:
+ * - Área protegida (layout principal com sidebar): Início e os módulos.
+ *   Os módulos futuros entram como filhos desta rota, carregados sob demanda:
  *     { path: 'associados', loadChildren: () => import('./features/associados/associados.routes') }
  */
 export const routes: Routes = [
@@ -39,9 +53,10 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'inicio' },
       {
         path: 'inicio',
-        title: 'Início | Gestão de Associados',
+        title: `Início | ${APP_TITLE}`,
         loadComponent: () => import('./features/home/home').then((m) => m.Home),
       },
+      ...comingSoonRoutes,
     ],
   },
   { path: '**', redirectTo: '' },

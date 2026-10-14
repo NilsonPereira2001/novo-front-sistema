@@ -1,0 +1,56 @@
+<header class="topbar">
+  <div class="topbar__start">
+    <button
+      type="button"
+      class="topbar__icon-btn topbar__menu"
+      aria-label="Abrir menu"
+      aria-controls="menu-principal"
+      (click)="menuClick.emit()"
+    >
+      <app-icon name="menu" />
+    </button>
+
+    @if (location(); as loc) {
+      <nav class="topbar__trail" aria-label="Você está em">
+        @if (loc.group.label) {
+          <span class="topbar__trail-group">{{ loc.group.label }}</span>
+          <app-icon class="topbar__trail-sep" name="chevron-right" />
+        }
+        <span class="topbar__trail-page" aria-current="page">{{ loc.item.label }}</span>
+      </nav>
+    }
+  </div>
+
+  <div class="topbar__end">
+    <div class="user-menu">
+      <button
+        type="button"
+        class="user-menu__trigger"
+        (click)="toggleUserMenu()"
+        [attr.aria-expanded]="userMenuOpen()"
+        aria-controls="menu-usuario"
+      >
+        <span class="avatar" aria-hidden="true">{{ initials() }}</span>
+        <span class="user-menu__name">{{ user()?.name }}</span>
+        <app-icon class="user-menu__chevron" name="chevron-down" />
+        <span class="sr-only">Abrir menu do usuário</span>
+      </button>
+
+      @if (userMenuOpen()) {
+        <div class="user-menu__panel" id="menu-usuario">
+          <div class="user-menu__identity">
+            <span class="avatar avatar--lg" aria-hidden="true">{{ initials() }}</span>
+            <span class="user-menu__identity-text">
+              <strong>{{ user()?.name }}</strong>
+              <span>{{ user()?.username }}</span>
+            </span>
+          </div>
+          <button type="button" class="user-menu__item" (click)="logout()">
+            <app-icon name="log-out" />
+            Sair do sistema
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+</header>

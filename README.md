@@ -2,7 +2,7 @@
 
 Novo frontend do sistema de gestão de associados, em **Angular 21** (componentes standalone, signals, formulários reativos). O backend é o Spring Boot existente, com PostgreSQL.
 
-> **Etapa atual:** fundação da aplicação e tela de login. Os demais módulos (pessoas, financeiro, jurídico etc.) ainda não foram implementados.
+> **Etapa atual:** login integrado, layout principal (menu lateral + barra superior) e tela Início. Os módulos (pessoas, financeiro, jurídico etc.) abrem uma página "em breve" até serem implementados.
 
 ## Como rodar
 
@@ -31,22 +31,37 @@ src/
     │   │   ├── interceptors/  # cookies/Bearer na API, 401 → sessão expirada
     │   │   ├── models/        # tipos de sessão, usuário e erros
     │   │   └── services/      # AuthService, adaptador do contrato, lembrar usuário
-    │   └── config/            # token BRANDING (marca da contratante e da plataforma)
+    │   ├── config/            # token BRANDING (marca da contratante e da plataforma)
+    │   └── navigation/        # menu do sistema: fonte única para sidebar, rotas e atalhos
     ├── layout/
     │   ├── auth-layout/       # tela dividida: identidade + formulário
-    │   └── main-layout/       # estrutura mínima da área autenticada
+    │   └── main-layout/       # área autenticada: sidebar/ + topbar/ + conteúdo
     ├── features/
     │   ├── auth/login/        # tela de login
     │   ├── auth/access-denied/
-    │   └── home/              # página inicial provisória (sem dashboard)
+    │   ├── home/              # tela Início
+    │   └── coming-soon/       # página provisória dos módulos ainda não construídos
     └── shared/
         ├── components/        # ícones, alertas, logomarca da contratante
         └── validators/
 ```
 
+## Menu e novos módulos
+
+O menu fica em `src/app/core/navigation/navigation.ts`. Cada item tem rótulo, rota, ícone, descrição e `available`.
+
+Para implementar um módulo:
+
+1. Crie a feature em `src/app/features/<modulo>/`.
+2. Declare a rota real em `app.routes.ts`, como filha do layout principal.
+3. Marque o item como `available: true` no menu. Enquanto estiver `false`, a rota abre a página "em breve".
+
+Para restringir um item a certos perfis, use `roles: ['ADMIN']`. Isso só esconde o item no menu: a permissão continua sendo validada pelo backend.
+
 ## Identidade visual
 
-- Cores, fontes, raios e sombras: `src/styles/_tokens.scss`.
+- Cores, fontes, raios, sombras e larguras do layout: `src/styles/_tokens.scss`.
+- Padrões de página reaproveitáveis (cabeçalho, cartões, etiquetas): `src/styles/_layout.scss`.
 - Nome do sistema, empresa contratante e assinatura da WorkTec: `branding` em `src/environments/environment.base.ts`.
 - Logomarca da contratante: coloque o arquivo em `public/branding/` e informe o caminho em `branding.tenant.logoUrl`. Sem logo, aparece um símbolo provisório.
 

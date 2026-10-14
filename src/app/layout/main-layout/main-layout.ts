@@ -1,99 +1,84 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs';
 
-import { BRANDING } from '../../core/config/branding';
-import { AuthService } from '../../core/auth/services/auth.service';
-import { Icon } from '../../shared/components/icon/icon';
-import { TenantLogo } from '../../shared/components/tenant-logo/tenant-logo';
+import { Sidebar } from './sidebar/sidebar';
+import { Topbar } from './topbar/topbar';
+
+const COLLAPSED_KEY = 'ga.menu-recolhido';
 
 /**
- * Estrutura MÍNIMA da área autenticada.
- * Por ora tem apenas a barra superior com usuário e "Sair".
- * O menu lateral e a navegação dos módulos entram na próxima etapa.
+ * Estrutura da área autenticada: menu lateral + barra superior + conteúdo.
  */
 @Component({
   selector: 'app-main-layout',
-  imports: [RouterOutlet, TenantLogo, Icon],
-  template: `
-    <header class="topbar">
-      <div class="topbar__brand">
-        <app-tenant-logo class="topbar__logo" />
-        <span class="topbar__name">{{ branding.systemName }}</span>
-      </div>
-      <div class="topbar__user">
-        @if (auth.user(); as user) {
-          <span class="topbar__username">{{ user.name }}</span>
-        }
-        <button type="button" class="btn btn--secondary topbar__logout" (click)="auth.logout()">
-          <app-icon name="log-out" />
-          <span>Sair</span>
-        </button>
-      </div>
-    </header>
-    <main class="content" id="conteudo">
-      <router-outlet />
-    </main>
-  `,
-  styles: `
-    :host {
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-      min-height: 100dvh;
-    }
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--space-4);
-      height: 4rem;
-      padding: 0 var(--space-5);
-      background: var(--color-navy-900);
-      color: var(--color-white);
-    }
-    .topbar__brand,
-    .topbar__user {
-      display: flex;
-      align-items: center;
-      gap: var(--space-3);
-      min-width: 0;
-    }
-    .topbar__logo {
-      --logo-size: 2.25rem;
-      color: rgba(255, 255, 255, 0.75);
-    }
-    .topbar__name {
-      font-weight: 700;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .topbar__username {
-      font-size: var(--text-sm);
-      color: rgba(255, 255, 255, 0.8);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .topbar__logout {
-      --control-height: 2.5rem;
-      padding: 0 var(--space-4);
-      font-size: var(--text-sm);
-    }
-    .content {
-      flex: 1;
-      padding: var(--space-6) var(--space-5);
-    }
-    @media (max-width: 599px) {
-      .topbar__username,
-      .topbar__logout span {
-        display: none;
-      }
-    }
-  `,
+  imports: [RouterOutlet, Sidebar, Topbar],
+  templateUrl: './main-layout.html',
+  styleUrl: './main-layout.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '(document:keydown.escape)': 'closeDrawer()',
+  },
 })
 export class MainLayout {
-  protected readonly auth = inject(AuthService);
-  protected readonly branding = inject(BRANDING);
+  private readonly content = viewChild.required<ElementRef<HTMLElement>>('content');
+
+  /** Menu recolhido no desktop (preferência lembrada neste navegador). */
+  protected readonly collapsed = signal(readCollapsed());
+  /** Gaveta aberta em telas menores. */
+  protected readonly drawerOpen = signal(false);
+
+  constructor() {
+    // Fecha a gaveta e volta ao topo a cada navegação.
+    inject(Router)
+      .events.pipe(
+        filter((event) => event instanceof NavigationEnd),
+        takeUntilDestroyed(inject(DestroyRef)),
+      )
+      .subscribe(() => {
+        this.drawerOpen.set(false);
+        window.scrollTo({ top: 0 });
+      });
+  }
+
+  protected toggleCollapsed(): void {
+    const next = !this.collapsed();
+    this.collapsed.set(next);
+    try {
+      localStorage.setItem(COLLAPSED_KEY, next ? '1' : '0');
+    } catch {
+      // Armazenamento indisponível: a preferência vale só nesta visita.
+    }
+  }
+
+  protected openDrawer(): void {
+    this.drawerOpen.set(true);
+  }
+
+  closeDrawer(): void {
+    this.drawerOpen.set(false);
+  }
+
+  /** Link "pular para o conteúdo" sem alterar a URL (evita navegação do router). */
+  protected skipToContent(event: Event): void {
+    event.preventDefault();
+    this.content().nativeElement.focus();
+  }
+}
+
+function readCollapsed(): boolean {
+  try {
+    return localStorage.getItem(COLLAPSED_KEY) === '1';
+  } catch {
+    return false;
+  }
 }

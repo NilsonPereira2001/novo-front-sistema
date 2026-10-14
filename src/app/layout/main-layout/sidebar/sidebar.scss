@@ -1,0 +1,320 @@
+// Larguras compartilhadas com o layout principal via variáveis CSS.
+:host {
+  --sidebar-bg: var(--color-navy-900);
+  --sidebar-text: rgba(255, 255, 255, 0.72);
+  --sidebar-text-strong: var(--color-white);
+  --sidebar-hover: rgba(255, 255, 255, 0.06);
+  --sidebar-active: rgba(75, 141, 245, 0.16);
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 40;
+  width: min(var(--sidebar-width), 86vw);
+  transform: translateX(-100%);
+  transition: transform 220ms ease;
+}
+
+:host(.is-open) {
+  transform: translateX(0);
+  box-shadow: var(--shadow-lg);
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--sidebar-bg);
+  color: var(--sidebar-text);
+}
+
+// --- Cabeçalho ---------------------------------------------------------------
+.sidebar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  height: var(--topbar-height);
+  padding: 0 var(--space-3) 0 var(--space-4);
+  border-bottom: 1px solid var(--sidebar-border);
+}
+
+.sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  color: var(--sidebar-text-strong);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+
+  &:hover {
+    color: var(--sidebar-text-strong);
+  }
+}
+
+.sidebar__logo {
+  --logo-size: 2.25rem;
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.sidebar__brand-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.sidebar__tenant {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar__system {
+  font-size: var(--text-xs);
+  color: var(--sidebar-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar__icon-btn {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--sidebar-text);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--sidebar-hover);
+    color: var(--sidebar-text-strong);
+  }
+}
+
+// --- Navegação ---------------------------------------------------------------
+.sidebar__nav {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-3) var(--space-3) var(--space-4);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+.sidebar__group + .sidebar__group {
+  margin-top: var(--space-4);
+}
+
+.sidebar__group-label {
+  padding: 0 var(--space-3) var(--space-2);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.42);
+  white-space: nowrap;
+}
+
+.sidebar__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sidebar__link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 2.5rem;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--sidebar-text);
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+
+  &:hover {
+    background: var(--sidebar-hover);
+    color: var(--sidebar-text-strong);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+  }
+
+  &.is-active {
+    background: var(--sidebar-active);
+    color: var(--sidebar-text-strong);
+    font-weight: 600;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0.5rem;
+      bottom: 0.5rem;
+      width: 3px;
+      border-radius: 0 3px 3px 0;
+      background: var(--color-accent);
+    }
+
+    .sidebar__link-icon {
+      color: var(--color-accent);
+    }
+  }
+}
+
+.sidebar__link-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar__soon {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+// --- Rodapé ------------------------------------------------------------------
+.sidebar__footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-top: 1px solid var(--sidebar-border);
+}
+
+.sidebar__collapse {
+  display: none; // só no desktop
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 2.5rem;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  font-size: var(--text-sm);
+  color: var(--sidebar-text);
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    background: var(--sidebar-hover);
+    color: var(--sidebar-text-strong);
+  }
+}
+
+.sidebar__signature {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  font-size: 0.6875rem;
+  color: rgba(255, 255, 255, 0.45);
+  white-space: nowrap;
+  overflow: hidden;
+
+  img {
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--color-white);
+  }
+}
+
+// =============================================================================
+// Desktop: menu fixo, com opção de recolher
+// =============================================================================
+@media (min-width: 1024px) {
+  :host {
+    position: sticky;
+    top: 0;
+    width: var(--sidebar-width);
+    height: 100vh;
+    height: 100dvh;
+    transform: none;
+    box-shadow: none;
+    transition: width 200ms ease;
+  }
+
+  .sidebar__close {
+    display: none;
+  }
+
+  .sidebar__collapse {
+    display: flex;
+  }
+
+  :host(.is-collapsed) {
+    width: var(--sidebar-width-collapsed);
+
+    .sidebar__header {
+      justify-content: center;
+      padding: 0;
+    }
+
+    .sidebar__brand-text,
+    .sidebar__link-label,
+    .sidebar__collapse-label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+    }
+
+    .sidebar__group-label {
+      height: 1px;
+      margin: 0 var(--space-3) var(--space-3);
+      padding: 0;
+      overflow: hidden;
+      color: transparent;
+      background: var(--sidebar-border);
+    }
+
+    .sidebar__group:first-child .sidebar__group-label {
+      display: none;
+    }
+
+    .sidebar__link,
+    .sidebar__collapse {
+      justify-content: center;
+      padding: 0;
+    }
+
+    .sidebar__soon,
+    .sidebar__signature span {
+      display: none;
+    }
+
+    .sidebar__signature {
+      justify-content: center;
+      padding: 0;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host {
+    transition: none;
+  }
+}

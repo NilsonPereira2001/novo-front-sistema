@@ -1,0 +1,22 @@
+<a class="skip-link" href="#conteudo" (click)="skipToContent($event)">Pular para o conteúdo</a>
+
+<div class="shell">
+  <app-sidebar
+    [collapsed]="collapsed()"
+    [drawerOpen]="drawerOpen()"
+    (toggleCollapse)="toggleCollapsed()"
+    (closeDrawer)="closeDrawer()"
+    (navigated)="closeDrawer()"
+  />
+
+  @if (drawerOpen()) {
+    <div class="shell__overlay" aria-hidden="true" (click)="closeDrawer()"></div>
+  }
+
+  <div class="shell__main">
+    <app-topbar (menuClick)="openDrawer()" />
+    <main #content class="shell__content" id="conteudo" tabindex="-1">
+      <router-outlet />
+    </main>
+  </div>
+</div>

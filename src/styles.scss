@@ -1,5 +1,6 @@
 // Estilos globais da aplicação.
-// Ordem: tokens (variáveis) → base (reset/tipografia) → formulários e botões.
+// Ordem: tokens (variáveis) → base (reset/tipografia) → formulários e botões → páginas.
 @use 'styles/tokens';
 @use 'styles/base';
 @use 'styles/forms';
+@use 'styles/layout';

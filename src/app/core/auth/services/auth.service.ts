@@ -36,6 +36,7 @@ export class AuthService {
 
   private readonly session = signal<AuthSession | null>(null);
   private readonly statusSignal = signal<AuthStatus>('unknown');
+  private readonly startedAtSignal = signal<number | null>(null);
 
   private expirationTimer: ReturnType<typeof setTimeout> | null = null;
   private restoreRequest$: Observable<boolean> | null = null;
@@ -44,6 +45,10 @@ export class AuthService {
   readonly user = computed<AuthUser | null>(() => this.session()?.user ?? null);
   readonly isAuthenticated = computed(() => this.statusSignal() === 'authenticated');
   readonly accessToken = computed(() => this.session()?.accessToken ?? null);
+  /** Momento em que o login foi feito nesta aba (epoch em ms). */
+  readonly sessionStartedAt = this.startedAtSignal.asReadonly();
+  /** Expiração informada pelo token (epoch em ms), quando existir. */
+  readonly sessionExpiresAt = computed(() => this.session()?.expiresAt ?? null);
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.clearExpirationTimer());
@@ -141,6 +146,7 @@ export class AuthService {
 
   private startSession(session: AuthSession): void {
     this.session.set(session);
+    this.startedAtSignal.set(Date.now());
     this.statusSignal.set('authenticated');
     this.scheduleExpiration(session.expiresAt);
   }
@@ -148,6 +154,7 @@ export class AuthService {
   private endSession(reason: LoginRedirectReason): void {
     this.clearExpirationTimer();
     this.session.set(null);
+    this.startedAtSignal.set(null);
     this.statusSignal.set('anonymous');
     void this.router.navigate(['/login'], { queryParams: { motivo: reason } });
   }

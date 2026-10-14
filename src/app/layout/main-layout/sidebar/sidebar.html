@@ -1,0 +1,70 @@
+<aside class="sidebar" id="menu-principal" aria-label="Menu principal">
+  <div class="sidebar__header">
+    <a class="sidebar__brand" routerLink="/inicio" (click)="navigated.emit()">
+      <app-tenant-logo class="sidebar__logo" />
+      <span class="sidebar__brand-text">
+        <span class="sidebar__tenant">{{ branding.tenant.name }}</span>
+        <span class="sidebar__system">{{ branding.systemName }}</span>
+      </span>
+    </a>
+
+    <!-- Fechar (apenas na gaveta) -->
+    <button
+      type="button"
+      class="sidebar__icon-btn sidebar__close"
+      aria-label="Fechar menu"
+      (click)="closeDrawer.emit()"
+    >
+      <app-icon name="x" />
+    </button>
+  </div>
+
+  <nav class="sidebar__nav">
+    @for (group of groups(); track group.label ?? '_') {
+      <div class="sidebar__group">
+        @if (group.label) {
+          <p class="sidebar__group-label" [id]="'grupo-' + group.label">{{ group.label }}</p>
+        }
+        <ul class="sidebar__list" [attr.aria-labelledby]="group.label ? 'grupo-' + group.label : null">
+          @for (item of group.items; track item.path) {
+            <li>
+              <a
+                class="sidebar__link"
+                [routerLink]="'/' + item.path"
+                routerLinkActive="is-active"
+                ariaCurrentWhenActive="page"
+                [attr.title]="collapsed() ? item.label : null"
+                (click)="navigated.emit()"
+              >
+                <app-icon class="sidebar__link-icon" [name]="item.icon" />
+                <span class="sidebar__link-label">{{ item.label }}</span>
+                @if (!item.available) {
+                  <span class="sidebar__soon" aria-hidden="true"></span>
+                  <span class="sr-only">(em breve)</span>
+                }
+              </a>
+            </li>
+          }
+        </ul>
+      </div>
+    }
+  </nav>
+
+  <div class="sidebar__footer">
+    <button
+      type="button"
+      class="sidebar__collapse"
+      (click)="toggleCollapse.emit()"
+      [attr.aria-label]="collapsed() ? 'Expandir menu' : 'Recolher menu'"
+      [attr.aria-expanded]="!collapsed()"
+      aria-controls="menu-principal"
+    >
+      <app-icon [name]="collapsed() ? 'chevron-right' : 'chevron-left'" />
+      <span class="sidebar__collapse-label">Recolher menu</span>
+    </button>
+    <p class="sidebar__signature">
+      <img [src]="branding.platform.logoUrl" alt="" width="20" height="20" />
+      <span>{{ branding.platform.name }}</span>
+    </p>
+  </div>
+</aside>

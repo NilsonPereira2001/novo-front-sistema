@@ -1,0 +1,108 @@
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">{{ today | date: longDateFormat }}</p>
+    <h1 class="page-title">
+      {{ greeting }}@if (firstName()) {<span>, {{ firstName() }}</span>}
+    </h1>
+    <p class="page-subtitle">
+      Bem-vindo ao {{ branding.systemName }} — {{ branding.tenant.name }}.
+    </p>
+  </div>
+</header>
+
+<div class="home">
+  <div class="home__main">
+    <!-- Acesso rápido -->
+    <section aria-labelledby="titulo-acesso-rapido">
+      <h2 id="titulo-acesso-rapido" class="section-title">Acesso rápido</h2>
+      <ul class="quick">
+        @for (item of quickAccess; track item.path) {
+          <li>
+            <a class="quick__card card" [routerLink]="'/' + item.path">
+              <span class="quick__icon"><app-icon [name]="item.icon" /></span>
+              <span class="quick__text">
+                <span class="quick__label">{{ item.label }}</span>
+                <span class="quick__desc">{{ item.description }}</span>
+              </span>
+            </a>
+          </li>
+        }
+      </ul>
+    </section>
+
+    <!-- Módulos -->
+    <section aria-labelledby="titulo-modulos">
+      <h2 id="titulo-modulos" class="section-title">Módulos do sistema</h2>
+      <div class="modules">
+        @for (group of moduleGroups; track group.label) {
+          <article class="modules__card card">
+            <header class="modules__header">
+              <span class="modules__icon"><app-icon [name]="group.items[0].icon" /></span>
+              <h3 class="modules__title">{{ group.label }}</h3>
+            </header>
+            <ul class="modules__list">
+              @for (item of group.items; track item.path) {
+                <li>
+                  <a class="modules__link" [routerLink]="'/' + item.path">
+                    {{ item.label }}
+                    <app-icon class="modules__chevron" name="chevron-right" />
+                  </a>
+                </li>
+              }
+            </ul>
+          </article>
+        }
+      </div>
+    </section>
+  </div>
+
+  <aside class="home__side">
+    <!-- Sessão -->
+    <section class="card" aria-labelledby="titulo-sessao">
+      <div class="card__header">
+        <h2 id="titulo-sessao" class="card__title">Sua sessão</h2>
+        <span class="tag tag--primary">Conectado</span>
+      </div>
+      <dl class="session">
+        <div class="session__row">
+          <dt>Usuário</dt>
+          <dd>{{ user()?.username }}</dd>
+        </div>
+        @if (user()?.roles?.length) {
+          <div class="session__row">
+            <dt>Perfil</dt>
+            <dd class="session__roles">
+              @for (role of user()?.roles; track role) {
+                <span class="tag">{{ role }}</span>
+              }
+            </dd>
+          </div>
+        }
+        @if (startedAt(); as started) {
+          <div class="session__row">
+            <dt>Entrada</dt>
+            <dd>{{ started | date: 'HH:mm' }}</dd>
+          </div>
+        }
+        @if (expiresAt(); as expires) {
+          <div class="session__row">
+            <dt>Expira</dt>
+            <dd>{{ expires | date: expiryFormat }}</dd>
+          </div>
+        }
+      </dl>
+    </section>
+
+    <!-- Indicadores -->
+    <section class="card indicators" aria-labelledby="titulo-indicadores">
+      <div class="card__body">
+        <span class="indicators__icon"><app-icon name="bar-chart" /></span>
+        <h2 id="titulo-indicadores" class="card__title">Indicadores</h2>
+        <p class="indicators__text">
+          Os números de associados, financeiro e jurídico aparecerão aqui assim que os módulos
+          forem integrados ao sistema.
+        </p>
+      </div>
+    </section>
+  </aside>
+</div>

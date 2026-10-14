@@ -1,43 +1,67 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { DatePipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
+import { BRANDING } from '../../core/config/branding';
 import { AuthService } from '../../core/auth/services/auth.service';
+import { NAVIGATION, NAV_ITEMS, NavItem } from '../../core/navigation/navigation';
+import { Icon } from '../../shared/components/icon/icon';
+
+/** Atalhos em destaque no topo da tela Início. */
+const QUICK_ACCESS_PATHS = [
+  'associados',
+  'financeiro/lancamentos',
+  'juridico/processos',
+  'documentos',
+] as const;
 
 /**
- * Página inicial PROVISÓRIA da área autenticada.
- * Serve apenas para validar o fluxo de login → rota protegida.
- * O dashboard real será construído em etapa posterior.
+ * Tela Início da área autenticada.
+ *
+ * Mostra apenas informações reais: o usuário logado, os dados da sessão e
+ * os atalhos para os módulos. Indicadores numéricos (associados ativos,
+ * inadimplência etc.) entram quando houver endpoints no backend — nenhum
+ * número é inventado aqui.
  */
 @Component({
   selector: 'app-home',
-  template: `
-    <section class="home">
-      <h1 class="home__title">
-        Olá{{ auth.user()?.name ? ', ' + auth.user()?.name : '' }}
-      </h1>
-      <p class="home__text">
-        Login realizado com sucesso. Os módulos do sistema serão disponibilizados nas próximas
-        etapas.
-      </p>
-    </section>
-  `,
-  styles: `
-    .home {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-2);
-      max-width: 40rem;
-    }
-    .home__title {
-      font-size: var(--text-2xl);
-      font-weight: 800;
-      color: var(--color-navy-900);
-    }
-    .home__text {
-      color: var(--color-text-muted);
-    }
-  `,
+  imports: [DatePipe, RouterLink, Icon],
+  templateUrl: './home.html',
+  styleUrl: './home.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Home {
-  protected readonly auth = inject(AuthService);
+  private readonly auth = inject(AuthService);
+  protected readonly branding = inject(BRANDING);
+
+  protected readonly user = this.auth.user;
+  protected readonly startedAt = this.auth.sessionStartedAt;
+  protected readonly expiresAt = this.auth.sessionExpiresAt;
+  protected readonly today = new Date();
+  protected readonly longDateFormat = "EEEE, d 'de' MMMM 'de' y";
+  protected readonly expiryFormat = "dd/MM 'às' HH:mm";
+
+  protected readonly greeting = greetingFor(this.today.getHours());
+
+  protected readonly firstName = computed(() => {
+    const name = this.user()?.name?.trim() ?? '';
+    return name.split(/\s+/)[0] ?? '';
+  });
+
+  protected readonly quickAccess: readonly NavItem[] = QUICK_ACCESS_PATHS.map((path) =>
+    NAV_ITEMS.find((item) => item.path === path),
+  ).filter((item): item is NavItem => item !== undefined);
+
+  /** Grupos de módulos (sem o item solto "Início"). */
+  protected readonly moduleGroups = NAVIGATION.filter((group) => group.label !== null);
+}
+
+function greetingFor(hour: number): string {
+  if (hour < 12) {
+    return 'Bom dia';
+  }
+  if (hour < 18) {
+    return 'Boa tarde';
+  }
+  return 'Boa noite';
 }
