@@ -1,0 +1,95 @@
+// =============================================================================
+// Tokens de identidade visual
+// -----------------------------------------------------------------------------
+// Todas as cores, fontes, raios e sombras do sistema saem daqui.
+// Para trocar a identidade de uma empresa contratante, ajuste apenas este
+// arquivo (ou sobrescreva as variáveis em :root).
+// =============================================================================
+
+:root {
+  // --- Marca: azul-marinho e azul institucional ------------------------------
+  --color-navy-950: #050d1c;
+  --color-navy-900: #0a1730;
+  --color-navy-800: #102345;
+  --color-navy-700: #18325f;
+  --color-navy-600: #234680;
+
+  --color-primary: #1d5fd1;
+  --color-primary-hover: #174fb2;
+  --color-primary-active: #123f8f;
+  --color-primary-soft: #e8effc;
+  --color-on-primary: #ffffff;
+
+  --color-accent: #4b8df5; // azul vivo da marca, usado só em detalhes
+
+  // --- Neutros ---------------------------------------------------------------
+  --color-white: #ffffff;
+  --color-gray-25: #fafbfc;
+  --color-gray-50: #f4f6f9;
+  --color-gray-100: #e9edf2;
+  --color-gray-200: #d6dce5;
+  --color-gray-300: #b6c0cd;
+  --color-gray-400: #8794a6;
+  --color-gray-500: #627084;
+  --color-gray-600: #4a5668;
+  --color-gray-700: #344051;
+  --color-gray-800: #1f2937;
+
+  // --- Semânticas ------------------------------------------------------------
+  --color-bg: var(--color-gray-50);
+  --color-surface: var(--color-white);
+  --color-text: var(--color-gray-800);
+  --color-text-muted: var(--color-gray-500);
+  --color-border: var(--color-gray-200);
+  --color-border-strong: var(--color-gray-300);
+
+  --color-danger: #c42b2b;
+  --color-danger-soft: #fdeeee;
+  --color-danger-border: #f3c4c4;
+  --color-warning: #9a5b00;
+  --color-warning-soft: #fff6e5;
+  --color-warning-border: #f5d9a3;
+  --color-success: #17784a;
+  --color-success-soft: #e9f7ef;
+  --color-success-border: #b7e2ca;
+  --color-info: var(--color-primary);
+  --color-info-soft: var(--color-primary-soft);
+  --color-info-border: #c3d5f6;
+
+  --focus-ring: 0 0 0 3px rgba(29, 95, 209, 0.35);
+
+  // --- Tipografia ------------------------------------------------------------
+  --font-sans: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.25rem;
+
+  // --- Espaçamento, raios, sombras -------------------------------------------
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-full: 999px;
+
+  --shadow-sm: 0 1px 2px rgba(10, 23, 48, 0.06);
+  --shadow-md: 0 4px 16px rgba(10, 23, 48, 0.08);
+  --shadow-lg: 0 18px 48px rgba(10, 23, 48, 0.14);
+
+  --control-height: 3rem;
+  --transition-fast: 150ms ease;
+}

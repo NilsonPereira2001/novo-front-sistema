@@ -1,0 +1,59 @@
+<div class="auth">
+  <!-- Identidade institucional -->
+  <aside class="brand" aria-label="Identificação do sistema">
+    <svg class="brand__pattern" viewBox="0 0 600 800" preserveAspectRatio="xMaxYMid slice" aria-hidden="true">
+      <circle cx="600" cy="400" r="210" />
+      <circle cx="600" cy="400" r="300" />
+      <circle cx="600" cy="400" r="390" />
+      <path d="M0 560h220l40-40h140" />
+      <path d="M0 600h180l40 40h120" />
+      <path d="M0 640h120" />
+      <circle cx="400" cy="520" r="5" />
+      <circle cx="340" cy="640" r="5" />
+      <circle cx="120" cy="640" r="5" />
+    </svg>
+
+    <div class="brand__top">
+      <app-tenant-logo class="brand__logo" />
+      <div class="brand__names">
+        <span class="brand__tenant">{{ branding.tenant.name }}</span>
+        <span class="brand__system">{{ branding.systemName }}</span>
+      </div>
+    </div>
+
+    <div class="brand__body">
+      <span class="brand__eyebrow">
+        <app-icon name="shield" />
+        Área restrita
+      </span>
+      <p class="brand__title">{{ branding.systemName }}</p>
+      <p class="brand__tagline">{{ branding.systemTagline }}</p>
+
+      <ul class="brand__list">
+        @for (item of highlights; track item) {
+          <li>{{ item }}</li>
+        }
+      </ul>
+    </div>
+
+    <div class="brand__signature">
+      <img [src]="branding.platform.logoUrl" alt="" width="40" height="40" />
+      <span>Desenvolvido por <strong>{{ branding.platform.name }}</strong></span>
+    </div>
+  </aside>
+
+  <!-- Formulário -->
+  <main class="main" id="conteudo">
+    <div class="main__inner">
+      <router-outlet />
+    </div>
+
+    <footer class="main__footer">
+      <span>© {{ year }} {{ branding.tenant.name }}</span>
+      <span class="main__platform">
+        <img [src]="branding.platform.logoUrl" alt="" width="20" height="20" />
+        {{ branding.platform.name }}
+      </span>
+    </footer>
+  </main>
+</div>

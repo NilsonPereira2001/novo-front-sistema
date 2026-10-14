@@ -1,59 +1,80 @@
-# NovoFrontSistema
+# Gestão de Associados — Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.0.4.
+Novo frontend do sistema de gestão de associados, em **Angular 21** (componentes standalone, signals, formulários reativos). O backend é o Spring Boot existente, com PostgreSQL.
 
-## Development server
+> **Etapa atual:** fundação da aplicação e tela de login. Os demais módulos (pessoas, financeiro, jurídico etc.) ainda não foram implementados.
 
-To start a local development server, run:
-
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Como rodar
 
 ```bash
-ng generate component component-name
+npm install
+npm start          # http://localhost:4200
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Em desenvolvimento, as chamadas para `/api` são redirecionadas pelo `proxy.conf.json` para `http://localhost:8080` (Spring Boot). Ajuste o `target` se o backend estiver em outra porta, e remova o `pathRewrite` se o backend já usar o prefixo `/api`.
 
 ```bash
-ng generate --help
+npm run build      # build de produção
+npm test           # testes unitários (Vitest)
 ```
 
-## Building
+## Estrutura
 
-To build the project run:
-
-```bash
-ng build
+```
+src/
+├── environments/              # URL da API, endpoints de auth e identidade visual
+├── styles/                    # tokens (cores, fontes), base e formulários globais
+└── app/
+    ├── core/
+    │   ├── auth/
+    │   │   ├── guards/        # authGuard (área protegida), guestGuard (login)
+    │   │   ├── interceptors/  # cookies/Bearer na API, 401 → sessão expirada
+    │   │   ├── models/        # tipos de sessão, usuário e erros
+    │   │   └── services/      # AuthService, adaptador do contrato, lembrar usuário
+    │   └── config/            # token BRANDING (marca da contratante e da plataforma)
+    ├── layout/
+    │   ├── auth-layout/       # tela dividida: identidade + formulário
+    │   └── main-layout/       # estrutura mínima da área autenticada
+    ├── features/
+    │   ├── auth/login/        # tela de login
+    │   ├── auth/access-denied/
+    │   └── home/              # página inicial provisória (sem dashboard)
+    └── shared/
+        ├── components/        # ícones, alertas, logomarca da contratante
+        └── validators/
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+## Identidade visual
 
-## Running unit tests
+- Cores, fontes, raios e sombras: `src/styles/_tokens.scss`.
+- Nome do sistema, empresa contratante e assinatura da WorkTec: `branding` em `src/environments/environment.ts`.
+- Logomarca da contratante: coloque o arquivo em `public/branding/` e informe o caminho em `branding.tenant.logoUrl`. Sem logo, aparece um símbolo provisório.
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+## ⚠️ Pendências antes da integração real
 
-```bash
-ng test
-```
+O contrato de autenticação do backend ainda **não foi confirmado**. Tudo o que depende dele está isolado em dois lugares:
 
-## Running end-to-end tests
+1. `src/environments/environment.ts` → `api.auth`
+   - `loginPath` — caminho do endpoint de login (provisório: `/auth/login`)
+   - `sessionPath` — endpoint que devolve o usuário logado (para manter a sessão ao recarregar)
+   - `logoutPath` — endpoint de logout, se existir
+   - `withCredentials` — `true` se o backend usa cookie HttpOnly ou sessão
+2. `src/app/core/auth/services/auth-api.adapter.ts`
+   - nomes dos campos enviados no login;
+   - onde ficam o token, o nome, o id e os perfis do usuário na resposta.
 
-For end-to-end (e2e) testing, run:
+Também é preciso confirmar no Spring:
 
-```bash
-ng e2e
-```
+- **CORS** liberando a origem do frontend com `allowCredentials=true`, se for usar cookies fora do proxy;
+- **Status HTTP** para credenciais inválidas (401 ou 400) e para usuário sem permissão (403).
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+### Estratégia de sessão
 
-## Additional Resources
+- **Preferida:** cookie `HttpOnly`, `Secure` e `SameSite` emitido pelo backend. O frontend nunca lê o token.
+- **Se o backend devolver JWT no corpo:** o token fica **somente em memória**, nunca no `localStorage`. Ao recarregar a página é preciso entrar de novo, a menos que exista `sessionPath` ou refresh token em cookie.
+- A expiração do JWT (`exp`) é respeitada: ao expirar, o usuário volta ao login com o aviso "sessão expirada".
+- Os guards só controlam a navegação. **Toda permissão precisa ser validada também no backend.**
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+### Recuperação de senha
+
+O link "Esqueci minha senha" não aparece porque ainda não existe fluxo real no backend. Ele será adicionado quando esse fluxo existir.

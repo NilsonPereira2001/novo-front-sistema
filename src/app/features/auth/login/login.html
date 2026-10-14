@@ -1,0 +1,130 @@
+<section class="login" aria-labelledby="login-title">
+  <header class="login__header">
+    <h1 id="login-title" class="login__title">Acesse sua conta</h1>
+    <p class="login__subtitle">Informe suas credenciais para entrar no sistema.</p>
+  </header>
+
+  <!-- Mensagens de estado -->
+  <div class="login__messages" aria-live="polite">
+    @if (notice(); as n) {
+      <app-alert [tone]="n.tone">{{ n.text }}</app-alert>
+    }
+    @if (errorMessage(); as message) {
+      <app-alert tone="danger" [heading]="errorHeading()">{{ message }}</app-alert>
+    }
+    @if (state() === 'success') {
+      <app-alert tone="success">Acesso autorizado. Redirecionando…</app-alert>
+    }
+  </div>
+
+  <form class="login__form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <!-- Usuário -->
+    <div class="field" [class.field--invalid]="showError('username')">
+      <label class="field__label" for="login-username">Usuário</label>
+      <div class="field__control">
+        <app-icon class="field__icon" name="user" />
+        <input
+          #usernameInput
+          id="login-username"
+          class="field__input"
+          type="text"
+          formControlName="username"
+          autocomplete="username"
+          autocapitalize="none"
+          spellcheck="false"
+          placeholder="Digite seu usuário"
+          [attr.aria-invalid]="showError('username')"
+          [attr.aria-describedby]="showError('username') ? 'login-username-error' : null"
+        />
+      </div>
+      @if (showError('username')) {
+        <p id="login-username-error" class="field__error">
+          @if (form.controls.username.hasError('maxlength')) {
+            O usuário pode ter no máximo 150 caracteres.
+          } @else {
+            Informe seu usuário.
+          }
+        </p>
+      }
+    </div>
+
+    <!-- Senha -->
+    <div class="field" [class.field--invalid]="showError('password')">
+      <label class="field__label" for="login-password">Senha</label>
+      <div class="field__control">
+        <app-icon class="field__icon" name="lock" />
+        <input
+          #passwordInput
+          id="login-password"
+          class="field__input has-trailing"
+          [type]="showPassword() ? 'text' : 'password'"
+          formControlName="password"
+          autocomplete="current-password"
+          placeholder="Digite sua senha"
+          (keyup)="checkCapsLock($event)"
+          (keydown)="checkCapsLock($event)"
+          (blur)="capsLockOn.set(false)"
+          [attr.aria-invalid]="showError('password')"
+          [attr.aria-describedby]="passwordDescribedBy()"
+        />
+        <button
+          type="button"
+          class="field__trailing"
+          (click)="togglePassword()"
+          [disabled]="isSubmitting()"
+          [attr.aria-pressed]="showPassword()"
+          [attr.aria-label]="showPassword() ? 'Ocultar senha' : 'Mostrar senha'"
+          aria-controls="login-password"
+        >
+          <app-icon [name]="showPassword() ? 'eye-off' : 'eye'" />
+        </button>
+      </div>
+      @if (showError('password')) {
+        <p id="login-password-error" class="field__error">
+          @if (form.controls.password.hasError('maxlength')) {
+            A senha pode ter no máximo 200 caracteres.
+          } @else {
+            Informe sua senha.
+          }
+        </p>
+      }
+      @if (capsLockOn()) {
+        <p id="login-capslock" class="login__hint">
+          <app-icon name="info" />
+          Caps Lock está ativado.
+        </p>
+      }
+    </div>
+
+    <div class="login__options">
+      <label class="checkbox">
+        <input type="checkbox" formControlName="remember" />
+        Lembrar meu usuário neste dispositivo
+      </label>
+      <!--
+        Link "Esqueci minha senha": só será exibido quando existir um fluxo
+        real de recuperação no backend (requisito do projeto).
+      -->
+    </div>
+
+    <button
+      type="submit"
+      class="btn btn--primary btn--block login__submit"
+      [disabled]="isSubmitting() || state() === 'success'"
+      [attr.aria-busy]="isSubmitting()"
+    >
+      @if (isSubmitting()) {
+        <span class="spinner" aria-hidden="true"></span>
+        Entrando…
+      } @else {
+        Entrar no sistema
+        <app-icon name="arrow-right" />
+      }
+    </button>
+  </form>
+
+  <p class="login__security">
+    <app-icon name="shield" />
+    Ambiente seguro. Não compartilhe sua senha com outras pessoas.
+  </p>
+</section>
