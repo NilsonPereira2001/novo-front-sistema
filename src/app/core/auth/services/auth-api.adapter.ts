@@ -1,30 +1,39 @@
 /**
  * ============================================================================
- * ADAPTADOR DO CONTRATO DE AUTENTICAÇÃO — ⚠️ A CONFIRMAR COM O BACKEND
+ * ADAPTADOR DO CONTRATO DE AUTENTICAÇÃO
  * ============================================================================
  *
  * Este é o ÚNICO arquivo que conhece o formato do backend Spring Boot.
- * Quando o contrato real for confirmado, ajuste apenas as funções abaixo;
- * o serviço, os guards e a tela não precisam mudar.
+ * Se o contrato mudar, ajuste apenas as funções abaixo; o serviço, os guards
+ * e a tela não precisam mudar.
  *
- * O que precisa ser confirmado:
- *  1. Nome dos campos enviados no login (ex.: `username`/`password`, `login`/`senha`, `cpf`/`senha`).
- *  2. Formato da resposta: JWT no corpo? Cookie HttpOnly? Sessão (JSESSIONID)?
- *  3. Onde ficam os dados do usuário (nome, id, perfis) na resposta.
- *  4. Se existe endpoint de "usuário atual" para restaurar a sessão.
+ * Contrato confirmado (AuthProfController, POST /api/auth/login):
+ *  - Entrada: `@RequestParam username` e `@RequestParam password`.
+ *  - 200: LoginResponseDTO com o JWT (gerado pelo TokenService).
+ *  - 401: credenciais inválidas | 403: usuário inativo/bloqueado | 500: erro interno.
  *
- * Nenhum dado é inventado: se um campo esperado não vier, o login falha com
- * erro "inesperado" em vez de simular um usuário.
+ * ⚠️ Ainda a confirmar: os campos exatos do LoginResponseDTO. A leitura abaixo
+ * aceita os nomes mais comuns e, para o usuário, também lê o `sub` do JWT.
+ * Nenhum dado é inventado: se nem o token nem o usuário forem encontrados,
+ * o login falha com erro "inesperado" em vez de simular um usuário.
  */
+
+import { HttpParams } from '@angular/common/http';
 
 import { AuthSession, AuthUser, LoginCredentials } from '../models/auth.models';
 
-/** Corpo enviado ao endpoint de login. ⚠️ Confirmar nomes dos campos. */
-export function toLoginRequest(credentials: LoginCredentials): Record<string, string> {
-  return {
-    username: credentials.username,
-    password: credentials.password,
-  };
+/**
+ * Corpo enviado ao endpoint de login.
+ *
+ * O backend lê os campos com `@RequestParam`, então enviamos como
+ * `application/x-www-form-urlencoded` no CORPO da requisição (o Angular define
+ * esse Content-Type ao receber HttpParams). Nunca na URL, para a senha não
+ * ficar registrada em logs de servidor ou proxy.
+ */
+export function toLoginRequest(credentials: LoginCredentials): HttpParams {
+  return new HttpParams()
+    .set('username', credentials.username)
+    .set('password', credentials.password);
 }
 
 /**

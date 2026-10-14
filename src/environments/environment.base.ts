@@ -10,14 +10,18 @@ import { Environment } from './environment.model';
  */
 export const baseEnvironment: Omit<Environment, 'production'> = {
   api: {
-    // ⚠️ A CONFIRMAR: endereço da API. Em desenvolvimento, `/api` passa pelo proxy.conf.json.
+    // Em desenvolvimento, `/api` passa pelo proxy.conf.json até o Spring Boot (porta 8081).
+    // ⚠️ A CONFIRMAR: endereço da API em produção.
     baseUrl: '/api',
     auth: {
-      // ⚠️ A CONFIRMAR: caminhos reais do backend Spring Boot.
+      // AuthProfController: @RequestMapping("api/auth") + @PostMapping("/login")
       loginPath: '/auth/login',
+      // O backend não tem endpoint de "usuário atual": recarregar a página exige novo login.
       sessionPath: null,
+      // O backend não tem endpoint de logout: sair apenas descarta o token da memória.
       logoutPath: null,
-      withCredentials: true,
+      // A autenticação é por JWT devolvido no corpo da resposta, não por cookie.
+      withCredentials: false,
     },
   },
 

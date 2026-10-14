@@ -27,7 +27,7 @@ type LoginState = 'idle' | 'submitting' | 'success';
 
 const ERROR_HEADINGS: Readonly<Record<AuthErrorKind, string>> = {
   'invalid-credentials': 'Não foi possível entrar',
-  forbidden: 'Acesso não autorizado',
+  forbidden: 'Acesso bloqueado',
   'server-unavailable': 'Serviço indisponível',
   network: 'Sem conexão com o servidor',
   unexpected: 'Algo deu errado',

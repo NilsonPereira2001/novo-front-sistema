@@ -20,11 +20,12 @@ function kindFromStatus(status: number): AuthErrorKind {
   if (status === 0) {
     return 'network';
   }
-  // Spring Security costuma responder 401 para credenciais inválidas;
-  // alguns backends usam 400. ⚠️ Confirmar com o backend.
+  // AuthProfController: 401 = usuário ou senha inválidos.
+  // 400 ocorre se o Spring não receber username/password.
   if (status === 401 || status === 400) {
     return 'invalid-credentials';
   }
+  // AuthProfController: 403 = usuário inativo, bloqueado ou desabilitado.
   if (status === 403) {
     return 'forbidden';
   }
@@ -37,7 +38,7 @@ function kindFromStatus(status: number): AuthErrorKind {
 /** Mensagens exibidas ao usuário para cada categoria. */
 export const AUTH_ERROR_MESSAGES: Readonly<Record<AuthErrorKind, string>> = {
   'invalid-credentials': 'Usuário ou senha incorretos. Confira os dados e tente novamente.',
-  forbidden: 'Seu usuário não tem permissão para acessar o sistema. Procure o administrador.',
+  forbidden: 'Seu usuário está inativo ou bloqueado. Procure o administrador do sistema.',
   'server-unavailable':
     'O servidor está temporariamente indisponível. Aguarde alguns instantes e tente novamente.',
   network: 'Não foi possível conectar ao servidor. Verifique sua conexão com a internet.',
