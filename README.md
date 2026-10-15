@@ -2,7 +2,7 @@
 
 Novo frontend do sistema de gestão de associados, em **Angular 21** (componentes standalone, signals, formulários reativos). O backend é o Spring Boot existente, com PostgreSQL.
 
-> **Etapa atual:** login integrado, layout principal (menu lateral + barra superior) e tela Início. Os módulos (pessoas, financeiro, jurídico etc.) abrem uma página "em breve" até serem implementados.
+> **Etapa atual:** login integrado, layout principal (menu lateral + barra superior) e tela Início. Os módulos (Pessoas, Financeiro, jurídico etc.) abrem uma página "em breve" até serem implementados.
 
 ## Como rodar
 

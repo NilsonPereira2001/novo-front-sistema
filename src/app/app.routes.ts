@@ -24,7 +24,7 @@ const comingSoonRoutes: Routes = NAV_ITEMS.filter((item) => !item.available).map
  * - Área pública (layout de autenticação): login.
  * - Área protegida (layout principal com sidebar): Início e os módulos.
  *   Os módulos futuros entram como filhos desta rota, carregados sob demanda:
- *     { path: 'associados', loadChildren: () => import('./features/associados/associados.routes') }
+ *     { path: 'pessoas', loadChildren: () => import('./features/pessoas/pessoas.routes') }
  */
 export const routes: Routes = [
   {

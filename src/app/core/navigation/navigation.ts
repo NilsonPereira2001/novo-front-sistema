@@ -40,37 +40,13 @@ export const NAVIGATION: readonly NavGroup[] = [
         description: 'Visão geral e atalhos do sistema',
         available: true,
       },
-    ],
-  },
-  {
-    label: 'Pessoas',
-    items: [
       {
-        label: 'Associados',
-        path: 'associados',
+        label: 'Pessoas',
+        path: 'pessoas',
         icon: 'users',
-        description: 'Cadastro e ficha individual dos associados',
-        available: false,
-      },
-      {
-        label: 'Dependentes',
-        path: 'dependentes',
-        icon: 'user-check',
-        description: 'Dependentes vinculados aos associados',
-        available: false,
-      },
-      {
-        label: 'Funcionários',
-        path: 'funcionarios',
-        icon: 'briefcase',
-        description: 'Equipe interna da instituição',
-        available: false,
-      },
-      {
-        label: 'Diretores',
-        path: 'diretores',
-        icon: 'award',
-        description: 'Composição da diretoria',
+        // Cadastro único: associados, dependentes, funcionários e diretores ficam
+        // na mesma tela, separados por filtro de tipo, para buscar em um só lugar.
+        description: 'Associados, dependentes, funcionários e diretores em um só lugar',
         available: false,
       },
     ],
