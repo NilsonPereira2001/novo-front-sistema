@@ -46,7 +46,7 @@ export const NAVIGATION: readonly NavGroup[] = [
         icon: 'users',
         // Cadastro único: associados, dependentes, funcionários e diretores ficam
         // na mesma tela, separados por filtro de tipo, para buscar em um só lugar.
-        description: 'Associados, dependentes, funcionários e diretores em um só lugar',
+        description: 'Cadastro único de todas as pessoas',
         available: false,
       },
     ],
