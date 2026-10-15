@@ -64,17 +64,25 @@
       <select
         id="filtro-tipo-pessoa"
         class="tipo-filter__select"
-        [disabled]="!tiposDisponiveis"
-        [attr.aria-describedby]="tiposDisponiveis ? null : 'filtro-tipo-ajuda'"
+        [disabled]="tiposLoading()"
+        [attr.aria-busy]="tiposLoading()"
+        [attr.aria-describedby]="tiposErro() ? 'filtro-tipo-erro' : null"
         (change)="onTipoChange($event)"
       >
-        <option value="" [selected]="idTipoPessoa() === undefined">Todos os tipos</option>
+        <option value="" [selected]="idTipoPessoa() === undefined">
+          {{ tiposLoading() ? 'Carregando tipos…' : 'Todos os tipos' }}
+        </option>
         @for (t of tipos(); track t.id) {
-          <option [value]="t.id.toString()" [selected]="t.id === idTipoPessoa()">{{ t.descricao }}</option>
+          <option [value]="t.id.toString()" [selected]="t.id === idTipoPessoa()">
+            {{ t.nome }}
+          </option>
         }
       </select>
-      @if (!tiposDisponiveis) {
-        <span id="filtro-tipo-ajuda" class="tipo-filter__hint">Em breve</span>
+      @if (tiposErro()) {
+        <span id="filtro-tipo-erro" class="tipo-filter__error" role="alert">
+          Não foi possível carregar os tipos.
+          <button type="button" class="link-button" (click)="retryTipos()">Tentar novamente</button>
+        </span>
       }
     </div>
   </div>
@@ -89,8 +97,8 @@
     <div class="state">
       <span class="state__icon"><app-icon name="inbox" /></span>
       @if (hasFilters()) {
-        <p class="state__title">Nenhum resultado encontrado</p>
-        <p class="state__text">Nenhuma pessoa corresponde aos filtros selecionados.</p>
+        <p class="state__title">Nenhuma pessoa encontrada</p>
+        <p class="state__text">Nenhuma pessoa foi encontrada para os critérios selecionados.</p>
         <button type="button" class="btn btn--secondary" (click)="clearFilters()">
           Limpar filtros
         </button>

@@ -106,7 +106,7 @@ Listagem integrada a `GET /pessoas/listar/filtradas/paginada` (`Page<PessoaDTO>`
 - **Arquivos:** o contrato está em `src/app/features/pessoas/data/pessoas-api.ts` e os modelos em `features/pessoas/models/`.
 - **Testes:** `npm test` roda `pessoas-api.spec.ts`, que cobre os parâmetros e a leitura da resposta.
 
-**Pendente:** o filtro por tipo de pessoa fica desabilitado até existir um endpoint que liste os tipos (id e descrição). Para ativá-lo, informe o caminho em `TIPOS_PESSOA_PATH`, no arquivo `features/pessoas/data/tipos-pessoa.service.ts`.
+**Filtro por tipo:** as opções vêm de `GET /tipo/pessoas/listar` (`TipoPessoaController`), com `id` e `nome`. O seletor mostra o `nome` e envia o `id` em `idTipoPessoa`, sem nenhuma lista fixa no frontend. Pesquisa e tipo funcionam juntos, e limpar um não apaga o outro. O seletor tem estado de carregamento e mensagem de erro com "Tentar novamente".
 
 Ainda são telas em construção: aguardando deferimento, novo associado e novo funcionário.
 

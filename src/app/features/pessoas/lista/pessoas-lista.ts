@@ -22,7 +22,7 @@ import { CpfPipe } from '../../../shared/pipes/cpf.pipe';
 import { DisplayValuePipe } from '../../../shared/pipes/display-value.pipe';
 import { TelefonePipe } from '../../../shared/pipes/telefone.pipe';
 import { initials } from '../../../shared/utils/text';
-import { PESSOAS_PAGE_SIZE_PADRAO } from '../data/pessoas-api';
+import { PESSOAS_PAGE_SIZE_PADRAO, toIdTipoPessoa } from '../data/pessoas-api';
 import { PessoaService } from '../data/pessoas.service';
 import { TiposPessoaService } from '../data/tipos-pessoa.service';
 import { PessoaDTO, PessoasFiltro } from '../models/pessoa.dto';
@@ -65,18 +65,32 @@ export class PessoasLista {
   protected readonly skeletonRows = Array.from({ length: PESSOAS_PAGE_SIZE_PADRAO }, (_, i) => i);
   protected readonly initials = initials;
 
-  // --- Tipos de pessoa (opções do filtro) ------------------------------------
-  protected readonly tiposDisponiveis = this.tiposService.disponivel;
-  private readonly tiposState = loadFrom(signal(null), () => this.tiposService.listar());
+  // --- Tipos de pessoa (opções do filtro, vindas de GET /tipo/pessoas/listar) --
+  private readonly tiposAttempt = signal(0);
+  private readonly tiposState = loadFrom(
+    signal(null),
+    () => this.tiposService.listar(),
+    this.tiposAttempt,
+  );
+  protected readonly tiposLoading = computed(() => this.tiposState().status === 'loading');
+  protected readonly tiposErro = computed(() => this.tiposState().status === 'error');
   protected readonly tipos = computed(() => {
     const s = this.tiposState();
     return s.status === 'ready' ? s.data : [];
   });
 
-  /** `?tipo=3` → 3. Qualquer outro valor é ignorado. */
+  /**
+   * `?tipo=3` → 3. Valores inválidos são ignorados (nunca vira NaN ou "null").
+   * Se os tipos já carregaram e o id não existe entre eles (URL editada à mão,
+   * tipo removido), o filtro é descartado para não ficar invisível na tela.
+   */
   protected readonly idTipoPessoa = computed(() => {
-    const value = Number(this.url.params().get('tipo'));
-    return Number.isInteger(value) && value > 0 ? value : undefined;
+    const id = toIdTipoPessoa(this.url.params().get('tipo'));
+    const s = this.tiposState();
+    if (id !== undefined && s.status === 'ready' && !s.data.some((t) => t.id === id)) {
+      return undefined;
+    }
+    return id;
   });
 
   protected readonly hasFilters = computed(
@@ -84,12 +98,16 @@ export class PessoasLista {
   );
 
   // --- Consulta ---------------------------------------------------------------
-  private readonly filtro = computed<PessoasFiltro>(() => ({
-    filtro: this.url.termo() || undefined,
-    idTipoPessoa: this.idTipoPessoa(),
-    page: this.url.page(),
-    size: this.url.size(),
-  }));
+  /** Só muda quando algum valor muda de fato, evitando consultas repetidas. */
+  private readonly filtro = computed<PessoasFiltro>(
+    () => ({
+      filtro: this.url.termo() || undefined,
+      idTipoPessoa: this.idTipoPessoa(),
+      page: this.url.page(),
+      size: this.url.size(),
+    }),
+    { equal: mesmoFiltro },
+  );
   private readonly attempt = signal(0);
   private readonly state = loadFrom(
     this.filtro,
@@ -122,9 +140,14 @@ export class PessoasLista {
   // --- Ações ------------------------------------------------------------------
   protected readonly newMenuOpen = signal(false);
 
+  /** Troca o tipo mantendo a pesquisa; "Todos os tipos" remove o parâmetro. */
   protected onTipoChange(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value;
-    this.url.setFilters({ tipo: value || null });
+    const id = toIdTipoPessoa((event.target as HTMLSelectElement).value);
+    this.url.setFilters({ tipo: id ?? null });
+  }
+
+  protected retryTipos(): void {
+    this.tiposAttempt.update((n) => n + 1);
   }
 
   protected clearFilters(): void {
@@ -149,4 +172,13 @@ export class PessoasLista {
       this.closeNewMenu();
     }
   }
+}
+
+function mesmoFiltro(a: PessoasFiltro, b: PessoasFiltro): boolean {
+  return (
+    a.filtro === b.filtro &&
+    a.idTipoPessoa === b.idTipoPessoa &&
+    a.page === b.page &&
+    a.size === b.size
+  );
 }

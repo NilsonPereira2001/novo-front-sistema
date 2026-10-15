@@ -36,9 +36,13 @@
   }
 }
 
-.tipo-filter__hint {
+.tipo-filter__error {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
   font-size: var(--text-xs);
-  color: var(--color-text-muted);
+  color: var(--color-danger);
 }
 
 // Indicador de carregamento sobre a tabela já exibida
@@ -77,6 +81,7 @@
 
 @media (max-width: 767px) {
   .tipo-filter {
+    flex-wrap: wrap;
     width: 100%;
   }
 

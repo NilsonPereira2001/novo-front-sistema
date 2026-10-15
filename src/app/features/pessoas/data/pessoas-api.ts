@@ -1,19 +1,22 @@
 /**
  * Contrato da API de pessoas — único arquivo que conhece o backend.
  *
- * Endpoint (PessoaController):
+ * Endpoints:
  *   GET /pessoas/listar/filtradas/paginada?filtro=&idTipoPessoa=&page=&size=
- *   Resposta: ResponseEntity<Page<PessoaDTO>>
- *   Padrão do backend: @PageableDefault(size = 7)
+ *     Resposta: ResponseEntity<Page<PessoaDTO>> · padrão @PageableDefault(size = 7)
+ *   GET /tipo/pessoas/listar   (TipoPessoaController)
+ *     Resposta: ResponseEntity<List<TipoPessoa>> · campos `id` e `nome`
  */
 
 import { HttpParams } from '@angular/common/http';
 
-import { JsonRecord, isRecord, readString } from '../../../shared/utils/json-read';
+import { JsonRecord, isRecord, readNumber, readString } from '../../../shared/utils/json-read';
 import { PessoaDTO, PessoasFiltro } from '../models/pessoa.dto';
+import { TipoPessoa } from '../models/tipo-pessoa.model';
 
 export const PESSOAS_API = {
   listarPaginada: '/pessoas/listar/filtradas/paginada',
+  listarTipos: '/tipo/pessoas/listar',
 } as const;
 
 /** Mesmo tamanho de página do `@PageableDefault(size = 7)` do backend. */
@@ -30,7 +33,7 @@ export function toListarParams(filtro: PessoasFiltro): HttpParams {
   if (texto) {
     params = params.set('filtro', texto);
   }
-  if (filtro.idTipoPessoa !== undefined) {
+  if (isIdValido(filtro.idTipoPessoa)) {
     params = params.set('idTipoPessoa', filtro.idTipoPessoa);
   }
   return params;
@@ -81,4 +84,27 @@ function readDisplayValue(value: unknown): string | null {
     return readString(value, ['descricao', 'nome', 'label']);
   }
   return null;
+}
+
+/**
+ * Converte o valor do seletor (ou da URL) em `idTipoPessoa`.
+ * Vazio, "null", NaN, zero, negativo ou decimal → `undefined` (sem filtro).
+ */
+export function toIdTipoPessoa(value: string | null | undefined): number | undefined {
+  if (value === null || value === undefined || value.trim() === '') {
+    return undefined;
+  }
+  const id = Number(value);
+  return isIdValido(id) ? id : undefined;
+}
+
+function isIdValido(id: number | undefined): id is number {
+  return id !== undefined && Number.isSafeInteger(id) && id > 0;
+}
+
+/** Lê um item de `GET /tipo/pessoas/listar`. Itens sem `id` ou `nome` são descartados. */
+export function toTipoPessoa(raw: JsonRecord): TipoPessoa | null {
+  const id = readNumber(raw, ['id']);
+  const nome = readString(raw, ['nome']);
+  return id !== null && isIdValido(id) && nome ? { id, nome } : null;
 }

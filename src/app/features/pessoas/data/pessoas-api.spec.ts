@@ -1,5 +1,11 @@
 import { toPage } from '../../../shared/data/page.model';
-import { PESSOAS_PAGE_SIZE_PADRAO, toListarParams, toPessoaDTO } from './pessoas-api';
+import {
+  PESSOAS_PAGE_SIZE_PADRAO,
+  toIdTipoPessoa,
+  toListarParams,
+  toPessoaDTO,
+  toTipoPessoa,
+} from './pessoas-api';
 
 describe('toListarParams', () => {
   it('consulta inicial envia só page e size', () => {
@@ -81,5 +87,33 @@ describe('toPage com PessoaDTO', () => {
   it('rejeita respostas fora do formato', () => {
     expect(toPage([{ id: 1 }], toPessoaDTO)).toBeNull();
     expect(toPage({ content: [] }, toPessoaDTO)).toBeNull();
+  });
+});
+
+describe('tipos de pessoa', () => {
+  it('lê id e nome de GET /tipo/pessoas/listar', () => {
+    expect(toTipoPessoa({ id: 1, nome: 'Associado' })).toEqual({ id: 1, nome: 'Associado' });
+  });
+
+  it('descarta itens sem id válido ou sem nome', () => {
+    expect(toTipoPessoa({ nome: 'Sem id' })).toBeNull();
+    expect(toTipoPessoa({ id: 0, nome: 'Zero' })).toBeNull();
+    expect(toTipoPessoa({ id: 2, nome: '' })).toBeNull();
+  });
+
+  it('converte o valor do seletor em idTipoPessoa sem valores inválidos', () => {
+    expect(toIdTipoPessoa('3')).toBe(3);
+    expect(toIdTipoPessoa('')).toBeUndefined();
+    expect(toIdTipoPessoa('null')).toBeUndefined();
+    expect(toIdTipoPessoa('undefined')).toBeUndefined();
+    expect(toIdTipoPessoa('abc')).toBeUndefined();
+    expect(toIdTipoPessoa('2.5')).toBeUndefined();
+    expect(toIdTipoPessoa(null)).toBeUndefined();
+  });
+
+  it('nunca envia idTipoPessoa inválido para a listagem', () => {
+    expect(toListarParams({ idTipoPessoa: Number.NaN, page: 0, size: 7 }).has('idTipoPessoa')).toBe(
+      false,
+    );
   });
 });
