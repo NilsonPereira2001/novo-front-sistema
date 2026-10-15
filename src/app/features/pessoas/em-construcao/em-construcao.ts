@@ -5,7 +5,7 @@ import { Icon } from '../../../shared/components/icon/icon';
 
 /**
  * Página provisória das telas de Pessoas ainda não construídas
- * (novo associado, novo funcionário, ficha individual).
+ * (novo membro, novo funcionário, deferimento).
  * `titulo` e `descricao` vêm de `data` da rota.
  */
 @Component({

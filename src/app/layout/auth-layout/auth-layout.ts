@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 
 import { BRANDING } from '../../core/config/branding';
+import { TERMOS } from '../../core/config/terminologia';
 import { Icon } from '../../shared/components/icon/icon';
 import { TenantLogo } from '../../shared/components/tenant-logo/tenant-logo';
 
@@ -22,7 +23,7 @@ export class AuthLayout {
   protected readonly year = new Date().getFullYear();
 
   protected readonly highlights = [
-    'Cadastro centralizado de associados e dependentes',
+    `Cadastro centralizado de ${TERMOS.membrosMin} e dependentes`,
     'Financeiro, jurídico e convênios no mesmo lugar',
     'Acesso individual e protegido para cada usuário',
   ] as const;

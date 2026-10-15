@@ -27,11 +27,11 @@
 
       @if (newMenuOpen()) {
         <div class="dropdown__panel" id="menu-nova-pessoa">
-          <a class="dropdown__item" routerLink="/pessoas/novo/associado" (click)="closeNewMenu()">
+          <a class="dropdown__item" routerLink="/pessoas/novo/membro" (click)="closeNewMenu()">
             <span class="dropdown__icon"><app-icon name="users" /></span>
             <span class="dropdown__text">
-              <strong>Associado</strong>
-              <span>Novo membro da associação</span>
+              <strong>{{ termos.membro }}</strong>
+              <span>Novo membro da instituição</span>
             </span>
           </a>
           <a class="dropdown__item" routerLink="/pessoas/novo/funcionario" (click)="closeNewMenu()">

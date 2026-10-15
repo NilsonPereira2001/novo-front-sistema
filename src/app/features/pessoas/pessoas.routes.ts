@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 
 import { pageTitle } from '../../core/config/app-title';
+import { TERMOS } from '../../core/config/terminologia';
 
 /**
  * Rotas do módulo Pessoas.
@@ -23,11 +24,11 @@ const routes: Routes = [
     loadComponent: () => import('./em-construcao/em-construcao').then((m) => m.EmConstrucao),
   },
   {
-    path: 'novo/associado',
-    title: pageTitle('Novo associado'),
+    path: 'novo/membro',
+    title: pageTitle(`Novo ${TERMOS.membroMin}`),
     data: {
-      titulo: 'Novo associado',
-      descricao: 'Cadastro de um novo associado.',
+      titulo: `Novo ${TERMOS.membroMin}`,
+      descricao: `Cadastro de um novo ${TERMOS.membroMin}.`,
     },
     loadComponent: () => import('./em-construcao/em-construcao').then((m) => m.EmConstrucao),
   },

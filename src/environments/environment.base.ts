@@ -8,6 +8,12 @@ import { Environment } from './environment.model';
  * `environment.ts` pelo arquivo de desenvolvimento; se um importar o outro,
  * o import aponta para si mesmo e a aplicação não inicia.
  */
+/**
+ * Nomenclatura dos membros da empresa contratante.
+ * Ex.: { membro: 'Afiliado', membros: 'Afiliados' } para quem usa "afiliado".
+ */
+const terminologia = { membro: 'Associado', membros: 'Associados' } as const;
+
 export const baseEnvironment: Omit<Environment, 'production'> = {
   api: {
     // Tudo que começa com `/backend` vai para o Spring Boot, sem o prefixo:
@@ -29,7 +35,8 @@ export const baseEnvironment: Omit<Environment, 'production'> = {
   },
 
   branding: {
-    systemName: 'Gestão de Associados',
+    systemName: `Gestão de ${terminologia.membros}`,
+    terminologia,
     systemTagline: 'Plataforma de gestão institucional',
     tenant: {
       // Substituir pelos dados da empresa contratante.

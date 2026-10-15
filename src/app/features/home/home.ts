@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { RouterLink } from '@angular/router';
 
 import { BRANDING } from '../../core/config/branding';
+import { TERMOS } from '../../core/config/terminologia';
 import { AuthService } from '../../core/auth/services/auth.service';
 import { NAVIGATION, NAV_ITEMS, NavItem } from '../../core/navigation/navigation';
 import { Icon } from '../../shared/components/icon/icon';
@@ -19,7 +20,7 @@ const QUICK_ACCESS_PATHS = [
  * Tela Início da área autenticada.
  *
  * Mostra apenas informações reais: o usuário logado, os dados da sessão e
- * os atalhos para os módulos. Indicadores numéricos (associados ativos,
+ * os atalhos para os módulos. Indicadores numéricos (membros ativos,
  * inadimplência etc.) entram quando houver endpoints no backend — nenhum
  * número é inventado aqui.
  */
@@ -34,6 +35,7 @@ export class Home {
   private readonly auth = inject(AuthService);
   protected readonly branding = inject(BRANDING);
 
+  protected readonly termos = TERMOS;
   protected readonly user = this.auth.user;
   protected readonly startedAt = this.auth.sessionStartedAt;
   protected readonly expiresAt = this.auth.sessionExpiresAt;

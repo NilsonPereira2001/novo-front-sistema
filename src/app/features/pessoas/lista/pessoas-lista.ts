@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+import { TERMOS } from '../../../core/config/terminologia';
 import { Icon } from '../../../shared/components/icon/icon';
 import { LoadError } from '../../../shared/components/load-error/load-error';
 import { Pagination } from '../../../shared/components/pagination/pagination';
@@ -64,6 +65,7 @@ export class PessoasLista {
   });
   protected readonly skeletonRows = Array.from({ length: PESSOAS_PAGE_SIZE_PADRAO }, (_, i) => i);
   protected readonly initials = initials;
+  protected readonly termos = TERMOS;
 
   // --- Tipos de pessoa (opções do filtro, vindas de GET /tipo/pessoas/listar) --
   private readonly tiposAttempt = signal(0);

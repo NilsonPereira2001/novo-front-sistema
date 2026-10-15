@@ -52,6 +52,18 @@ export interface BrandingConfig {
   readonly systemName: string;
   readonly systemTagline: string;
 
+  /**
+   * Como a empresa contratante chama os seus membros. Cada empresa usa o
+   * mesmo sistema com nomenclatura própria (ex.: "Associado" ou "Afiliado").
+   * Todos os textos fixos do frontend usam estes termos.
+   */
+  readonly terminologia: {
+    /** Singular, com inicial maiúscula (ex.: "Associado", "Afiliado"). */
+    readonly membro: string;
+    /** Plural, com inicial maiúscula (ex.: "Associados", "Afiliados"). */
+    readonly membros: string;
+  };
+
   readonly tenant: {
     readonly name: string;
     /** Caminho da logomarca em `public/`. `null` exibe o símbolo provisório. */

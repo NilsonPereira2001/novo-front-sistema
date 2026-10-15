@@ -1,8 +1,9 @@
 import { IconName } from '../../shared/components/icon/icon';
+import { TERMOS } from '../config/terminologia';
 
 export interface NavItem {
   readonly label: string;
-  /** Caminho absoluto da rota, sem a barra inicial (ex.: `associados`). */
+  /** Caminho absoluto da rota, sem a barra inicial (ex.: `pessoas`). */
   readonly path: string;
   readonly icon: IconName;
   /** Frase curta usada nos atalhos da tela Início e na página "em breve". */
@@ -44,7 +45,7 @@ export const NAVIGATION: readonly NavGroup[] = [
         label: 'Pessoas',
         path: 'pessoas',
         icon: 'users',
-        // Cadastro único: associados, dependentes, funcionários e diretores ficam
+        // Cadastro único: membros, dependentes, funcionários e diretores ficam
         // na mesma tela, separados por filtro de tipo, para buscar em um só lugar.
         description: 'Cadastro único de todas as pessoas',
         available: true,
@@ -65,7 +66,7 @@ export const NAVIGATION: readonly NavGroup[] = [
         label: 'Débitos',
         path: 'financeiro/debitos',
         icon: 'arrow-down-circle',
-        description: 'Valores em aberto dos associados',
+        description: `Valores em aberto dos ${TERMOS.membrosMin}`,
         available: false,
       },
       {
@@ -91,7 +92,7 @@ export const NAVIGATION: readonly NavGroup[] = [
         label: 'Atendimentos',
         path: 'juridico/atendimentos',
         icon: 'message-square',
-        description: 'Atendimentos jurídicos aos associados',
+        description: `Atendimentos jurídicos aos ${TERMOS.membrosMin}`,
         available: false,
       },
       {
@@ -117,7 +118,7 @@ export const NAVIGATION: readonly NavGroup[] = [
         label: 'Indicações',
         path: 'indicacoes',
         icon: 'user-plus',
-        description: 'Indicações de novos associados',
+        description: `Indicações de novos ${TERMOS.membrosMin}`,
         available: false,
       },
       {
@@ -131,7 +132,7 @@ export const NAVIGATION: readonly NavGroup[] = [
         label: 'Arquivos',
         path: 'arquivos',
         icon: 'folder',
-        description: 'Arquivos anexados aos associados',
+        description: `Arquivos anexados aos ${TERMOS.membrosMin}`,
         available: false,
       },
       {

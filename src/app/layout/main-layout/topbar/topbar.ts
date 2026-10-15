@@ -46,7 +46,7 @@ export class Topbar {
     { initialValue: this.router.url },
   );
 
-  /** Grupo e página atuais, para a trilha "Pessoas › Associados". */
+  /** Grupo e página atuais, para a trilha "Financeiro › Lançamentos". */
   protected readonly location = computed(() => findNavEntry(this.url()));
 
   protected readonly initials = computed(() => initials(this.user()?.name));

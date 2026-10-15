@@ -63,6 +63,8 @@ Para restringir um item a certos perfis, use `roles: ['ADMIN']`. Isso só escond
 
 ## Identidade visual
 
+- **Nomenclatura dos membros:** cada empresa chama os seus membros de um jeito, como "Associado" ou "Afiliado". O termo fica em `terminologia`, no `src/environments/environment.base.ts`. Todos os textos fixos usam esse termo, inclusive o nome do sistema ("Gestão de Associados" ou "Gestão de Afiliados"). Os nomes que vêm do banco, como os tipos de pessoa, já chegam com a nomenclatura de cada empresa.
+
 - Cores, fontes, raios, sombras e medidas do layout: `src/styles/_tokens.scss`.
 - Padrões de página reaproveitáveis (cabeçalho, cartões, etiquetas): `src/styles/_layout.scss`.
 - Nome do sistema, empresa contratante e assinatura da WorkTec: `branding` em `src/environments/environment.base.ts`.
