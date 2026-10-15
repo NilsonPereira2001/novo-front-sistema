@@ -2,7 +2,7 @@
 
 Novo frontend do sistema de gestão de associados, em **Angular 21** (componentes standalone, signals, formulários reativos). O backend é o Spring Boot existente, com PostgreSQL.
 
-> **Etapa atual:** login integrado, layout principal (menu lateral + barra superior) e tela Início. Os módulos (Pessoas, Financeiro, jurídico etc.) abrem uma página "em breve" até serem implementados.
+> **Etapa atual:** login integrado, layout principal (menu lateral + barra superior), tela Início e listagem de Pessoas. Os demais módulos (Financeiro, Jurídico etc.) abrem uma página "em breve" até serem implementados.
 
 ## Como rodar
 
@@ -40,9 +40,12 @@ src/
     │   ├── auth/login/        # tela de login
     │   ├── auth/access-denied/
     │   ├── home/              # tela Início
+    │   ├── pessoas/           # lista única, aguardando deferimento (data/ = API)
     │   └── coming-soon/       # página provisória dos módulos ainda não construídos
     └── shared/
-        ├── components/        # ícones, alertas, logomarca da contratante
+        ├── components/        # ícones, alertas, logomarca, paginação, busca, erro de carga
+        ├── data/              # Pagina<T>, estado de carga, filtros na URL
+        ├── pipes/             # cpf
         └── validators/
 ```
 
@@ -89,6 +92,18 @@ Toda a leitura do contrato está em `src/app/core/auth/services/auth-api.adapter
 - O JWT fica **somente em memória**, nunca no `localStorage`, e é enviado como `Authorization: Bearer` apenas para a própria API.
 - A expiração do JWT (`exp`) é respeitada: ao expirar, ou se a API responder 401, o usuário volta ao login com o aviso "sessão expirada".
 - Os guards só controlam a navegação. **Toda permissão precisa ser validada também no backend.**
+
+### Pessoas — ⚠️ a confirmar
+
+As telas estão prontas, mas os endpoints de pessoas ainda **não foram confirmados**. Tudo está isolado em `src/app/features/pessoas/data/pessoas-api.adapter.ts`:
+
+- **Listagem:** provisoriamente `GET /api/pessoas?page=0&size=20&sort=nome,asc`, com os filtros `nome`, `cpf` (só dígitos) e `tipo` (`ASSOCIADO`, `DEPENDENTE` ou `FUNCIONARIO`).
+- **Aguardando deferimento:** provisoriamente a mesma listagem, com `tipo=ASSOCIADO&situacao=AGUARDANDO_DEFERIMENTO`.
+- **Resposta:** aceita `Page`/`PagedModel` do Spring Data ou uma lista simples. Os campos lidos são `id`, `nome`, `cpf`, `tipo`, `situacao` e `matricula`, e, no deferimento, `dataSolicitacao` e `indicadoPor`.
+
+Enquanto o endpoint não existir, a tela mostra "Esta consulta ainda não está disponível no servidor" (404).
+
+Ainda são telas em construção: novo associado, novo funcionário e a ficha individual (`/pessoas/:id`).
 
 ### Recuperação de senha
 

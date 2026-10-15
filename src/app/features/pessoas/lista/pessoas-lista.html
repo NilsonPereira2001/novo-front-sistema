@@ -1,0 +1,166 @@
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">Cadastro central</p>
+    <h1 class="page-title">Pessoas</h1>
+    <p class="page-subtitle">Associados, dependentes e funcionários em um só lugar.</p>
+  </div>
+
+  <div class="page-header__actions">
+    <a class="btn btn--secondary" routerLink="/pessoas/aguardando-deferimento">
+      <app-icon name="clock" />
+      Aguardando deferimento
+    </a>
+
+    <div class="dropdown" #newMenu>
+      <button
+        type="button"
+        class="btn btn--primary"
+        (click)="toggleNewMenu()"
+        [attr.aria-expanded]="newMenuOpen()"
+        aria-controls="menu-nova-pessoa"
+      >
+        <app-icon name="plus" />
+        Nova pessoa
+        <app-icon name="chevron-down" />
+      </button>
+
+      @if (newMenuOpen()) {
+        <div class="dropdown__panel" id="menu-nova-pessoa">
+          <a class="dropdown__item" routerLink="/pessoas/novo/associado" (click)="closeNewMenu()">
+            <span class="dropdown__icon"><app-icon name="users" /></span>
+            <span class="dropdown__text">
+              <strong>Associado</strong>
+              <span>Novo membro da associação</span>
+            </span>
+          </a>
+          <a class="dropdown__item" routerLink="/pessoas/novo/funcionario" (click)="closeNewMenu()">
+            <span class="dropdown__icon"><app-icon name="briefcase" /></span>
+            <span class="dropdown__text">
+              <strong>Funcionário</strong>
+              <span>Integrante da equipe interna</span>
+            </span>
+          </a>
+        </div>
+      }
+    </div>
+  </div>
+</header>
+
+<section class="card table-card" aria-labelledby="titulo-lista-pessoas">
+  <h2 id="titulo-lista-pessoas" class="sr-only">Lista de pessoas</h2>
+
+  <div class="toolbar">
+    <div class="segmented" role="group" aria-label="Filtrar por tipo">
+      @for (f of filtros; track f.label) {
+        <button
+          type="button"
+          class="segmented__item"
+          [class.is-active]="tipo() === f.value"
+          [attr.aria-pressed]="tipo() === f.value"
+          (click)="setTipo(f.param)"
+        >
+          {{ f.label }}
+        </button>
+      }
+    </div>
+
+    <app-search-field
+      label="Buscar por nome ou CPF"
+      placeholder="Buscar por nome ou CPF"
+      [value]="url.searchText()"
+      (valueChange)="url.search($event)"
+      (clear)="url.clearSearch()"
+    />
+  </div>
+
+  @if (errorKind(); as kind) {
+    <app-load-error [kind]="kind" (retry)="retry()" />
+  } @else if (pagina()?.itens.length === 0) {
+    <div class="state">
+      <span class="state__icon"><app-icon name="inbox" /></span>
+      @if (hasFilters()) {
+        <p class="state__title">Nenhuma pessoa encontrada</p>
+        <p class="state__text">Revise o nome ou CPF digitado, ou altere o filtro de tipo.</p>
+        <button type="button" class="btn btn--secondary" (click)="clearFilters()">
+          Limpar filtros
+        </button>
+      } @else {
+        <p class="state__title">Nenhuma pessoa cadastrada</p>
+        <p class="state__text">Use o botão "Nova pessoa" para cadastrar a primeira.</p>
+      }
+    </div>
+  } @else {
+    <div class="table-scroll">
+      <table class="data-table" [attr.aria-busy]="loading()">
+        <thead>
+          <tr>
+            <th scope="col">Nome</th>
+            <th scope="col">CPF</th>
+            <th scope="col">Tipo</th>
+            <th scope="col" class="hide-sm">Matrícula</th>
+            <th scope="col">Situação</th>
+            <th scope="col" class="cell-action"><span class="sr-only">Ações</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loading()) {
+            @for (row of skeletonRows; track row) {
+              <tr aria-hidden="true">
+                <td><span class="skeleton" style="width: 12rem"></span></td>
+                <td><span class="skeleton" style="width: 7rem"></span></td>
+                <td><span class="skeleton" style="width: 5rem"></span></td>
+                <td class="hide-sm"><span class="skeleton" style="width: 4rem"></span></td>
+                <td><span class="skeleton" style="width: 5rem"></span></td>
+                <td></td>
+              </tr>
+            }
+          } @else {
+            @for (p of pagina()?.itens ?? []; track p.id) {
+              <tr>
+                <td>
+                  <a class="person-cell" [routerLink]="['/pessoas', p.id]">
+                    <span class="avatar-sm" aria-hidden="true">{{ initials(p.nome) }}</span>
+                    {{ p.nome }}
+                  </a>
+                </td>
+                <td class="cell-mono">{{ p.cpf | cpf }}</td>
+                <td>
+                  <span [class]="tipoTag(p.tipo)">{{ tipoLabel(p.tipo) }}</span>
+                </td>
+                <td class="cell-mono hide-sm">{{ p.matricula ?? '—' }}</td>
+                <td>
+                  <span class="status" [attr.data-tone]="situacaoTone(p.situacao)">
+                    <span class="status__dot" aria-hidden="true"></span>
+                    {{ situacaoLabel(p.situacao) }}
+                  </span>
+                </td>
+                <td class="cell-action">
+                  <a
+                    class="icon-link"
+                    [routerLink]="['/pessoas', p.id]"
+                    [attr.aria-label]="'Abrir ficha de ' + p.nome"
+                  >
+                    <app-icon name="chevron-right" />
+                  </a>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (pagina(); as pg) {
+      <app-pagination
+        [page]="pg.pagina"
+        [size]="pg.tamanho"
+        [total]="pg.total"
+        [totalPages]="pg.totalPaginas"
+        [sizeOptions]="sizeOptions"
+        itemLabel="pessoas"
+        (pageChange)="url.setPage($event)"
+        (sizeChange)="url.setSize($event)"
+      />
+    }
+  }
+</section>

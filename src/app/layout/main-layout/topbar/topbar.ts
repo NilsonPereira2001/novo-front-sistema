@@ -14,6 +14,7 @@ import { filter, map } from 'rxjs';
 import { AuthService } from '../../../core/auth/services/auth.service';
 import { findNavEntry } from '../../../core/navigation/navigation';
 import { Icon } from '../../../shared/components/icon/icon';
+import { initials } from '../../../shared/utils/text';
 
 /** Barra superior: botão do menu (mobile), localização atual e menu do usuário. */
 @Component({
@@ -48,16 +49,7 @@ export class Topbar {
   /** Grupo e página atuais, para a trilha "Pessoas › Associados". */
   protected readonly location = computed(() => findNavEntry(this.url()));
 
-  protected readonly initials = computed(() => {
-    const name = this.user()?.name ?? '';
-    const parts = name.trim().split(/\s+/).filter(Boolean);
-    if (parts.length === 0) {
-      return '?';
-    }
-    const first = parts[0][0] ?? '';
-    const last = parts.length > 1 ? (parts[parts.length - 1][0] ?? '') : '';
-    return (first + last).toUpperCase();
-  });
+  protected readonly initials = computed(() => initials(this.user()?.name));
 
   protected toggleUserMenu(): void {
     this.userMenuOpen.update((open) => !open);

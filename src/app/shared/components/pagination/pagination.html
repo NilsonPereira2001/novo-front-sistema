@@ -1,0 +1,60 @@
+<div class="pagination">
+  <p class="pagination__summary" aria-live="polite">
+    @if (total() > 0) {
+      Mostrando <strong>{{ from() }}–{{ to() }}</strong> de <strong>{{ total() }}</strong>
+      {{ itemLabel() }}
+    }
+  </p>
+
+  <div class="pagination__controls">
+    <label class="pagination__size">
+      <span>Por página</span>
+      <select class="pagination__select" [value]="size()" (change)="onSizeChange($event)">
+        @for (option of sizeOptions(); track option) {
+          <option [value]="option" [selected]="option === size()">{{ option }}</option>
+        }
+      </select>
+    </label>
+
+    @if (totalPages() > 1) {
+      <nav class="pagination__pages" aria-label="Paginação">
+        <button
+          type="button"
+          class="pagination__btn"
+          (click)="go(page() - 1)"
+          [disabled]="isFirst()"
+          aria-label="Página anterior"
+        >
+          <app-icon name="chevron-left" />
+        </button>
+
+        @for (p of pages(); track $index) {
+          @if (p === null) {
+            <span class="pagination__ellipsis" aria-hidden="true">…</span>
+          } @else {
+            <button
+              type="button"
+              class="pagination__btn pagination__btn--number"
+              [class.is-current]="p === page()"
+              [attr.aria-current]="p === page() ? 'page' : null"
+              [attr.aria-label]="'Página ' + (p + 1)"
+              (click)="go(p)"
+            >
+              {{ p + 1 }}
+            </button>
+          }
+        }
+
+        <button
+          type="button"
+          class="pagination__btn"
+          (click)="go(page() + 1)"
+          [disabled]="isLast()"
+          aria-label="Próxima página"
+        >
+          <app-icon name="chevron-right" />
+        </button>
+      </nav>
+    }
+  </div>
+</div>

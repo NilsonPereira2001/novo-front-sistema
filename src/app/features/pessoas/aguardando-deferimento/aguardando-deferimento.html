@@ -1,0 +1,114 @@
+<header class="page-header">
+  <div class="page-header__text">
+    <a class="back-link" routerLink="/pessoas">
+      <app-icon name="arrow-left" />
+      Pessoas
+    </a>
+    <h1 class="page-title">Aguardando deferimento</h1>
+    <p class="page-subtitle">
+      Pedidos de associação que ainda precisam ser analisados.
+      @if (pagina(); as pg) {
+        @if (pg.total > 0) {
+          <span class="tag tag--primary">{{ pg.total }} {{ pg.total === 1 ? 'pedido' : 'pedidos' }}</span>
+        }
+      }
+    </p>
+  </div>
+</header>
+
+<section class="card table-card" aria-labelledby="titulo-deferimento">
+  <h2 id="titulo-deferimento" class="sr-only">Associados aguardando deferimento</h2>
+
+  <div class="toolbar">
+    <app-search-field
+      label="Buscar por nome ou CPF"
+      placeholder="Buscar por nome ou CPF"
+      [value]="url.searchText()"
+      (valueChange)="url.search($event)"
+      (clear)="url.clearSearch()"
+    />
+  </div>
+
+  @if (errorKind(); as kind) {
+    <app-load-error [kind]="kind" (retry)="retry()" />
+  } @else if (pagina()?.itens.length === 0) {
+    <div class="state">
+      <span class="state__icon"><app-icon name="check-circle" /></span>
+      @if (url.termo()) {
+        <p class="state__title">Nenhum pedido encontrado</p>
+        <p class="state__text">Nenhum pedido pendente corresponde ao nome ou CPF digitado.</p>
+        <button type="button" class="btn btn--secondary" (click)="url.clearSearch()">
+          Limpar busca
+        </button>
+      } @else {
+        <p class="state__title">Nenhum pedido pendente</p>
+        <p class="state__text">Todos os pedidos de associação já foram analisados.</p>
+      }
+    </div>
+  } @else {
+    <div class="table-scroll">
+      <table class="data-table" [attr.aria-busy]="loading()">
+        <thead>
+          <tr>
+            <th scope="col">Nome</th>
+            <th scope="col">CPF</th>
+            <th scope="col">Solicitado em</th>
+            <th scope="col" class="hide-sm">Indicado por</th>
+            <th scope="col" class="cell-action"><span class="sr-only">Ações</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loading()) {
+            @for (row of skeletonRows; track row) {
+              <tr aria-hidden="true">
+                <td><span class="skeleton" style="width: 12rem"></span></td>
+                <td><span class="skeleton" style="width: 7rem"></span></td>
+                <td><span class="skeleton" style="width: 5rem"></span></td>
+                <td class="hide-sm"><span class="skeleton" style="width: 8rem"></span></td>
+                <td></td>
+              </tr>
+            }
+          } @else {
+            @for (s of pagina()?.itens ?? []; track s.id) {
+              <tr>
+                <td>
+                  <a class="person-cell" [routerLink]="['/pessoas', s.id]">
+                    <span class="avatar-sm" aria-hidden="true">{{ initials(s.nome) }}</span>
+                    {{ s.nome }}
+                  </a>
+                </td>
+                <td class="cell-mono">{{ s.cpf | cpf }}</td>
+                <td class="cell-nowrap">
+                  @if (s.dataSolicitacao) {
+                    {{ s.dataSolicitacao | date: 'dd/MM/yyyy' }}
+                  } @else {
+                    —
+                  }
+                </td>
+                <td class="hide-sm">{{ s.indicadoPor ?? '—' }}</td>
+                <td class="cell-action">
+                  <a class="btn btn--secondary btn--sm" [routerLink]="['/pessoas', s.id]">
+                    Analisar
+                  </a>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (pagina(); as pg) {
+      <app-pagination
+        [page]="pg.pagina"
+        [size]="pg.tamanho"
+        [total]="pg.total"
+        [totalPages]="pg.totalPaginas"
+        [sizeOptions]="sizeOptions"
+        itemLabel="pedidos"
+        (pageChange)="url.setPage($event)"
+        (sizeChange)="url.setSize($event)"
+      />
+    }
+  }
+</section>
