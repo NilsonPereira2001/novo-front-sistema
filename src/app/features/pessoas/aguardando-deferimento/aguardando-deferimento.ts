@@ -52,6 +52,8 @@ export class AguardandoDeferimento {
     const s = this.state();
     return s.status === 'ready' ? s.data : null;
   });
+  /** Carregou e não há nenhum item (com ou sem filtros). */
+  protected readonly isEmpty = computed(() => this.pagina()?.itens.length === 0);
 
   protected retry(): void {
     this.attempt.update((n) => n + 1);

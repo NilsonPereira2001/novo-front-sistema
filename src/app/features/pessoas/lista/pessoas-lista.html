@@ -75,7 +75,7 @@
 
   @if (errorKind(); as kind) {
     <app-load-error [kind]="kind" (retry)="retry()" />
-  } @else if (pagina()?.itens.length === 0) {
+  } @else if (isEmpty()) {
     <div class="state">
       <span class="state__icon"><app-icon name="inbox" /></span>
       @if (hasFilters()) {

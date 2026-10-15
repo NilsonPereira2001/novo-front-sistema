@@ -73,6 +73,8 @@ export class PessoasLista {
     const s = this.state();
     return s.status === 'ready' ? s.data : null;
   });
+  /** Carregou e não há nenhum item (com ou sem filtros). */
+  protected readonly isEmpty = computed(() => this.pagina()?.itens.length === 0);
 
   protected readonly newMenuOpen = signal(false);
 
