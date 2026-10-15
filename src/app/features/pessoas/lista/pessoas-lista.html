@@ -2,9 +2,10 @@
   <div class="page-header__text">
     <p class="page-eyebrow">Cadastro central</p>
     <h1 class="page-title">Pessoas</h1>
-    <p class="page-subtitle">Associados, dependentes e funcionários em um só lugar.</p>
+    <p class="page-subtitle">Consulte e gerencie as pessoas cadastradas no sistema.</p>
   </div>
 
+  <!-- Ações futuras: por enquanto levam a páginas "em construção". -->
   <div class="page-header__actions">
     <a class="btn btn--secondary" routerLink="/pessoas/aguardando-deferimento">
       <app-icon name="clock" />
@@ -50,28 +51,37 @@
   <h2 id="titulo-lista-pessoas" class="sr-only">Lista de pessoas</h2>
 
   <div class="toolbar">
-    <div class="segmented" role="group" aria-label="Filtrar por tipo">
-      @for (f of filtros; track f.label) {
-        <button
-          type="button"
-          class="segmented__item"
-          [class.is-active]="tipo() === f.value"
-          [attr.aria-pressed]="tipo() === f.value"
-          (click)="setTipo(f.param)"
-        >
-          {{ f.label }}
-        </button>
-      }
-    </div>
-
     <app-search-field
-      label="Buscar por nome ou CPF"
-      placeholder="Buscar por nome ou CPF"
+      label="Pesquisar pessoas"
+      placeholder="Pesquisar por nome ou CPF"
       [value]="url.searchText()"
       (valueChange)="url.search($event)"
       (clear)="url.clearSearch()"
     />
+
+    <div class="tipo-filter">
+      <label class="tipo-filter__label" for="filtro-tipo-pessoa">Tipo de pessoa</label>
+      <select
+        id="filtro-tipo-pessoa"
+        class="tipo-filter__select"
+        [disabled]="!tiposDisponiveis"
+        [attr.aria-describedby]="tiposDisponiveis ? null : 'filtro-tipo-ajuda'"
+        (change)="onTipoChange($event)"
+      >
+        <option value="" [selected]="idTipoPessoa() === undefined">Todos os tipos</option>
+        @for (t of tipos(); track t.id) {
+          <option [value]="t.id.toString()" [selected]="t.id === idTipoPessoa()">{{ t.descricao }}</option>
+        }
+      </select>
+      @if (!tiposDisponiveis) {
+        <span id="filtro-tipo-ajuda" class="tipo-filter__hint">Em breve</span>
+      }
+    </div>
   </div>
+
+  @if (loading() && page()) {
+    <div class="loading-bar" role="progressbar" aria-label="Carregando pessoas"></div>
+  }
 
   @if (errorKind(); as kind) {
     <app-load-error [kind]="kind" (retry)="retry()" />
@@ -79,70 +89,68 @@
     <div class="state">
       <span class="state__icon"><app-icon name="inbox" /></span>
       @if (hasFilters()) {
-        <p class="state__title">Nenhuma pessoa encontrada</p>
-        <p class="state__text">Revise o nome ou CPF digitado, ou altere o filtro de tipo.</p>
+        <p class="state__title">Nenhum resultado encontrado</p>
+        <p class="state__text">Nenhuma pessoa corresponde aos filtros selecionados.</p>
         <button type="button" class="btn btn--secondary" (click)="clearFilters()">
           Limpar filtros
         </button>
       } @else {
         <p class="state__title">Nenhuma pessoa cadastrada</p>
-        <p class="state__text">Use o botão "Nova pessoa" para cadastrar a primeira.</p>
+        <p class="state__text">Ainda não há pessoas cadastradas no sistema.</p>
       }
     </div>
   } @else {
     <div class="table-scroll">
-      <table class="data-table" [attr.aria-busy]="loading()">
+      <table
+        class="data-table pessoas-table"
+        [class.is-stale]="loading() && !!page()"
+        [attr.aria-busy]="loading()"
+      >
         <thead>
           <tr>
             <th scope="col">Nome</th>
             <th scope="col">CPF</th>
             <th scope="col">Tipo</th>
-            <th scope="col" class="hide-sm">Matrícula</th>
-            <th scope="col">Situação</th>
-            <th scope="col" class="cell-action"><span class="sr-only">Ações</span></th>
+            <th scope="col">Telefone principal</th>
+            <th scope="col">Data de cadastro</th>
+            <th scope="col">Status</th>
+            <th scope="col">Restrição</th>
           </tr>
         </thead>
         <tbody>
-          @if (loading()) {
+          @if (page(); as pg) {
+            @for (p of pg.content; track p.id) {
+              <tr>
+                <td>
+                  <span class="person-cell">
+                    <span class="avatar-sm" aria-hidden="true">{{ initials(p.nome) }}</span>
+                    {{ p.nome | displayValue }}
+                  </span>
+                </td>
+                <td class="cell-mono">{{ p.cpf | cpf }}</td>
+                <td>{{ p.tipo | displayValue }}</td>
+                <td class="cell-mono">{{ p.telefonePrincipal | telefone }}</td>
+                <td class="cell-mono">
+                  @if (p.dataCadastro) {
+                    {{ p.dataCadastro | date: 'dd/MM/yyyy' }}
+                  } @else {
+                    —
+                  }
+                </td>
+                <td>{{ p.status | displayValue }}</td>
+                <td>{{ p.restricao | displayValue }}</td>
+              </tr>
+            }
+          } @else {
             @for (row of skeletonRows; track row) {
               <tr aria-hidden="true">
                 <td><span class="skeleton" style="width: 12rem"></span></td>
                 <td><span class="skeleton" style="width: 7rem"></span></td>
                 <td><span class="skeleton" style="width: 5rem"></span></td>
-                <td class="hide-sm"><span class="skeleton" style="width: 4rem"></span></td>
+                <td><span class="skeleton" style="width: 7rem"></span></td>
                 <td><span class="skeleton" style="width: 5rem"></span></td>
-                <td></td>
-              </tr>
-            }
-          } @else {
-            @for (p of pagina()?.itens ?? []; track p.id) {
-              <tr>
-                <td>
-                  <a class="person-cell" [routerLink]="['/pessoas', p.id]">
-                    <span class="avatar-sm" aria-hidden="true">{{ initials(p.nome) }}</span>
-                    {{ p.nome }}
-                  </a>
-                </td>
-                <td class="cell-mono">{{ p.cpf | cpf }}</td>
-                <td>
-                  <span [class]="tipoTag(p.tipo)">{{ tipoLabel(p.tipo) }}</span>
-                </td>
-                <td class="cell-mono hide-sm">{{ p.matricula ?? '—' }}</td>
-                <td>
-                  <span class="status" [attr.data-tone]="situacaoTone(p.situacao)">
-                    <span class="status__dot" aria-hidden="true"></span>
-                    {{ situacaoLabel(p.situacao) }}
-                  </span>
-                </td>
-                <td class="cell-action">
-                  <a
-                    class="icon-link"
-                    [routerLink]="['/pessoas', p.id]"
-                    [attr.aria-label]="'Abrir ficha de ' + p.nome"
-                  >
-                    <app-icon name="chevron-right" />
-                  </a>
-                </td>
+                <td><span class="skeleton" style="width: 4rem"></span></td>
+                <td><span class="skeleton" style="width: 4rem"></span></td>
               </tr>
             }
           }
@@ -150,13 +158,15 @@
       </table>
     </div>
 
-    @if (pagina(); as pg) {
+    @if (page(); as pg) {
       <app-pagination
-        [page]="pg.pagina"
-        [size]="pg.tamanho"
-        [total]="pg.total"
-        [totalPages]="pg.totalPaginas"
-        [sizeOptions]="sizeOptions"
+        [page]="pg.number"
+        [size]="pg.size"
+        [total]="pg.totalElements"
+        [totalPages]="pg.totalPages"
+        [first]="pg.first"
+        [last]="pg.last"
+        [sizeOptions]="url.sizeOptions"
         itemLabel="pessoas"
         (pageChange)="url.setPage($event)"
         (sizeChange)="url.setSize($event)"

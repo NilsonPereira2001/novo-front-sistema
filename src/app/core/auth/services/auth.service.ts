@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { Observable, catchError, finalize, map, of, shareReplay, tap, throwError } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
+import { apiUrl } from '../../http/api-url';
 import {
   AuthError,
   AuthSession,
@@ -32,7 +33,6 @@ export class AuthService {
   private readonly router = inject(Router);
 
   private readonly authConfig = environment.api.auth;
-  private readonly baseUrl = environment.api.baseUrl;
 
   private readonly session = signal<AuthSession | null>(null);
   private readonly statusSignal = signal<AuthStatus>('unknown');
@@ -183,6 +183,6 @@ export class AuthService {
   }
 
   private url(path: string): string {
-    return `${this.baseUrl}${path}`;
+    return apiUrl(path);
   }
 }

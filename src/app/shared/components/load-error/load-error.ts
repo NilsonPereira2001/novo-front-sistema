@@ -8,6 +8,7 @@ const ICONS: Readonly<Record<LoadErrorKind, IconName>> = {
   forbidden: 'shield-off',
   'not-found': 'server',
   server: 'server',
+  'invalid-response': 'alert-circle',
   unexpected: 'alert-circle',
 };
 

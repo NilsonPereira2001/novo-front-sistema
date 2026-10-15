@@ -1,9 +1,11 @@
+import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
   computed,
   inject,
+  linkedSignal,
   signal,
   viewChild,
 } from '@angular/core';
@@ -13,30 +15,38 @@ import { Icon } from '../../../shared/components/icon/icon';
 import { LoadError } from '../../../shared/components/load-error/load-error';
 import { Pagination } from '../../../shared/components/pagination/pagination';
 import { SearchField } from '../../../shared/components/search-field/search-field';
-import { PAGE_SIZE_OPTIONS, injectListUrlState } from '../../../shared/data/list-url-state';
-import { loadFrom } from '../../../shared/data/load-state';
+import { injectListUrlState } from '../../../shared/data/list-url-state';
+import { LoadState, loadFrom } from '../../../shared/data/load-state';
+import { Page } from '../../../shared/data/page.model';
 import { CpfPipe } from '../../../shared/pipes/cpf.pipe';
+import { DisplayValuePipe } from '../../../shared/pipes/display-value.pipe';
+import { TelefonePipe } from '../../../shared/pipes/telefone.pipe';
 import { initials } from '../../../shared/utils/text';
-import {
-  TIPO_FILTROS,
-  TIPO_LABEL,
-  TIPO_TAG,
-  situacaoLabel,
-  situacaoTone,
-  tipoFromParam,
-} from '../data/pessoas.labels';
-import { PessoasQuery, TipoPessoa } from '../data/pessoas.models';
-import { PessoasService } from '../data/pessoas.service';
+import { PESSOAS_PAGE_SIZE_PADRAO } from '../data/pessoas-api';
+import { PessoaService } from '../data/pessoas.service';
+import { TiposPessoaService } from '../data/tipos-pessoa.service';
+import { PessoaDTO, PessoasFiltro } from '../models/pessoa.dto';
 
 /**
- * Listagem única de pessoas (associados, dependentes e funcionários),
- * com busca por nome ou CPF, filtro por tipo e paginação no servidor.
- * Filtros e página ficam na URL.
+ * Listagem de pessoas integrada a GET /pessoas/listar/filtradas/paginada.
+ * Pesquisa, filtro por tipo e paginação são feitos pelo backend; o estado
+ * fica na URL (?busca=&tipo=&pagina=&tamanho=).
  */
 @Component({
   selector: 'app-pessoas-lista',
-  imports: [RouterLink, Icon, LoadError, Pagination, SearchField, CpfPipe],
+  imports: [
+    DatePipe,
+    RouterLink,
+    Icon,
+    LoadError,
+    Pagination,
+    SearchField,
+    CpfPipe,
+    DisplayValuePipe,
+    TelefonePipe,
+  ],
   templateUrl: './pessoas-lista.html',
+  styleUrl: './pessoas-lista.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:click)': 'onDocumentClick($event)',
@@ -44,55 +54,77 @@ import { PessoasService } from '../data/pessoas.service';
   },
 })
 export class PessoasLista {
-  private readonly service = inject(PessoasService);
+  private readonly pessoas = inject(PessoaService);
+  private readonly tiposService = inject(TiposPessoaService);
   private readonly newMenuRef = viewChild<ElementRef<HTMLElement>>('newMenu');
 
-  protected readonly url = injectListUrlState();
-  protected readonly filtros = TIPO_FILTROS;
-  protected readonly sizeOptions = PAGE_SIZE_OPTIONS;
-  protected readonly skeletonRows = Array.from({ length: 6 }, (_, i) => i);
+  protected readonly url = injectListUrlState({
+    defaultSize: PESSOAS_PAGE_SIZE_PADRAO,
+    sizeOptions: [PESSOAS_PAGE_SIZE_PADRAO, 15, 30, 50],
+  });
+  protected readonly skeletonRows = Array.from({ length: PESSOAS_PAGE_SIZE_PADRAO }, (_, i) => i);
+  protected readonly initials = initials;
 
-  protected readonly tipo = computed(() => tipoFromParam(this.url.params().get('tipo')));
-  protected readonly hasFilters = computed(() => this.url.termo() !== '' || this.tipo() !== null);
+  // --- Tipos de pessoa (opções do filtro) ------------------------------------
+  protected readonly tiposDisponiveis = this.tiposService.disponivel;
+  private readonly tiposState = loadFrom(signal(null), () => this.tiposService.listar());
+  protected readonly tipos = computed(() => {
+    const s = this.tiposState();
+    return s.status === 'ready' ? s.data : [];
+  });
 
-  private readonly query = computed<PessoasQuery>(() => ({
-    termo: this.url.termo(),
-    tipo: this.tipo(),
+  /** `?tipo=3` → 3. Qualquer outro valor é ignorado. */
+  protected readonly idTipoPessoa = computed(() => {
+    const value = Number(this.url.params().get('tipo'));
+    return Number.isInteger(value) && value > 0 ? value : undefined;
+  });
+
+  protected readonly hasFilters = computed(
+    () => this.url.termo() !== '' || this.idTipoPessoa() !== undefined,
+  );
+
+  // --- Consulta ---------------------------------------------------------------
+  private readonly filtro = computed<PessoasFiltro>(() => ({
+    filtro: this.url.termo() || undefined,
+    idTipoPessoa: this.idTipoPessoa(),
     page: this.url.page(),
     size: this.url.size(),
   }));
   private readonly attempt = signal(0);
-  private readonly state = loadFrom(this.query, (q) => this.service.listar(q), this.attempt);
+  private readonly state = loadFrom(
+    this.filtro,
+    (f) => this.pessoas.listarFiltradasPaginada(f),
+    this.attempt,
+  );
 
   protected readonly loading = computed(() => this.state().status === 'loading');
   protected readonly errorKind = computed(() => {
     const s = this.state();
     return s.status === 'error' ? s.kind : null;
   });
-  protected readonly pagina = computed(() => {
-    const s = this.state();
-    return s.status === 'ready' ? s.data : null;
-  });
-  /** Carregou e não há nenhum item (com ou sem filtros). */
-  protected readonly isEmpty = computed(() => this.pagina()?.itens.length === 0);
 
+  /**
+   * Última página recebida. Continua visível (esmaecida) enquanto a próxima
+   * carrega, para a tabela não "piscar" ao trocar de página ou filtro.
+   */
+  protected readonly page = linkedSignal<LoadState<Page<PessoaDTO>>, Page<PessoaDTO> | null>({
+    source: this.state,
+    computation: (s, previous) => {
+      if (s.status === 'ready') {
+        return s.data;
+      }
+      return s.status === 'loading' ? (previous?.value ?? null) : null;
+    },
+  });
+
+  protected readonly isEmpty = computed(() => !this.loading() && this.page()?.empty === true);
+
+  // --- Ações ------------------------------------------------------------------
   protected readonly newMenuOpen = signal(false);
 
-  // Rótulos usados no template
-  protected readonly initials = initials;
-  protected readonly situacaoTone = situacaoTone;
-  protected readonly situacaoLabel = situacaoLabel;
-
-  protected tipoLabel(tipo: TipoPessoa | null): string {
-    return tipo ? TIPO_LABEL[tipo] : '—';
-  }
-
-  protected tipoTag(tipo: TipoPessoa | null): string {
-    return tipo ? TIPO_TAG[tipo] : 'tag';
-  }
-
-  protected setTipo(param: string | null): void {
-    this.url.setFilters({ tipo: param });
+  protected onTipoChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.url.setFilters({ tipo: value || null });
   }
 
   protected clearFilters(): void {

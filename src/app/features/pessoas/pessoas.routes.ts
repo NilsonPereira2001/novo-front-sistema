@@ -4,7 +4,8 @@ import { pageTitle } from '../../core/config/app-title';
 
 /**
  * Rotas do módulo Pessoas.
- * As rotas fixas vêm antes de `:id` para não serem confundidas com um id.
+ * Nesta etapa só a listagem está implementada; as demais telas
+ * (deferimento, cadastro) abrem uma página "em construção".
  */
 const routes: Routes = [
   {
@@ -15,10 +16,11 @@ const routes: Routes = [
   {
     path: 'aguardando-deferimento',
     title: pageTitle('Aguardando deferimento'),
-    loadComponent: () =>
-      import('./aguardando-deferimento/aguardando-deferimento').then(
-        (m) => m.AguardandoDeferimento,
-      ),
+    data: {
+      titulo: 'Aguardando deferimento',
+      descricao: 'Pedidos de associação que ainda precisam ser analisados.',
+    },
+    loadComponent: () => import('./em-construcao/em-construcao').then((m) => m.EmConstrucao),
   },
   {
     path: 'novo/associado',
@@ -35,16 +37,6 @@ const routes: Routes = [
     data: {
       titulo: 'Novo funcionário',
       descricao: 'Cadastro de um novo funcionário da instituição.',
-    },
-    loadComponent: () => import('./em-construcao/em-construcao').then((m) => m.EmConstrucao),
-  },
-  {
-    path: ':id',
-    title: pageTitle('Ficha da pessoa'),
-    data: {
-      titulo: 'Ficha individual',
-      descricao:
-        'Dados pessoais, dependentes, indicações, convênios, documentos, arquivos e histórico.',
     },
     loadComponent: () => import('./em-construcao/em-construcao').then((m) => m.EmConstrucao),
   },

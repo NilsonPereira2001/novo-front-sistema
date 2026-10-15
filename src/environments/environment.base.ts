@@ -10,12 +10,15 @@ import { Environment } from './environment.model';
  */
 export const baseEnvironment: Omit<Environment, 'production'> = {
   api: {
-    // Em desenvolvimento, `/api` passa pelo proxy.conf.json até o Spring Boot (porta 8081).
-    // ⚠️ A CONFIRMAR: endereço da API em produção.
-    baseUrl: '/api',
+    // Tudo que começa com `/backend` vai para o Spring Boot, sem o prefixo:
+    //   /backend/api/auth/login              → :8081/api/auth/login
+    //   /backend/pessoas/listar/filtradas/... → :8081/pessoas/listar/filtradas/...
+    // Em desenvolvimento quem faz isso é o proxy.conf.json. O prefixo evita
+    // conflito entre rotas do backend (/pessoas) e telas do Angular (/pessoas).
+    baseUrl: '/backend',
     auth: {
       // AuthProfController: @RequestMapping("api/auth") + @PostMapping("/login")
-      loginPath: '/auth/login',
+      loginPath: '/api/auth/login',
       // O backend não tem endpoint de "usuário atual": recarregar a página exige novo login.
       sessionPath: null,
       // O backend não tem endpoint de logout: sair apenas descarta o token da memória.

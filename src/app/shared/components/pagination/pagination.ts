@@ -18,7 +18,7 @@ export class Pagination {
   readonly size = input.required<number>();
   readonly total = input.required<number>();
   readonly totalPages = input.required<number>();
-  readonly sizeOptions = input<readonly number[]>([10, 20, 50]);
+  readonly sizeOptions = input.required<readonly number[]>();
   /** Nome no plural para o resumo ("pessoas", "solicitações"). */
   readonly itemLabel = input('registros');
 
@@ -31,8 +31,12 @@ export class Pagination {
   protected readonly to = computed(() =>
     Math.min(this.total(), (this.page() + 1) * this.size()),
   );
-  protected readonly isFirst = computed(() => this.page() <= 0);
-  protected readonly isLast = computed(() => this.page() >= this.totalPages() - 1);
+  /** Podem vir do backend (`first`/`last` do Page do Spring). */
+  readonly first = input<boolean | null>(null);
+  readonly last = input<boolean | null>(null);
+
+  protected readonly isFirst = computed(() => this.first() ?? this.page() <= 0);
+  protected readonly isLast = computed(() => this.last() ?? this.page() >= this.totalPages() - 1);
 
   /** Números de página com reticências: 1 … 4 5 6 … 12. `null` = reticências. */
   protected readonly pages = computed<(number | null)[]>(() => {

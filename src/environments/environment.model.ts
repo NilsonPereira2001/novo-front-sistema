@@ -8,13 +8,16 @@ export interface Environment {
   readonly production: boolean;
 
   readonly api: {
-    /** URL base da API Spring Boot (sem barra no final). */
+    /**
+     * Prefixo de todas as chamadas ao backend (sem barra no final).
+     * Os caminhos dos endpoints são escritos exatamente como no Spring Boot
+     * e somados a este prefixo (ver core/http/api-url.ts).
+     */
     readonly baseUrl: string;
 
     readonly auth: {
       /**
-       * ⚠️ A CONFIRMAR com o backend.
-       * Caminho do endpoint de login, relativo a `baseUrl`.
+       * Caminho do endpoint de login no backend.
        */
       readonly loginPath: string;
       /**

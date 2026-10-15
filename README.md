@@ -11,7 +11,7 @@ npm install
 npm start          # http://localhost:4200
 ```
 
-Em desenvolvimento, as chamadas para `/api` são redirecionadas pelo `proxy.conf.json` para o Spring Boot em `http://localhost:8081`, mantendo o prefixo `/api`. Suba o backend antes de testar o login.
+Em desenvolvimento, todas as chamadas ao backend usam o prefixo `/backend`, que o `proxy.conf.json` remove antes de encaminhar ao Spring Boot em `http://localhost:8081`. Por exemplo, `/backend/api/auth/login` vira `:8081/api/auth/login`, e `/backend/pessoas/listar/filtradas/paginada` vira `:8081/pessoas/listar/filtradas/paginada`. O prefixo evita conflito entre os caminhos do backend e as telas do Angular, que também usam `/pessoas`. Suba o backend antes de testar.
 
 ```bash
 npm run build      # build de produção
@@ -79,7 +79,9 @@ Login: `POST /api/auth/login` (`AuthProfController`), com `username` e `password
 | 403 | Usuário inativo ou bloqueado |
 | 500 / backend fora do ar | Servidor indisponível |
 
-Toda a leitura do contrato está em `src/app/core/auth/services/auth-api.adapter.ts`, e os endpoints estão em `src/environments/environment.base.ts`.
+A leitura do contrato de login está em `src/app/core/auth/services/auth-api.adapter.ts`. O prefixo do backend e o caminho do login estão em `src/environments/environment.base.ts`.
+
+Em produção, o servidor web precisa encaminhar `/backend/*` ao Spring Boot removendo o prefixo, ou então `baseUrl` deve receber a URL completa da API, o que exige CORS no backend.
 
 ### Pendências
 
@@ -93,17 +95,20 @@ Toda a leitura do contrato está em `src/app/core/auth/services/auth-api.adapter
 - A expiração do JWT (`exp`) é respeitada: ao expirar, ou se a API responder 401, o usuário volta ao login com o aviso "sessão expirada".
 - Os guards só controlam a navegação. **Toda permissão precisa ser validada também no backend.**
 
-### Pessoas — ⚠️ a confirmar
+### Pessoas
 
-As telas estão prontas, mas os endpoints de pessoas ainda **não foram confirmados**. Tudo está isolado em `src/app/features/pessoas/data/pessoas-api.adapter.ts`:
+Listagem integrada a `GET /pessoas/listar/filtradas/paginada` (`Page<PessoaDTO>`):
 
-- **Listagem:** provisoriamente `GET /api/pessoas?page=0&size=20&sort=nome,asc`, com os filtros `nome`, `cpf` (só dígitos) e `tipo` (`ASSOCIADO`, `DEPENDENTE` ou `FUNCIONARIO`).
-- **Aguardando deferimento:** provisoriamente a mesma listagem, com `tipo=ASSOCIADO&situacao=AGUARDANDO_DEFERIMENTO`.
-- **Resposta:** aceita `Page`/`PagedModel` do Spring Data ou uma lista simples. Os campos lidos são `id`, `nome`, `cpf`, `tipo`, `situacao` e `matricula`, e, no deferimento, `dataSolicitacao` e `indicadoPor`.
+- **Parâmetros:** `filtro` e `idTipoPessoa` são enviados só quando preenchidos; `page`, que começa em 0, e `size` vão sempre.
+- **Tamanho:** 7 por página, igual ao `@PageableDefault(size = 7)` do backend. Também há 15, 30 e 50.
+- **Comportamento:** a pesquisa tem debounce. Mudar a pesquisa, o tipo ou o tamanho da página volta para a primeira página.
+- **Resposta:** aceita `PageImpl` serializado ou `PagedModel`. Fora desse formato, a tela mostra "formato inesperado".
+- **Arquivos:** o contrato está em `src/app/features/pessoas/data/pessoas-api.ts` e os modelos em `features/pessoas/models/`.
+- **Testes:** `npm test` roda `pessoas-api.spec.ts`, que cobre os parâmetros e a leitura da resposta.
 
-Enquanto o endpoint não existir, a tela mostra "Esta consulta ainda não está disponível no servidor" (404).
+**Pendente:** o filtro por tipo de pessoa fica desabilitado até existir um endpoint que liste os tipos (id e descrição). Para ativá-lo, informe o caminho em `TIPOS_PESSOA_PATH`, no arquivo `features/pessoas/data/tipos-pessoa.service.ts`.
 
-Ainda são telas em construção: novo associado, novo funcionário e a ficha individual (`/pessoas/:id`).
+Ainda são telas em construção: aguardando deferimento, novo associado e novo funcionário.
 
 ### Recuperação de senha
 

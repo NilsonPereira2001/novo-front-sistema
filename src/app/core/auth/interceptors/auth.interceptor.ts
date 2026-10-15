@@ -3,6 +3,7 @@ import { inject } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
+import { apiUrl, isApiRequest } from '../../http/api-url';
 import { AuthService } from '../services/auth.service';
 
 /**
@@ -14,15 +15,15 @@ import { AuthService } from '../services/auth.service';
  * Requisições para outros domínios passam sem alteração (o token nunca vaza).
  */
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
-  const { baseUrl, auth: authConfig } = environment.api;
+  const authConfig = environment.api.auth;
 
-  if (!request.url.startsWith(baseUrl)) {
+  if (!isApiRequest(request.url)) {
     return next(request);
   }
 
   const auth = inject(AuthService);
   const token = auth.accessToken();
-  const isLoginRequest = request.url === `${baseUrl}${authConfig.loginPath}`;
+  const isLoginRequest = request.url === apiUrl(authConfig.loginPath);
 
   const authorized = request.clone({
     withCredentials: authConfig.withCredentials,

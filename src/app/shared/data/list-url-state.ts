@@ -3,18 +3,25 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { Subject, debounceTime } from 'rxjs';
 
-export const PAGE_SIZE_OPTIONS = [10, 20, 50] as const;
-const DEFAULT_PAGE_SIZE = 20;
-const SEARCH_DEBOUNCE_MS = 350;
+const SEARCH_DEBOUNCE_MS = 400;
+
+export interface ListUrlOptions {
+  /** Tamanho de página inicial (sem `?tamanho=` na URL). */
+  readonly defaultSize: number;
+  /** Tamanhos permitidos no seletor "Por página". */
+  readonly sizeOptions: readonly number[];
+}
 
 /**
  * Estado de uma listagem guardado na URL (`?busca=&pagina=&tamanho=`).
  * Assim, voltar, recarregar ou compartilhar o link mantém os filtros.
  *
  * Na URL a página começa em 1; para a API, `page()` começa em 0.
+ * Mudar busca, filtros ou tamanho volta para a primeira página.
  * Deve ser chamado em contexto de injeção.
  */
-export function injectListUrlState() {
+export function injectListUrlState(options: ListUrlOptions) {
+  const { defaultSize, sizeOptions } = options;
   const route = inject(ActivatedRoute);
   const router = inject(Router);
   const destroyRef = inject(DestroyRef);
@@ -28,7 +35,7 @@ export function injectListUrlState() {
   });
   const size = computed(() => {
     const value = Number(params().get('tamanho'));
-    return (PAGE_SIZE_OPTIONS as readonly number[]).includes(value) ? value : DEFAULT_PAGE_SIZE;
+    return sizeOptions.includes(value) ? value : defaultSize;
   });
 
   /** Texto do campo de busca; acompanha a URL, mas responde na hora à digitação. */
@@ -54,6 +61,7 @@ export function injectListUrlState() {
     });
 
   return {
+    sizeOptions,
     params,
     termo,
     page,
@@ -72,7 +80,7 @@ export function injectListUrlState() {
       update({ pagina: pageIndex > 0 ? pageIndex + 1 : null });
     },
     setSize(value: number): void {
-      update({ tamanho: value === DEFAULT_PAGE_SIZE ? null : value, pagina: null });
+      update({ tamanho: value === defaultSize ? null : value, pagina: null });
     },
     /** Altera filtros extras e volta para a primeira página. */
     setFilters(filters: Params): void {

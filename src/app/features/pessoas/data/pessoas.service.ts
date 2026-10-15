@@ -2,49 +2,31 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 
-import { environment } from '../../../../environments/environment';
+import { apiUrl } from '../../../core/http/api-url';
 import { UnexpectedResponseError } from '../../../core/http/load-error';
-import { Pagina, toPagina } from '../../../shared/data/pagina';
-import {
-  PESSOAS_API,
-  toDeferimentoParams,
-  toPessoaResumo,
-  toPessoasParams,
-  toSolicitacao,
-} from './pessoas-api.adapter';
-import {
-  DeferimentoQuery,
-  PessoaResumo,
-  PessoasQuery,
-  SolicitacaoDeferimento,
-} from './pessoas.models';
+import { Page, toPage } from '../../../shared/data/page.model';
+import { PessoaDTO, PessoasFiltro } from '../models/pessoa.dto';
+import { PESSOAS_API, toListarParams, toPessoaDTO } from './pessoas-api';
 
-/** Comunicação HTTP do módulo Pessoas. Sem lógica de tela. */
+/**
+ * Comunicação HTTP do módulo Pessoas. Filtro e paginação são feitos pelo
+ * backend; o token é anexado pelo authInterceptor.
+ */
 @Injectable({ providedIn: 'root' })
-export class PessoasService {
+export class PessoaService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = environment.api.baseUrl;
 
-  listar(query: PessoasQuery): Observable<Pagina<PessoaResumo>> {
+  listarFiltradasPaginada(filtro: PessoasFiltro): Observable<Page<PessoaDTO>> {
     return this.http
-      .get<unknown>(this.baseUrl + PESSOAS_API.listar, { params: toPessoasParams(query) })
-      .pipe(map((body) => orFail(toPagina(body, toPessoaResumo, query))));
+      .get<unknown>(apiUrl(PESSOAS_API.listarPaginada), { params: toListarParams(filtro) })
+      .pipe(
+        map((body) => {
+          const page = toPage(body, toPessoaDTO);
+          if (!page) {
+            throw new UnexpectedResponseError();
+          }
+          return page;
+        }),
+      );
   }
-
-  listarAguardandoDeferimento(
-    query: DeferimentoQuery,
-  ): Observable<Pagina<SolicitacaoDeferimento>> {
-    return this.http
-      .get<unknown>(this.baseUrl + PESSOAS_API.aguardandoDeferimento, {
-        params: toDeferimentoParams(query),
-      })
-      .pipe(map((body) => orFail(toPagina(body, toSolicitacao, query))));
-  }
-}
-
-function orFail<T>(value: T | null): T {
-  if (value === null) {
-    throw new UnexpectedResponseError();
-  }
-  return value;
 }

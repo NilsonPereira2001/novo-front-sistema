@@ -3,6 +3,8 @@
     @if (total() > 0) {
       Mostrando <strong>{{ from() }}–{{ to() }}</strong> de <strong>{{ total() }}</strong>
       {{ itemLabel() }}
+      <span class="pagination__sep" aria-hidden="true">·</span>
+      Página <strong>{{ page() + 1 }}</strong> de <strong>{{ totalPages() }}</strong>
     }
   </p>
 
@@ -16,7 +18,7 @@
       </select>
     </label>
 
-    @if (totalPages() > 1) {
+    @if (total() > 0) {
       <nav class="pagination__pages" aria-label="Paginação">
         <button
           type="button"

@@ -19,6 +19,11 @@
   }
 }
 
+.pagination__sep {
+  margin: 0 var(--space-2);
+  color: var(--color-gray-300);
+}
+
 .pagination__controls {
   display: flex;
   flex-wrap: wrap;
