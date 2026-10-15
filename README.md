@@ -60,7 +60,7 @@ Para restringir um item a certos perfis, use `roles: ['ADMIN']`. Isso só escond
 
 ## Identidade visual
 
-- Cores, fontes, raios, sombras e larguras do layout: `src/styles/_tokens.scss`.
+- Cores, fontes, raios, sombras e medidas do layout: `src/styles/_tokens.scss`.
 - Padrões de página reaproveitáveis (cabeçalho, cartões, etiquetas): `src/styles/_layout.scss`.
 - Nome do sistema, empresa contratante e assinatura da WorkTec: `branding` em `src/environments/environment.base.ts`.
 - Logomarca da contratante: coloque o arquivo em `public/branding/` e informe o caminho em `branding.tenant.logoUrl`. Sem logo, aparece um símbolo provisório.
