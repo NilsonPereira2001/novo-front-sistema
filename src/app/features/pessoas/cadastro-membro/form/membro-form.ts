@@ -54,7 +54,6 @@ export function createMembroForm(fb: NonNullableFormBuilder) {
       estadoCivil: id(),
       email: fb.control('', [Validators.email]),
       rg: texto(),
-      matricula: texto(),
       naturalidade: texto(),
       tipoPessoa: id(),
     }),
@@ -77,8 +76,13 @@ export function createMembroForm(fb: NonNullableFormBuilder) {
       chavePix: texto(),
       formaPagamento: id(),
     }),
+    /**
+     * Unidade, graduação, quadro, data de incorporação e matrícula só valem
+     * para vínculo MILITAR: ficam desabilitados e vazios nos demais.
+     */
     vinculo: fb.group({
       tipoVinculo: id(),
+      matricula: texto(),
       instituicao: id(),
       unidade: id(),
       graduacao: id(),

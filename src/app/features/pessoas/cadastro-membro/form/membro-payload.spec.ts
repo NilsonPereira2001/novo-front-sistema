@@ -13,7 +13,6 @@ function formVazio(): MembroFormValue {
       estadoCivil: null,
       email: '',
       rg: '',
-      matricula: '',
       naturalidade: '',
       tipoPessoa: null,
     },
@@ -38,6 +37,7 @@ function formVazio(): MembroFormValue {
     },
     vinculo: {
       tipoVinculo: null,
+      matricula: '',
       instituicao: null,
       unidade: null,
       graduacao: null,

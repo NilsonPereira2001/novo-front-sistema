@@ -2,6 +2,7 @@ import { DatePipe } from '@angular/common';
 import {
   Component,
   DestroyRef,
+  computed,
   ElementRef,
   Signal,
   inject,
@@ -23,6 +24,7 @@ import { Opcao } from '../../../shared/data/opcao.model';
 import { CpfPipe } from '../../../shared/pipes/cpf.pipe';
 import { TelefonePipe } from '../../../shared/pipes/telefone.pipe';
 import { applyMask } from '../../../shared/utils/masks';
+import { normalizeKey } from '../../../shared/utils/text';
 import { BuscaSelect } from './components/busca-select';
 import { ConveniosField } from './components/convenios-field';
 import { FotoField } from './components/foto-field';
@@ -141,10 +143,22 @@ export class CadastroMembro {
     this.vinculo.instituicao.valueChanges.pipe(distinctUntilChanged()),
     { initialValue: null },
   );
+  /**
+   * Regra de negócio: unidade, graduação, quadro, data de incorporação e
+   * matrícula só se aplicam quando o tipo de vínculo é MILITAR (pelo nome
+   * vindo de GET /listar/tipo/vinculo, sem diferenciar maiúsculas/acentos).
+   */
+  protected readonly militar = computed(() => this.ehMilitar(this.idVinculo()));
+  protected readonly apenasMilitar = 'Disponível apenas para vínculo militar.';
+
   protected readonly instituicoes = this.dependente(this.idVinculo, (id) =>
     this.lookups.instituicoesPorVinculo(id),
   );
-  protected readonly unidades = this.dependente(this.idInstituicao, (id) =>
+  /** Unidades só são consultadas para vínculo militar. */
+  private readonly idInstituicaoMilitar = computed(() =>
+    this.militar() ? this.idInstituicao() : null,
+  );
+  protected readonly unidades = this.dependente(this.idInstituicaoMilitar, (id) =>
     this.lookups.unidadesPorInstituicao(id),
   );
 
@@ -156,9 +170,16 @@ export class CadastroMembro {
     // Trocar o vínculo invalida instituição e unidade; trocar a instituição invalida a unidade.
     this.vinculo.tipoVinculo.valueChanges
       .pipe(distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
+      .subscribe((idVinculo) => {
         this.vinculo.instituicao.setValue(null);
         this.vinculo.unidade.setValue(null);
+        // Saindo de MILITAR, os dados militares deixam de valer e são descartados.
+        if (!this.ehMilitar(idVinculo)) {
+          this.vinculo.matricula.setValue('');
+          this.vinculo.graduacao.setValue(null);
+          this.vinculo.quadro.setValue(null);
+          this.vinculo.dataIncorporacao.setValue('');
+        }
       });
     this.vinculo.instituicao.valueChanges
       .pipe(distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
@@ -297,6 +318,15 @@ export class CadastroMembro {
   }
 
   // --- Auxiliares ---------------------------------------------------------------
+  private ehMilitar(idVinculo: number | null): boolean {
+    if (idVinculo === null) {
+      return false;
+    }
+    const s = this.tiposVinculo.state();
+    const label = s.status === 'ready' ? s.data.find((o) => o.id === idVinculo)?.label : null;
+    return normalizeKey(label) === 'MILITAR';
+  }
+
   private lookup(fn: () => Observable<Opcao[]>): Lookup {
     const attempt = signal(0);
     const state = loadFrom(signal(null), fn, attempt);

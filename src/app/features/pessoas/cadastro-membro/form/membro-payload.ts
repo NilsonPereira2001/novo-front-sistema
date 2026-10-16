@@ -26,7 +26,6 @@ export function toAssociadoNovoPayload(
     estadoCivil: ref(p.estadoCivil),
     email: text(p.email),
     rg: text(p.rg),
-    matricula: text(p.matricula),
     naturalidade: text(p.naturalidade),
     tipoPessoa: ref(p.tipoPessoa),
 
@@ -49,6 +48,7 @@ export function toAssociadoNovoPayload(
     formaPagamento: ref(b.formaPagamento),
 
     tipoVinculo: ref(vi.tipoVinculo),
+    matricula: text(vi.matricula),
     instituicao: ref(vi.instituicao),
     unidade: ref(vi.unidade),
     graduacao: ref(vi.graduacao),

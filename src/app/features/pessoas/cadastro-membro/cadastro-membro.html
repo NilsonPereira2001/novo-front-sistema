@@ -99,9 +99,8 @@
               <app-select-field class="span-4" label="Estado civil" [control]="p.estadoCivil" [state]="estadosCivis.state()" (retry)="estadosCivis.retry()" />
               <app-text-field class="span-8" label="E-mail" type="email" [control]="p.email" autocomplete="email" placeholder="nome@exemplo.com" />
 
-              <app-text-field class="span-4" label="RG" [control]="p.rg" />
-              <app-text-field class="span-4" label="Matrícula" [control]="p.matricula" />
-              <app-text-field class="span-4" label="Naturalidade" [control]="p.naturalidade" />
+              <app-text-field class="span-6" label="RG" [control]="p.rg" />
+              <app-text-field class="span-6" label="Naturalidade" [control]="p.naturalidade" />
 
               <app-select-field class="span-4" label="Tipo de pessoa" [control]="p.tipoPessoa" [state]="tiposPessoa.state()" (retry)="tiposPessoa.retry()" />
             </div>
@@ -153,15 +152,26 @@
                 label="Unidade"
                 [control]="v.unidade"
                 [state]="unidades.state()"
-                [blocked]="idInstituicao() === null"
-                blockedHint="Selecione primeiro a instituição."
+                [blocked]="!militar() || idInstituicao() === null"
+                [blockedHint]="militar() ? 'Selecione primeiro a instituição.' : apenasMilitar"
                 (retry)="unidades.retry()"
               />
-
-              <app-select-field class="span-4" label="Graduação" [control]="v.graduacao" [state]="graduacoes.state()" (retry)="graduacoes.retry()" />
-              <app-select-field class="span-4" label="Quadro" [control]="v.quadro" [state]="quadros.state()" (retry)="quadros.retry()" />
-              <app-text-field class="span-4" label="Data de incorporação" type="date" [control]="v.dataIncorporacao" />
             </div>
+
+            <fieldset class="militar" [class.is-off]="!militar()">
+              <legend class="militar__legend">
+                Dados militares
+                @if (!militar()) {
+                  <span class="militar__hint">{{ apenasMilitar }}</span>
+                }
+              </legend>
+              <div class="form-grid">
+                <app-text-field class="span-3" label="Matrícula" [control]="v.matricula" [blocked]="!militar()" />
+                <app-select-field class="span-3" label="Graduação" [control]="v.graduacao" [state]="graduacoes.state()" [blocked]="!militar()" (retry)="graduacoes.retry()" />
+                <app-select-field class="span-3" label="Quadro" [control]="v.quadro" [state]="quadros.state()" [blocked]="!militar()" (retry)="quadros.retry()" />
+                <app-text-field class="span-3" label="Data de incorporação" type="date" [control]="v.dataIncorporacao" [blocked]="!militar()" />
+              </div>
+            </fieldset>
           }
           @case ('adesao') {
             <div class="form-grid">
@@ -215,7 +225,6 @@
                     <div><dt>Estado civil</dt><dd>{{ rotulo(estadosCivis, p.estadoCivil.value) }}</dd></div>
                     <div><dt>E-mail</dt><dd>{{ texto(p.email.value) }}</dd></div>
                     <div><dt>RG</dt><dd>{{ texto(p.rg.value) }}</dd></div>
-                    <div><dt>Matrícula</dt><dd>{{ texto(p.matricula.value) }}</dd></div>
                     <div><dt>Naturalidade</dt><dd>{{ texto(p.naturalidade.value) }}</dd></div>
                     <div><dt>Tipo de pessoa</dt><dd>{{ rotulo(tiposPessoa, p.tipoPessoa.value) }}</dd></div>
                   </dl>
@@ -282,6 +291,7 @@
                 </header>
                 <dl class="review__list">
                   <div><dt>Tipo de vínculo</dt><dd>{{ rotulo(tiposVinculo, v.tipoVinculo.value) }}</dd></div>
+                  <div><dt>Matrícula</dt><dd>{{ texto(v.matricula.value) }}</dd></div>
                   <div><dt>Instituição</dt><dd>{{ rotulo(instituicoes, v.instituicao.value) }}</dd></div>
                   <div><dt>Unidade</dt><dd>{{ rotulo(unidades, v.unidade.value) }}</dd></div>
                   <div><dt>Graduação</dt><dd>{{ rotulo(graduacoes, v.graduacao.value) }}</dd></div>

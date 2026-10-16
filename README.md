@@ -129,6 +129,8 @@ O cadastro é feito em 8 etapas, com revisão antes de salvar. Os arquivos ficam
 - CPF, CEP e telefones vão só com dígitos.
 - `telefones` vai como `[{ telefone, principal }]`, sem `pessoa`, e `convenios` como `[{ id }]`.
 
+**Vínculo militar:** matrícula, unidade, graduação, quadro e data de incorporação só ficam habilitados quando o tipo de vínculo é **MILITAR**, comparado pelo nome que vem de `/listar/tipo/vinculo`, sem diferenciar maiúsculas e acentos. Ao trocar para outro vínculo, esses campos são limpos e não são enviados. A instituição vale para qualquer vínculo.
+
 **Validação:** CPF e nome são obrigatórios. Outras obrigatoriedades do backend não foram informadas e por isso não foram inventadas. Há validação de formato de CPF, e-mail, CEP, telefone e datas.
 
 **⚠️ Pendências do backend:**

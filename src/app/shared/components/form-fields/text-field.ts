@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, effect, input } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
 import { MaskDirective } from '../../directives/mask.directive';
@@ -66,8 +66,21 @@ export class TextField {
   readonly maxlength = input<number | null>(null);
   readonly hint = input<string | null>(null);
   readonly required = input(false);
+  /** Desabilita o campo pelo FormControl (forma recomendada em Reactive Forms). */
+  readonly blocked = input(false);
 
   protected readonly inputId = `campo-${++nextId}`;
+
+  constructor() {
+    effect(() => {
+      const control = this.control();
+      if (this.blocked() && control.enabled) {
+        control.disable({ emitEvent: false });
+      } else if (!this.blocked() && control.disabled) {
+        control.enable({ emitEvent: false });
+      }
+    });
+  }
 
   protected invalid(): boolean {
     return shouldShowError(this.control());
