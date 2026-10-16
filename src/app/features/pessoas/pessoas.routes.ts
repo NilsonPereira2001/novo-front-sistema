@@ -1,12 +1,15 @@
-import { Routes } from '@angular/router';
+import { CanDeactivateFn, Routes } from '@angular/router';
 
 import { pageTitle } from '../../core/config/app-title';
 import { TERMOS } from '../../core/config/terminologia';
 
+/** Pede confirmação antes de sair de um cadastro com dados não salvos. */
+const confirmarDescarte: CanDeactivateFn<{ podeSair(): boolean }> = (component) =>
+  component.podeSair();
+
 /**
- * Rotas do módulo Pessoas.
- * Nesta etapa só a listagem está implementada; as demais telas
- * (deferimento, cadastro) abrem uma página "em construção".
+ * Rotas do módulo Pessoas: listagem e cadastro de membro.
+ * Deferimento e cadastro de funcionário ainda abrem "em construção".
  */
 const routes: Routes = [
   {
@@ -26,11 +29,9 @@ const routes: Routes = [
   {
     path: 'novo/membro',
     title: pageTitle(`Novo ${TERMOS.membroMin}`),
-    data: {
-      titulo: `Novo ${TERMOS.membroMin}`,
-      descricao: `Cadastro de um novo ${TERMOS.membroMin}.`,
-    },
-    loadComponent: () => import('./em-construcao/em-construcao').then((m) => m.EmConstrucao),
+    canDeactivate: [confirmarDescarte],
+    loadComponent: () =>
+      import('./cadastro-membro/cadastro-membro').then((m) => m.CadastroMembro),
   },
   {
     path: 'novo/funcionario',

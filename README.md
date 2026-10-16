@@ -2,7 +2,7 @@
 
 Novo frontend do sistema de gestão de associados, em **Angular 21** (componentes standalone, signals, formulários reativos). O backend é o Spring Boot existente, com PostgreSQL.
 
-> **Etapa atual:** login integrado, layout principal (menu lateral + barra superior), tela Início e listagem de Pessoas. Os demais módulos (Financeiro, Jurídico etc.) abrem uma página "em breve" até serem implementados.
+> **Etapa atual:** login integrado, layout principal (menu lateral + barra superior), tela Início, listagem de Pessoas e cadastro de membro. Os demais módulos (Financeiro, Jurídico etc.) abrem uma página "em breve" até serem implementados.
 
 ## Como rodar
 
@@ -111,6 +111,35 @@ Listagem integrada a `GET /pessoas/listar/filtradas/paginada` (`Page<PessoaDTO>`
 **Filtro por tipo:** as opções vêm de `GET /tipo/pessoas/listar` (`TipoPessoaController`), com `id` e `nome`. O seletor mostra o `nome` e envia o `id` em `idTipoPessoa`, sem nenhuma lista fixa no frontend. Pesquisa e tipo funcionam juntos, e limpar um não apaga o outro. O seletor tem estado de carregamento e mensagem de erro com "Tentar novamente".
 
 Ainda são telas em construção: aguardando deferimento, novo associado e novo funcionário.
+
+### Cadastro de membro (`/pessoas/novo/membro`)
+
+O cadastro é feito em 8 etapas, com revisão antes de salvar. Os arquivos ficam em `src/app/features/pessoas/cadastro-membro/`:
+
+- `data/cadastro-api.ts`: todos os endpoints e as pendências.
+- `form/membro-form.ts`: o estado do formulário.
+- `form/membro-payload.ts`: monta o JSON de `AssociadoNovoDTO`.
+
+**Endpoints usados:** `GET /sexo/todos`, `/estado/civil/todos`, `/estados/todos`, `/bancos/todos`, `/tipo/pix`, `/formas/pagamentos`, `/listar/tipo/vinculo`, `/instituicao/listar/por/vinculo/{id}`, `POST /unidade/listar`, `GET /graduacao/listar`, `/listar/quadros`, `/tipo/socios/todos`, `/convenios/fixos/nao/nativos/ativos`, `/tipo/pessoas/listar` e `/empresa/conveniada/todas/paginada`. A busca do membro indicador reaproveita `/pessoas/listar/filtradas/paginada`.
+
+**Payload:**
+- Só são enviadas propriedades do DTO, e os opcionais vazios são omitidos.
+- `id` e `dataCadastro` nunca são enviados.
+- Relacionamentos vão como `{ "id": n }`, e as datas como `YYYY-MM-DD`.
+- CPF, CEP e telefones vão só com dígitos.
+- `telefones` vai como `[{ telefone, principal }]`, sem `pessoa`, e `convenios` como `[{ id }]`.
+
+**Validação:** CPF e nome são obrigatórios. Outras obrigatoriedades do backend não foram informadas e por isso não foram inventadas. Há validação de formato de CPF, e-mail, CEP, telefone e datas.
+
+**⚠️ Pendências do backend:**
+
+1. **Rota de criação:** `CADASTRO_API.criar` está `null`. Enquanto não for informada, a tela permite preencher e revisar, mas o botão "Salvar" fica desabilitado.
+2. **Foto:** `FOTO_FORMATO` está `null`, então a foto é só pré-visualizada. Defina `'data-url'` ou `'base64'` conforme o backend espera a `String foto`.
+3. **`POST /unidade/listar`:** o corpo enviado é `{ "id": idInstituicao }`. Falta confirmar se é isso que o backend espera.
+4. **Campos de rótulo:** cada entidade auxiliar é lida pelo primeiro campo de texto encontrado (`nome`, `descricao`...).
+5. **Referências:** falta confirmar que o backend aceita `{ id }` nos relacionamentos e só dígitos em CPF, CEP e telefone.
+6. **Tipo de conta:** é texto livre, porque não há lista de valores confirmada.
+7. **Serviço de CEP:** não existe, então não há preenchimento automático do endereço.
 
 ### Recuperação de senha
 

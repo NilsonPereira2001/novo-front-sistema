@@ -1,0 +1,375 @@
+@let p = form.controls.pessoais.controls;
+@let e = form.controls.endereco.controls;
+@let b = form.controls.bancarios.controls;
+@let v = form.controls.vinculo.controls;
+@let a = form.controls.adesao.controls;
+@let f = form.controls.familia.controls;
+
+<div #topo class="cadastro-topo"></div>
+
+<header class="page-header">
+  <div class="page-header__text">
+    <a class="back-link" routerLink="/pessoas">
+      <app-icon name="arrow-left" />
+      Pessoas
+    </a>
+    <h1 class="page-title">Novo {{ termos.membroMin }}</h1>
+    <p class="page-subtitle">Preencha as etapas e revise os dados antes de salvar.</p>
+  </div>
+  <div class="page-header__actions">
+    <button type="button" class="btn btn--secondary" (click)="cancelar()">Cancelar</button>
+  </div>
+</header>
+
+@if (envio().status === 'sucesso') {
+  <section class="card cadastro-sucesso" role="status">
+    <span class="cadastro-sucesso__icon"><app-icon name="check-circle" /></span>
+    <h2 class="cadastro-sucesso__title">Cadastro salvo com sucesso</h2>
+    <p class="state__text">{{ p.nome.value }} foi cadastrado(a) no sistema.</p>
+    <div class="cadastro-sucesso__actions">
+      <a class="btn btn--secondary" routerLink="/pessoas">Ver lista de pessoas</a>
+      <button type="button" class="btn btn--primary" (click)="novoCadastro()">
+        <app-icon name="plus" />
+        Cadastrar outro
+      </button>
+    </div>
+  </section>
+} @else {
+  <div class="cadastro">
+    <!-- Etapas -->
+    <nav class="steps" aria-label="Etapas do cadastro">
+      <ol class="steps__list">
+        @for (et of etapas; track et.key; let i = $index) {
+          <li>
+            <button
+              type="button"
+              class="steps__item"
+              [class.is-current]="i === etapaAtual()"
+              [class.is-done]="i < etapaAtual() && !etapaComErro(et.key)"
+              [class.has-error]="etapaComErro(et.key)"
+              [attr.aria-current]="i === etapaAtual() ? 'step' : null"
+              (click)="irPara(i)"
+            >
+              <span class="steps__number" aria-hidden="true">
+                @if (etapaComErro(et.key)) {
+                  !
+                } @else {
+                  {{ i + 1 }}
+                }
+              </span>
+              <span class="steps__text">
+                <span class="steps__title">{{ et.titulo }}</span>
+                <span class="steps__desc">{{ et.descricao }}</span>
+              </span>
+              @if (etapaComErro(et.key)) {
+                <span class="sr-only">(possui campos com erro)</span>
+              }
+            </button>
+          </li>
+        }
+      </ol>
+    </nav>
+
+    <!-- Conteúdo da etapa -->
+    <section class="card cadastro__panel" [attr.aria-labelledby]="'etapa-titulo'">
+      <header class="cadastro__panel-header">
+        <p class="page-eyebrow">Etapa {{ etapaAtual() + 1 }} de {{ etapas.length }}</p>
+        <h2 id="etapa-titulo" class="cadastro__panel-title">{{ etapa.titulo }}</h2>
+      </header>
+
+      <div class="cadastro__panel-body">
+        @if (avisoErros() && etapaComErro(etapa.key)) {
+          <app-alert tone="danger" heading="Há campos para corrigir">
+            Revise os campos destacados antes de continuar.
+          </app-alert>
+        }
+
+        @switch (etapa.key) {
+          @case ('pessoais') {
+            <div class="form-grid">
+              <div class="span-12"><app-foto-field [control]="p.foto" /></div>
+
+              <app-text-field class="span-4" label="CPF" [control]="p.cpf" mask="cpf" placeholder="000.000.000-00" [required]="true" />
+              <app-text-field class="span-8" label="Nome completo" [control]="p.nome" autocomplete="name" [required]="true" />
+
+              <app-text-field class="span-4" label="Nome de guerra" [control]="p.nomeGuerra" />
+              <app-text-field class="span-4" label="Data de nascimento" type="date" [control]="p.dataNascimento" autocomplete="bday" />
+              <app-select-field class="span-4" label="Sexo" [control]="p.sexo" [state]="sexos.state()" (retry)="sexos.retry()" />
+
+              <app-select-field class="span-4" label="Estado civil" [control]="p.estadoCivil" [state]="estadosCivis.state()" (retry)="estadosCivis.retry()" />
+              <app-text-field class="span-8" label="E-mail" type="email" [control]="p.email" autocomplete="email" placeholder="nome@exemplo.com" />
+
+              <app-text-field class="span-4" label="RG" [control]="p.rg" />
+              <app-text-field class="span-4" label="Matrícula" [control]="p.matricula" />
+              <app-text-field class="span-4" label="Naturalidade" [control]="p.naturalidade" />
+
+              <app-select-field class="span-4" label="Tipo de pessoa" [control]="p.tipoPessoa" [state]="tiposPessoa.state()" (retry)="tiposPessoa.retry()" />
+            </div>
+          }
+          @case ('endereco') {
+            <div class="form-grid">
+              <app-text-field class="span-4" label="CEP" [control]="e.cep" mask="cep" placeholder="00000-000" autocomplete="postal-code" />
+              <app-text-field class="span-8" label="Logradouro" [control]="e.logradouro" autocomplete="address-line1" />
+
+              <app-text-field class="span-3" label="Número" [control]="e.numero" />
+              <app-text-field class="span-6" label="Complemento" [control]="e.complemento" autocomplete="address-line2" />
+              <app-select-field class="span-3" label="Estado" [control]="e.estado" [state]="estados.state()" (retry)="estados.retry()" />
+
+              <app-text-field class="span-6" label="Cidade" [control]="e.cidade" autocomplete="address-level2" />
+              <app-text-field class="span-6" label="Bairro" [control]="e.bairro" />
+            </div>
+          }
+          @case ('telefones') {
+            <app-telefones-field [array]="form.controls.telefones" />
+          }
+          @case ('bancarios') {
+            <div class="form-grid">
+              <app-select-field class="span-6" label="Banco" [control]="b.banco" [state]="bancos.state()" (retry)="bancos.retry()" />
+              <app-text-field class="span-6" label="Tipo de conta" [control]="b.tipoConta" placeholder="Ex.: corrente, poupança" />
+
+              <app-text-field class="span-6" label="Agência" [control]="b.agencia" />
+              <app-text-field class="span-6" label="Número da conta" [control]="b.numeroConta" />
+
+              <app-select-field class="span-6" label="Tipo de Pix" [control]="b.tipoPix" [state]="tiposPix.state()" (retry)="tiposPix.retry()" />
+              <app-text-field class="span-6" label="Chave Pix" [control]="b.chavePix" />
+
+              <app-select-field class="span-6" label="Forma de pagamento" [control]="b.formaPagamento" [state]="formasPagamento.state()" (retry)="formasPagamento.retry()" />
+            </div>
+          }
+          @case ('vinculo') {
+            <div class="form-grid">
+              <app-select-field class="span-4" label="Tipo de vínculo" [control]="v.tipoVinculo" [state]="tiposVinculo.state()" (retry)="tiposVinculo.retry()" />
+              <app-select-field
+                class="span-4"
+                label="Instituição"
+                [control]="v.instituicao"
+                [state]="instituicoes.state()"
+                [blocked]="idVinculo() === null"
+                blockedHint="Selecione primeiro o tipo de vínculo."
+                (retry)="instituicoes.retry()"
+              />
+              <app-select-field
+                class="span-4"
+                label="Unidade"
+                [control]="v.unidade"
+                [state]="unidades.state()"
+                [blocked]="idInstituicao() === null"
+                blockedHint="Selecione primeiro a instituição."
+                (retry)="unidades.retry()"
+              />
+
+              <app-select-field class="span-4" label="Graduação" [control]="v.graduacao" [state]="graduacoes.state()" (retry)="graduacoes.retry()" />
+              <app-select-field class="span-4" label="Quadro" [control]="v.quadro" [state]="quadros.state()" (retry)="quadros.retry()" />
+              <app-text-field class="span-4" label="Data de incorporação" type="date" [control]="v.dataIncorporacao" />
+            </div>
+          }
+          @case ('adesao') {
+            <div class="form-grid">
+              <app-select-field class="span-6" label="Tipo de sócio" [control]="a.tipoSocio" [state]="tiposSocio.state()" (retry)="tiposSocio.retry()" />
+              <app-busca-select
+                class="span-6"
+                [label]="termos.membro + ' indicador'"
+                [control]="a.associadoIndicador"
+                [buscar]="buscarIndicadores"
+                placeholder="Digite o nome ou CPF"
+                hint="Busca entre as pessoas já cadastradas."
+              />
+              <app-busca-select
+                class="span-6"
+                label="Empresa conveniada"
+                [control]="a.empresaConveniada"
+                [buscar]="buscarEmpresas"
+                placeholder="Digite o nome da empresa"
+              />
+              <div class="span-12">
+                <app-convenios-field [control]="a.convenios" [state]="convenios.state()" (retry)="convenios.retry()" />
+              </div>
+            </div>
+          }
+          @case ('familia') {
+            <div class="form-grid">
+              <app-text-field class="span-6" label="Nome do pai" [control]="f.nomePai" />
+              <app-text-field class="span-6" label="Nome da mãe" [control]="f.nomeMae" />
+            </div>
+          }
+          @case ('revisao') {
+            <div class="review">
+              <section class="review__section">
+                <header class="review__header">
+                  <h3>Dados pessoais</h3>
+                  <button type="button" class="link-button" (click)="irPara(0)">Editar</button>
+                </header>
+                <div class="review__photo-row">
+                  @if (p.foto.value; as foto) {
+                    <img class="review__photo" [src]="foto" alt="Foto selecionada" />
+                  }
+                  <dl class="review__list">
+                    <div><dt>CPF</dt><dd>{{ p.cpf.value | cpf }}</dd></div>
+                    <div><dt>Nome completo</dt><dd>{{ texto(p.nome.value) }}</dd></div>
+                    <div><dt>Nome de guerra</dt><dd>{{ texto(p.nomeGuerra.value) }}</dd></div>
+                    <div>
+                      <dt>Data de nascimento</dt>
+                      <dd>@if (p.dataNascimento.value) { {{ p.dataNascimento.value | date: 'dd/MM/yyyy' }} } @else { — }</dd>
+                    </div>
+                    <div><dt>Sexo</dt><dd>{{ rotulo(sexos, p.sexo.value) }}</dd></div>
+                    <div><dt>Estado civil</dt><dd>{{ rotulo(estadosCivis, p.estadoCivil.value) }}</dd></div>
+                    <div><dt>E-mail</dt><dd>{{ texto(p.email.value) }}</dd></div>
+                    <div><dt>RG</dt><dd>{{ texto(p.rg.value) }}</dd></div>
+                    <div><dt>Matrícula</dt><dd>{{ texto(p.matricula.value) }}</dd></div>
+                    <div><dt>Naturalidade</dt><dd>{{ texto(p.naturalidade.value) }}</dd></div>
+                    <div><dt>Tipo de pessoa</dt><dd>{{ rotulo(tiposPessoa, p.tipoPessoa.value) }}</dd></div>
+                  </dl>
+                </div>
+              </section>
+
+              <section class="review__section">
+                <header class="review__header">
+                  <h3>Endereço</h3>
+                  <button type="button" class="link-button" (click)="irPara(1)">Editar</button>
+                </header>
+                <dl class="review__list">
+                  <div><dt>CEP</dt><dd>{{ cep(e.cep.value) }}</dd></div>
+                  <div><dt>Logradouro</dt><dd>{{ texto(e.logradouro.value) }}</dd></div>
+                  <div><dt>Número</dt><dd>{{ texto(e.numero.value) }}</dd></div>
+                  <div><dt>Complemento</dt><dd>{{ texto(e.complemento.value) }}</dd></div>
+                  <div><dt>Estado</dt><dd>{{ rotulo(estados, e.estado.value) }}</dd></div>
+                  <div><dt>Cidade</dt><dd>{{ texto(e.cidade.value) }}</dd></div>
+                  <div><dt>Bairro</dt><dd>{{ texto(e.bairro.value) }}</dd></div>
+                </dl>
+              </section>
+
+              <section class="review__section">
+                <header class="review__header">
+                  <h3>Telefones</h3>
+                  <button type="button" class="link-button" (click)="irPara(2)">Editar</button>
+                </header>
+                @if (form.controls.telefones.length === 0) {
+                  <p class="review__empty">Nenhum telefone informado.</p>
+                } @else {
+                  <ul class="review__phones">
+                    @for (t of form.controls.telefones.controls; track t) {
+                      <li>
+                        {{ t.controls.telefone.value | telefone }}
+                        @if (t.controls.principal.value) {
+                          <span class="tag tag--primary">Principal</span>
+                        }
+                      </li>
+                    }
+                  </ul>
+                }
+              </section>
+
+              <section class="review__section">
+                <header class="review__header">
+                  <h3>Dados bancários e pagamento</h3>
+                  <button type="button" class="link-button" (click)="irPara(3)">Editar</button>
+                </header>
+                <dl class="review__list">
+                  <div><dt>Banco</dt><dd>{{ rotulo(bancos, b.banco.value) }}</dd></div>
+                  <div><dt>Tipo de conta</dt><dd>{{ texto(b.tipoConta.value) }}</dd></div>
+                  <div><dt>Agência</dt><dd>{{ texto(b.agencia.value) }}</dd></div>
+                  <div><dt>Número da conta</dt><dd>{{ texto(b.numeroConta.value) }}</dd></div>
+                  <div><dt>Tipo de Pix</dt><dd>{{ rotulo(tiposPix, b.tipoPix.value) }}</dd></div>
+                  <div><dt>Chave Pix</dt><dd>{{ texto(b.chavePix.value) }}</dd></div>
+                  <div><dt>Forma de pagamento</dt><dd>{{ rotulo(formasPagamento, b.formaPagamento.value) }}</dd></div>
+                </dl>
+              </section>
+
+              <section class="review__section">
+                <header class="review__header">
+                  <h3>Dados funcionais</h3>
+                  <button type="button" class="link-button" (click)="irPara(4)">Editar</button>
+                </header>
+                <dl class="review__list">
+                  <div><dt>Tipo de vínculo</dt><dd>{{ rotulo(tiposVinculo, v.tipoVinculo.value) }}</dd></div>
+                  <div><dt>Instituição</dt><dd>{{ rotulo(instituicoes, v.instituicao.value) }}</dd></div>
+                  <div><dt>Unidade</dt><dd>{{ rotulo(unidades, v.unidade.value) }}</dd></div>
+                  <div><dt>Graduação</dt><dd>{{ rotulo(graduacoes, v.graduacao.value) }}</dd></div>
+                  <div><dt>Quadro</dt><dd>{{ rotulo(quadros, v.quadro.value) }}</dd></div>
+                  <div>
+                    <dt>Data de incorporação</dt>
+                    <dd>@if (v.dataIncorporacao.value) { {{ v.dataIncorporacao.value | date: 'dd/MM/yyyy' }} } @else { — }</dd>
+                  </div>
+                </dl>
+              </section>
+
+              <section class="review__section">
+                <header class="review__header">
+                  <h3>Adesão e convênios</h3>
+                  <button type="button" class="link-button" (click)="irPara(5)">Editar</button>
+                </header>
+                <dl class="review__list">
+                  <div><dt>Tipo de sócio</dt><dd>{{ rotulo(tiposSocio, a.tipoSocio.value) }}</dd></div>
+                  <div><dt>{{ termos.membro }} indicador</dt><dd>{{ a.associadoIndicador.value?.label ?? '—' }}</dd></div>
+                  <div><dt>Empresa conveniada</dt><dd>{{ a.empresaConveniada.value?.label ?? '—' }}</dd></div>
+                  <div><dt>Convênios</dt><dd>{{ conveniosSelecionados() }}</dd></div>
+                </dl>
+              </section>
+
+              <section class="review__section">
+                <header class="review__header">
+                  <h3>Dados familiares</h3>
+                  <button type="button" class="link-button" (click)="irPara(6)">Editar</button>
+                </header>
+                <dl class="review__list">
+                  <div><dt>Nome do pai</dt><dd>{{ texto(f.nomePai.value) }}</dd></div>
+                  <div><dt>Nome da mãe</dt><dd>{{ texto(f.nomeMae.value) }}</dd></div>
+                </dl>
+              </section>
+
+              @if (!envioDisponivel) {
+                <app-alert tone="warning" heading="Envio ainda não configurado">
+                  Você pode preencher e revisar o cadastro, mas o envio ao servidor aguarda a
+                  configuração do endereço de criação.
+                </app-alert>
+              }
+              @if (envio(); as en) {
+                @if (en.status === 'erro') {
+                  <app-alert tone="danger" heading="Não foi possível salvar">
+                    {{ mensagemErro(en.erro) }}
+                  </app-alert>
+                }
+              }
+            </div>
+          }
+        }
+      </div>
+
+      <!-- Ações -->
+      <footer class="cadastro__actions">
+        <button
+          type="button"
+          class="btn btn--secondary"
+          (click)="anterior()"
+          [disabled]="etapaAtual() === 0 || envio().status === 'enviando'"
+        >
+          <app-icon name="chevron-left" />
+          Voltar
+        </button>
+
+        @if (naRevisao) {
+          <button
+            type="button"
+            class="btn btn--primary"
+            (click)="salvar()"
+            [disabled]="!envioDisponivel || envio().status === 'enviando'"
+            [attr.aria-busy]="envio().status === 'enviando'"
+          >
+            @if (envio().status === 'enviando') {
+              <span class="spinner" aria-hidden="true"></span>
+              Salvando…
+            } @else {
+              <app-icon name="check-circle" />
+              Salvar cadastro
+            }
+          </button>
+        } @else {
+          <button type="button" class="btn btn--primary" (click)="proxima()">
+            Próximo
+            <app-icon name="chevron-right" />
+          </button>
+        }
+      </footer>
+    </section>
+  </div>
+}

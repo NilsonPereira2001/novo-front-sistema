@@ -248,6 +248,7 @@
   :host {
     position: sticky;
     top: 0;
+    flex-shrink: 0; // conteúdo largo não pode espremer o menu
     width: var(--sidebar-width);
     height: 100vh;
     height: 100dvh;
