@@ -35,7 +35,7 @@ export class CadastroLookupsService {
   private readonly cache = new Map<string, Observable<Opcao[]>>();
 
   sexos(): Observable<Opcao[]> {
-    return this.lista(CADASTRO_API.sexos);
+    return this.lista(CADASTRO_API.sexos, LABELS.sexo);
   }
   estadosCivis(): Observable<Opcao[]> {
     return this.lista(CADASTRO_API.estadosCivis);
@@ -50,7 +50,7 @@ export class CadastroLookupsService {
     return this.lista(CADASTRO_API.tiposPix);
   }
   formasPagamento(): Observable<Opcao[]> {
-    return this.lista(CADASTRO_API.formasPagamento);
+    return this.lista(CADASTRO_API.formasPagamento, LABELS.formaPagamento);
   }
   tiposVinculo(): Observable<Opcao[]> {
     return this.lista(CADASTRO_API.tiposVinculo);

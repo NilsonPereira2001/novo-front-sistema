@@ -65,8 +65,12 @@ export function toEmpresasParams(filtro: string): HttpParams {
   return params;
 }
 
-/** Campos de rótulo por entidade. ⚠️ Confirmar os nomes reais de cada uma. */
+/** Campos de rótulo por entidade (nomes dos atributos no backend). */
 export const LABELS = {
+  /** Entidade `Sexo`: `Long id`, `String sexo`. */
+  sexo: ['sexo'],
+  /** Entidade `FormaPagamento`: `Long id`, `String forma`. */
+  formaPagamento: ['forma'],
   estado: ['nome', 'sigla', 'descricao'],
   banco: ['nome', 'descricao'],
   empresa: ['nome', 'razaoSocial', 'nomeFantasia', 'descricao'],

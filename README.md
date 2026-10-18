@@ -138,7 +138,7 @@ O cadastro é feito em 8 etapas, com revisão antes de salvar. Os arquivos ficam
 1. **Rota de criação:** `CADASTRO_API.criar` está `null`. Enquanto não for informada, a tela permite preencher e revisar, mas o botão "Salvar" fica desabilitado.
 2. **Foto:** `FOTO_FORMATO` está `null`, então a foto é só pré-visualizada. Defina `'data-url'` ou `'base64'` conforme o backend espera a `String foto`.
 3. **`POST /unidade/listar`:** o corpo enviado é `{ "id": idInstituicao }`. Falta confirmar se é isso que o backend espera.
-4. **Campos de rótulo:** cada entidade auxiliar é lida pelo primeiro campo de texto encontrado (`nome`, `descricao`...).
+4. **Campos de rótulo:** `Sexo` usa `sexo` e `FormaPagamento` usa `forma`. As demais entidades usam `nome`, `descricao`, `tipo` ou `sigla`. Se nenhum desses existir e a entidade tiver um único campo de texto, ele é usado. Os nomes de campo ficam em `LABELS`, no `cadastro-api.ts`.
 5. **Referências:** falta confirmar que o backend aceita `{ id }` nos relacionamentos e só dígitos em CPF, CEP e telefone.
 6. **Tipo de conta:** é texto livre, porque não há lista de valores confirmada.
 7. **Serviço de CEP:** não existe, então não há preenchimento automático do endereço.
