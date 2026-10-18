@@ -10,7 +10,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { Observable, distinctUntilChanged, finalize, of } from 'rxjs';
 
@@ -149,6 +149,8 @@ export class CadastroMembro {
    * vindo de GET /listar/tipo/vinculo, sem diferenciar maiúsculas/acentos).
    */
   protected readonly militar = computed(() => this.ehMilitar(this.idVinculo()));
+  /** Regra de negócio: vínculo CONVENIADO exige informar a empresa conveniada. */
+  protected readonly conveniado = computed(() => this.ehConveniado(this.idVinculo()));
   protected readonly apenasMilitar = 'Disponível apenas para vínculo militar.';
 
   protected readonly instituicoes = this.dependente(this.idVinculo, (id) =>
@@ -173,6 +175,15 @@ export class CadastroMembro {
       .subscribe((idVinculo) => {
         this.vinculo.instituicao.setValue(null);
         this.vinculo.unidade.setValue(null);
+        // CONVENIADO exige a empresa; nos demais vínculos ela não se aplica e é descartada.
+        const empresa = this.vinculo.empresaConveniada;
+        if (this.ehConveniado(idVinculo)) {
+          empresa.setValidators(Validators.required);
+        } else {
+          empresa.clearValidators();
+          empresa.setValue(null);
+        }
+        empresa.updateValueAndValidity();
         // Saindo de MILITAR, os dados militares deixam de valer e são descartados.
         if (!this.ehMilitar(idVinculo)) {
           this.vinculo.matricula.setValue('');
@@ -319,12 +330,21 @@ export class CadastroMembro {
 
   // --- Auxiliares ---------------------------------------------------------------
   private ehMilitar(idVinculo: number | null): boolean {
+    return this.nomeVinculo(idVinculo) === 'MILITAR';
+  }
+
+  private ehConveniado(idVinculo: number | null): boolean {
+    return this.nomeVinculo(idVinculo) === 'CONVENIADO';
+  }
+
+  /** Nome do tipo de vínculo normalizado (maiúsculas, sem acentos), vindo da API. */
+  private nomeVinculo(idVinculo: number | null): string {
     if (idVinculo === null) {
-      return false;
+      return '';
     }
     const s = this.tiposVinculo.state();
     const label = s.status === 'ready' ? s.data.find((o) => o.id === idVinculo)?.label : null;
-    return normalizeKey(label) === 'MILITAR';
+    return normalizeKey(label);
   }
 
   private lookup(fn: () => Observable<Opcao[]>): Lookup {

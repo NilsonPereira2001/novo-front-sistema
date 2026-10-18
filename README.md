@@ -131,7 +131,9 @@ O cadastro é feito em 8 etapas, com revisão antes de salvar. Os arquivos ficam
 
 **Vínculo militar:** matrícula, unidade, graduação, quadro e data de incorporação só ficam habilitados quando o tipo de vínculo é **MILITAR**, comparado pelo nome que vem de `/listar/tipo/vinculo`, sem diferenciar maiúsculas e acentos. Ao trocar para outro vínculo, esses campos são limpos e não são enviados. A instituição vale para qualquer vínculo.
 
-**Validação:** CPF e nome são obrigatórios. Outras obrigatoriedades do backend não foram informadas e por isso não foram inventadas. Há validação de formato de CPF, e-mail, CEP, telefone e datas.
+**Vínculo conveniado:** quando o tipo de vínculo é **CONVENIADO**, aparece o campo "Empresa conveniada" na etapa de dados funcionais, e ele passa a ser obrigatório. Nos demais vínculos o campo não aparece, e a empresa não é enviada.
+
+**Validação:** CPF e nome são obrigatórios, e a empresa conveniada também, quando o vínculo é CONVENIADO. Outras obrigatoriedades do backend não foram informadas e por isso não foram inventadas. Há validação de formato de CPF, e-mail, CEP, telefone e datas.
 
 **⚠️ Pendências do backend:**
 

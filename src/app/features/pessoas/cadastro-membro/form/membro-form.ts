@@ -15,8 +15,8 @@ import { requiredTrimmed } from '../../../../shared/validators/text.validators';
  * Estado interno do formulário de cadastro (o que a tela edita).
  * O JSON enviado ao backend é montado à parte, em `membro-payload.ts`.
  *
- * Obrigatoriedade: apenas CPF e nome. As demais regras de obrigatoriedade
- * do backend não foram informadas e por isso não foram inventadas.
+ * Obrigatoriedade: CPF e nome sempre; empresa conveniada quando o vínculo é
+ * CONVENIADO. Outras regras do backend não foram informadas e não foram inventadas.
  */
 
 export type TelefoneForm = FormGroup<{
@@ -82,6 +82,8 @@ export function createMembroForm(fb: NonNullableFormBuilder) {
      */
     vinculo: fb.group({
       tipoVinculo: id(),
+      /** Obrigatória quando o tipo de vínculo é CONVENIADO (validador aplicado na tela). */
+      empresaConveniada: fb.control<Opcao | null>(null),
       matricula: texto(),
       instituicao: id(),
       unidade: id(),
@@ -96,7 +98,6 @@ export function createMembroForm(fb: NonNullableFormBuilder) {
     adesao: fb.group({
       tipoSocio: id(),
       associadoIndicador: fb.control<Opcao | null>(null),
-      empresaConveniada: fb.control<Opcao | null>(null),
       convenios: fb.control<number[]>([]),
     }),
     familia: fb.group({

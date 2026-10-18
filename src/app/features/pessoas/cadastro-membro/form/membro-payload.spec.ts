@@ -37,6 +37,7 @@ function formVazio(): MembroFormValue {
     },
     vinculo: {
       tipoVinculo: null,
+      empresaConveniada: null,
       matricula: '',
       instituicao: null,
       unidade: null,
@@ -44,7 +45,7 @@ function formVazio(): MembroFormValue {
       quadro: null,
       dataIncorporacao: '',
     },
-    adesao: { tipoSocio: null, associadoIndicador: null, empresaConveniada: null, convenios: [] },
+    adesao: { tipoSocio: null, associadoIndicador: null, convenios: [] },
     familia: { nomePai: '', nomeMae: '' },
   };
 }
@@ -77,7 +78,7 @@ describe('toAssociadoNovoPayload', () => {
     v.vinculo.instituicao = 4;
     v.vinculo.unidade = 9;
     v.adesao.associadoIndicador = { id: 15, label: 'João' };
-    v.adesao.empresaConveniada = { id: 3, label: 'Empresa X' };
+    v.vinculo.empresaConveniada = { id: 3, label: 'Empresa X' };
     v.adesao.convenios = [5, 7, 5];
     const payload = toAssociadoNovoPayload(v, null);
     expect(payload.sexo).toEqual({ id: 2 });

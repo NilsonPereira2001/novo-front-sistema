@@ -156,6 +156,17 @@
                 [blockedHint]="militar() ? 'Selecione primeiro a instituição.' : apenasMilitar"
                 (retry)="unidades.retry()"
               />
+              @if (conveniado()) {
+                <app-busca-select
+                  class="span-8"
+                  label="Empresa conveniada"
+                  [control]="v.empresaConveniada"
+                  [buscar]="buscarEmpresas"
+                  [required]="true"
+                  placeholder="Digite o nome da empresa"
+                  hint="Obrigatória para vínculo conveniado."
+                />
+              }
             </div>
 
             <fieldset class="militar" [class.is-off]="!militar()">
@@ -183,13 +194,6 @@
                 [buscar]="buscarIndicadores"
                 placeholder="Digite o nome ou CPF"
                 hint="Busca entre as pessoas já cadastradas."
-              />
-              <app-busca-select
-                class="span-6"
-                label="Empresa conveniada"
-                [control]="a.empresaConveniada"
-                [buscar]="buscarEmpresas"
-                placeholder="Digite o nome da empresa"
               />
               <div class="span-12">
                 <app-convenios-field [control]="a.convenios" [state]="convenios.state()" (retry)="convenios.retry()" />
@@ -291,6 +295,9 @@
                 </header>
                 <dl class="review__list">
                   <div><dt>Tipo de vínculo</dt><dd>{{ rotulo(tiposVinculo, v.tipoVinculo.value) }}</dd></div>
+                  @if (conveniado()) {
+                    <div><dt>Empresa conveniada</dt><dd>{{ v.empresaConveniada.value?.label ?? '—' }}</dd></div>
+                  }
                   <div><dt>Matrícula</dt><dd>{{ texto(v.matricula.value) }}</dd></div>
                   <div><dt>Instituição</dt><dd>{{ rotulo(instituicoes, v.instituicao.value) }}</dd></div>
                   <div><dt>Unidade</dt><dd>{{ rotulo(unidades, v.unidade.value) }}</dd></div>
@@ -311,7 +318,6 @@
                 <dl class="review__list">
                   <div><dt>Tipo de sócio</dt><dd>{{ rotulo(tiposSocio, a.tipoSocio.value) }}</dd></div>
                   <div><dt>{{ termos.membro }} indicador</dt><dd>{{ a.associadoIndicador.value?.label ?? '—' }}</dd></div>
-                  <div><dt>Empresa conveniada</dt><dd>{{ a.empresaConveniada.value?.label ?? '—' }}</dd></div>
                   <div><dt>Convênios</dt><dd>{{ conveniosSelecionados() }}</dd></div>
                 </dl>
               </section>

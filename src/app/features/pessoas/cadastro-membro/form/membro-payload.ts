@@ -48,6 +48,7 @@ export function toAssociadoNovoPayload(
     formaPagamento: ref(b.formaPagamento),
 
     tipoVinculo: ref(vi.tipoVinculo),
+    empresaConveniada: ref(vi.empresaConveniada?.id ?? null),
     matricula: text(vi.matricula),
     instituicao: ref(vi.instituicao),
     unidade: ref(vi.unidade),
@@ -58,7 +59,6 @@ export function toAssociadoNovoPayload(
     tipoSocio: ref(a.tipoSocio),
     associadoIndicador: ref(a.associadoIndicador?.id ?? null),
     convenios: [...new Set(a.convenios)].map((id) => ({ id })),
-    empresaConveniada: ref(a.empresaConveniada?.id ?? null),
 
     nomePai: text(f.nomePai),
     nomeMae: text(f.nomeMae),

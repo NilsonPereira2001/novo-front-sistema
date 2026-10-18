@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl } from '@angular/forms';
 import { Observable, Subject, catchError, debounceTime, map, of, startWith, switchMap } from 'rxjs';
 
+import { FieldError, shouldShowError } from '../../../../shared/components/form-fields/field-error';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { Opcao } from '../../../../shared/data/opcao.model';
 
@@ -23,11 +24,16 @@ type Busca =
  */
 @Component({
   selector: 'app-busca-select',
-  imports: [Icon],
+  imports: [Icon, FieldError],
   host: { '(document:click)': 'onDocumentClick($event)' },
   template: `
-    <div class="field combo">
-      <label class="field__label" [for]="inputId">{{ label() }}</label>
+    <div class="field combo" [class.field--invalid]="invalid()">
+      <label class="field__label" [for]="inputId">
+        {{ label() }}
+        @if (required()) {
+          <span class="field__req" aria-hidden="true">*</span>
+        }
+      </label>
 
       @if (control().value; as selecionado) {
         <div class="combo__selected">
@@ -55,6 +61,10 @@ type Busca =
             [attr.aria-controls]="listId"
             aria-autocomplete="list"
             [attr.aria-activedescendant]="ativo() >= 0 ? listId + '-' + ativo() : null"
+            [attr.aria-required]="required() || null"
+            [attr.aria-invalid]="invalid()"
+            [attr.aria-describedby]="invalid() ? inputId + '-erro' : null"
+            (blur)="control().markAsTouched()"
             [placeholder]="placeholder()"
             [value]="texto()"
             (input)="digitou($event)"
@@ -99,6 +109,7 @@ type Busca =
       @if (hint()) {
         <p class="field__hint">{{ hint() }}</p>
       }
+      <app-field-error [control]="control()" [errorId]="inputId + '-erro'" />
     </div>
   `,
   styles: `
@@ -177,6 +188,7 @@ export class BuscaSelect {
   readonly buscar = input.required<(termo: string) => Observable<Opcao[]>>();
   readonly placeholder = input('Digite para buscar');
   readonly hint = input<string | null>(null);
+  readonly required = input(false);
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
@@ -210,6 +222,10 @@ export class BuscaSelect {
         this.ativo.set(estado.status === 'ready' && estado.itens.length > 0 ? 0 : -1);
         this.aberto.set(estado.status !== 'idle');
       });
+  }
+
+  protected invalid(): boolean {
+    return shouldShowError(this.control());
   }
 
   protected itens(): Opcao[] {
