@@ -110,7 +110,7 @@ Listagem integrada a `GET /pessoas/listar/filtradas/paginada` (`Page<PessoaDTO>`
 
 **Filtro por tipo:** as opções vêm de `GET /tipo/pessoas/listar` (`TipoPessoaController`), com `id` e `nome`. O seletor mostra o `nome` e envia o `id` em `idTipoPessoa`, sem nenhuma lista fixa no frontend. Pesquisa e tipo funcionam juntos, e limpar um não apaga o outro. O seletor tem estado de carregamento e mensagem de erro com "Tentar novamente".
 
-Ainda são telas em construção: aguardando deferimento, novo associado e novo funcionário.
+Ainda são telas em construção: aguardando deferimento e novo funcionário.
 
 ### Cadastro de membro (`/pessoas/novo/membro`)
 
@@ -119,8 +119,21 @@ O cadastro é feito em 8 etapas, com revisão antes de salvar. Os arquivos ficam
 - `data/cadastro-api.ts`: todos os endpoints e as pendências.
 - `form/membro-form.ts`: o estado do formulário.
 - `form/membro-payload.ts`: monta o JSON de `AssociadoNovoDTO`.
+- `data/cadastro-erro.ts`: interpreta as respostas de erro do salvamento.
 
 **Endpoints usados:** `GET /sexo/todos`, `/estado/civil/todos`, `/estados/todos`, `/bancos/todos`, `/tipo/pix`, `/formas/pagamentos`, `/listar/tipo/vinculo`, `/instituicao/listar/por/vinculo/{id}`, `POST /unidade/listar`, `GET /graduacao/listar`, `/listar/quadros`, `/tipo/socios/todos`, `/convenios/fixos/nao/nativos/ativos`, `/tipo/pessoas/listar` e `/empresa/conveniada/todas/paginada`. A busca do membro indicador reaproveita `/pessoas/listar/filtradas/paginada`.
+
+**Salvar:** `POST /associado/salvar/novo` (permissão `AFILIADO_CRIAR`), com o `AssociadoNovoDTO` como JSON no corpo e o token no `Authorization`.
+
+| Resposta | O que a tela mostra |
+|---|---|
+| 201 + Associado | Tela "Cadastro salvo com sucesso" |
+| 400 ("Erro: Dados inválidos ou duplicados.") | O texto do backend, sem o "Erro:", e a dica de conferir se o CPF já está cadastrado |
+| 403 | Usuário sem permissão para cadastrar |
+| 500 | Mensagem genérica. O texto da exceção que o backend devolve nunca é exibido |
+| Backend fora do ar | Falha de conexão |
+
+O botão fica bloqueado durante o envio para evitar cadastro duplicado.
 
 **Payload:**
 - Só são enviadas propriedades do DTO, e os opcionais vazios são omitidos.
@@ -137,13 +150,12 @@ O cadastro é feito em 8 etapas, com revisão antes de salvar. Os arquivos ficam
 
 **⚠️ Pendências do backend:**
 
-1. **Rota de criação:** `CADASTRO_API.criar` está `null`. Enquanto não for informada, a tela permite preencher e revisar, mas o botão "Salvar" fica desabilitado.
-2. **Foto:** `FOTO_FORMATO` está `null`, então a foto é só pré-visualizada. Defina `'data-url'` ou `'base64'` conforme o backend espera a `String foto`.
-3. **`POST /unidade/listar`:** o corpo enviado é `{ "id": idInstituicao }`. Falta confirmar se é isso que o backend espera.
-4. **Campos de rótulo:** `Sexo` usa `sexo` e `FormaPagamento` usa `forma`. As demais entidades usam `nome`, `descricao`, `tipo` ou `sigla`. Se nenhum desses existir e a entidade tiver um único campo de texto, ele é usado. Os nomes de campo ficam em `LABELS`, no `cadastro-api.ts`.
-5. **Referências:** falta confirmar que o backend aceita `{ id }` nos relacionamentos e só dígitos em CPF, CEP e telefone.
-6. **Tipo de conta:** é texto livre, porque não há lista de valores confirmada.
-7. **Serviço de CEP:** não existe, então não há preenchimento automático do endereço.
+1. **Foto:** `FOTO_FORMATO` está `null`, então a foto é só pré-visualizada e **não vai no cadastro**. Defina `'data-url'` ou `'base64'` conforme o backend espera a `String foto`.
+2. **`POST /unidade/listar`:** o corpo enviado é `{ "id": idInstituicao }`. Falta confirmar se é isso que o backend espera.
+3. **Campos de rótulo:** `Sexo` usa `sexo` e `FormaPagamento` usa `forma`. As demais entidades usam `nome`, `descricao`, `tipo` ou `sigla`. Se nenhum desses existir e a entidade tiver um único campo de texto, ele é usado. Os nomes de campo ficam em `LABELS`, no `cadastro-api.ts`.
+4. **Referências:** falta confirmar que o backend aceita `{ id }` nos relacionamentos e só dígitos em CPF, CEP e telefone.
+5. **Tipo de conta:** é texto livre, porque não há lista de valores confirmada.
+6. **Serviço de CEP:** não existe, então não há preenchimento automático do endereço.
 
 ### Recuperação de senha
 

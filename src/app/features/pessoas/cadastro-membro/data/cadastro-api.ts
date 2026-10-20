@@ -30,11 +30,11 @@ export const CADASTRO_API = {
   /** Pesquisa paginada: `filtro` + paginação do Spring. */
   empresasConveniadas: '/empresa/conveniada/todas/paginada',
   /**
-   * ⚠️ PENDENTE: rota e método do controller que recebe `AssociadoNovoDTO`
-   * não foram informados. Enquanto for `null`, a tela permite preencher e
-   * revisar, mas não envia. Informe aqui (ex.: '/associado/salvar').
+   * POST com `AssociadoNovoDTO` no corpo (JSON). Permissão `AFILIADO_CRIAR`.
+   * Respostas: 201 + Associado criado · 400 texto "Erro: Dados inválidos ou
+   * duplicados." · 403 sem permissão · 500 texto com a exceção (nunca exibido).
    */
-  criar: null as string | null,
+  criar: '/associado/salvar/novo' as string | null,
 } as const;
 
 /**
