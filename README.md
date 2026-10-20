@@ -110,7 +110,7 @@ Listagem integrada a `GET /pessoas/listar/filtradas/paginada` (`Page<PessoaDTO>`
 
 **Filtro por tipo:** as opções vêm de `GET /tipo/pessoas/listar` (`TipoPessoaController`), com `id` e `nome`. O seletor mostra o `nome` e envia o `id` em `idTipoPessoa`, sem nenhuma lista fixa no frontend. Pesquisa e tipo funcionam juntos, e limpar um não apaga o outro. O seletor tem estado de carregamento e mensagem de erro com "Tentar novamente".
 
-Ainda são telas em construção: aguardando deferimento e novo funcionário.
+Ainda são telas em construção: aguardando deferimento, novo funcionário e edição de cadastro.
 
 ### Cadastro de membro (`/pessoas/novo/membro`)
 
@@ -156,6 +156,30 @@ O botão fica bloqueado durante o envio para evitar cadastro duplicado.
 4. **Referências:** falta confirmar que o backend aceita `{ id }` nos relacionamentos e só dígitos em CPF, CEP e telefone.
 5. **Tipo de conta:** é texto livre, porque não há lista de valores confirmada.
 6. **Serviço de CEP:** não existe, então não há preenchimento automático do endereço.
+
+### Detalhe da pessoa (`/pessoas/:id`) — ⚠️ dados fictícios
+
+Ao clicar no nome de uma pessoa na lista, abre o detalhe. É **uma tela só** para membro, funcionário e dependente, e o que muda entre eles fica em `detalhe/models/perfil-config.ts`:
+
+| Perfil | Abas | Documentos | Desligar / Reativar |
+|---|---|---|---|
+| Membro | Dados, Convênios, Indicações, Dependentes, Arquivos | Declaração de vínculo, Ficha, Contrato de adesão, Contrato de desligamento | Sim |
+| Funcionário | Dados, Arquivos | Declaração de vínculo, Ficha | Sim |
+| Dependente | Dados (com link para o titular), Arquivos | Ficha | Não |
+
+- **Ações:** Editar (por enquanto leva a "em construção"), Documentos (prévia e impressão), Desligar (pede data e motivo, campos `data_desligamento` e `motivo_desligamento` de `Associado`) e Reativar.
+- **Regras de documentos:** a declaração de vínculo só fica disponível com status ativo, e o contrato de desligamento só depois do desligamento. ⚠️ A confirmar.
+- **Aba na URL:** `?aba=convenios`, para o "voltar" do navegador funcionar.
+
+**Como integrar:** a tela só conversa com `PessoaDetalheFonte` (`detalhe/data/pessoa-detalhe-fonte.ts`). Hoje quem responde é `PessoaDetalheDemo`, que gera dados fictícios em memória, não chama o backend e não salva nada. A tela mostra o aviso "Dados fictícios de demonstração" enquanto isso. Para integrar:
+
+1. Criar `PessoaDetalheApi` implementando a classe com os endpoints reais (detalhe, convênios, indicações, dependentes, arquivos, desligar, reativar, documentos).
+2. Trocar o provider da rota `:id` em `pessoas.routes.ts`.
+3. Apagar `pessoa-detalhe.demo.ts`.
+
+Os documentos já aceitam PDF vindo da API: a janela exibe o arquivo e oferece Imprimir e Baixar.
+
+**Faltam do backend:** os endpoints acima, os campos do funcionário (cargo, setor e admissão são provisórios) e as categorias de arquivo (hoje: Documentos pessoais, Comprovantes, Contratos, Outros).
 
 ### Recuperação de senha
 

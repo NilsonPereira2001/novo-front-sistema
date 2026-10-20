@@ -130,10 +130,10 @@
             @for (p of pg.content; track p.id) {
               <tr>
                 <td>
-                  <span class="person-cell">
+                  <a class="person-cell" [routerLink]="['/pessoas', p.id]" [state]="{ resumo: p }">
                     <span class="avatar-sm" aria-hidden="true">{{ initials(p.nome) }}</span>
                     {{ p.nome | displayValue }}
-                  </span>
+                  </a>
                 </td>
                 <td class="cell-mono">{{ p.cpf | cpf }}</td>
                 <td>{{ p.tipo | displayValue }}</td>

@@ -1,0 +1,226 @@
+<a class="back-link" routerLink="/pessoas">
+  <app-icon name="arrow-left" />
+  Pessoas
+</a>
+
+@if (demonstracao) {
+  <app-alert tone="warning" heading="Dados fictícios de demonstração">
+    Esta tela ainda não está ligada ao servidor. As informações são de exemplo e as ações
+    (desligar, reativar, enviar arquivos) não são salvas.
+  </app-alert>
+}
+
+@if (erro(); as kind) {
+  <section class="card">
+    <app-load-error [kind]="kind" (retry)="tentarDeNovo()" />
+  </section>
+} @else if (detalhe(); as d) {
+  <!-- Cabeçalho da pessoa -->
+  <section class="card perfil" aria-labelledby="nome-pessoa">
+    <div class="perfil__identidade">
+      @if (d.foto) {
+        <img class="perfil__foto" [src]="d.foto" [alt]="'Foto de ' + d.pessoais.nome" />
+      } @else {
+        <span class="perfil__foto perfil__foto--iniciais" aria-hidden="true">{{ initials(d.pessoais.nome) }}</span>
+      }
+
+      <div class="perfil__texto">
+        <div class="perfil__tags">
+          <span class="tag tag--primary">{{ d.tipoNome }}</span>
+          <span class="status" [attr.data-tone]="tom(d.status)">
+            <span class="status__dot"></span>{{ d.status | displayValue }}
+          </span>
+          @if (restricao()) {
+            <span class="tag tag--alerta">
+              <app-icon name="alert-circle" />
+              Restrição: {{ d.restricao }}
+            </span>
+          }
+        </div>
+        <h1 class="perfil__nome" id="nome-pessoa">{{ d.pessoais.nome }}</h1>
+        @if (d.titular; as t) {
+          <p class="perfil__sub">
+            {{ t.parentesco ?? 'Dependente' }} de <a [routerLink]="['/pessoas', t.id]">{{ t.nome }}</a>
+          </p>
+        }
+        <dl class="perfil__meta">
+          <div><dt>CPF</dt><dd class="cell-mono">{{ d.pessoais.cpf | cpf }}</dd></div>
+          @if (d.pessoais.matricula) {
+            <div><dt>Matrícula</dt><dd class="cell-mono">{{ d.pessoais.matricula }}</dd></div>
+          }
+          <div><dt>Telefone</dt><dd class="cell-mono">{{ telefonePrincipal() | telefone }}</dd></div>
+          @if (d.pessoais.email) {
+            <div><dt>E-mail</dt><dd>{{ d.pessoais.email }}</dd></div>
+          }
+          <div><dt>Cadastro</dt><dd class="cell-mono">{{ (d.dataCadastro | date: 'dd/MM/yyyy') ?? '—' }}</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    @if (perfil(); as pf) {
+      <div class="perfil__acoes">
+        <a class="btn btn--secondary btn--sm" [routerLink]="['/pessoas', d.id, 'editar']">
+          <app-icon name="pencil" />
+          Editar
+        </a>
+
+        <div class="dropdown" #menuDocsRef>
+          <button
+            type="button"
+            class="btn btn--secondary btn--sm"
+            (click)="menuDocs.set(!menuDocs())"
+            [attr.aria-expanded]="menuDocs()"
+            aria-controls="menu-documentos"
+          >
+            <app-icon name="file-text" />
+            Documentos
+            <app-icon name="chevron-down" />
+          </button>
+          @if (menuDocs()) {
+            <div class="dropdown__panel dropdown__panel--direita" id="menu-documentos">
+              @for (doc of pf.documentos; track doc.tipo) {
+                @let motivo = indisponivel(doc);
+                <button
+                  type="button"
+                  class="dropdown__item"
+                  [disabled]="!!motivo"
+                  [attr.aria-describedby]="motivo ? 'doc-motivo-' + doc.tipo : null"
+                  (click)="abrirDocumento(doc)"
+                >
+                  <span class="dropdown__icon">
+                    <app-icon [name]="doc.tipo.startsWith('contrato') ? 'file-signature' : 'file-text'" />
+                  </span>
+                  <span class="dropdown__text">
+                    <strong>{{ doc.titulo }}</strong>
+                    <span [id]="'doc-motivo-' + doc.tipo">{{ motivo ?? doc.descricao }}</span>
+                  </span>
+                </button>
+              }
+            </div>
+          }
+        </div>
+
+        @if (pf.podeDesligar && situacao() === 'ativo') {
+          <button type="button" class="btn btn--danger-outline btn--sm" (click)="abrirDesligar()">
+            <app-icon name="power" />
+            Desligar
+          </button>
+        } @else if (pf.podeDesligar && situacao() === 'desligado') {
+          <button type="button" class="btn btn--primary btn--sm" (click)="abrirReativar()">
+            <app-icon name="refresh-cw" />
+            Reativar
+          </button>
+        }
+      </div>
+    }
+  </section>
+
+  @if (aviso(); as texto) {
+    <div class="aviso">
+      <app-alert tone="success">{{ texto }}</app-alert>
+      <button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button>
+    </div>
+  }
+
+  @if (d.desligamento; as dl) {
+    <app-alert tone="danger" heading="Desligado">
+      Desde {{ (dl.data | date: 'dd/MM/yyyy') ?? '—' }}. Motivo: {{ dl.motivo || '—' }}
+    </app-alert>
+  }
+
+  <!-- Abas -->
+  @if (perfil(); as pf) {
+    <section class="card abas">
+      <div class="abas__lista" role="tablist" aria-label="Informações da pessoa">
+        @for (a of pf.abas; track a.key; let i = $index) {
+          <button
+            type="button"
+            role="tab"
+            class="abas__aba"
+            [id]="'aba-' + a.key"
+            [class.is-active]="abaAtiva() === a.key"
+            [attr.aria-selected]="abaAtiva() === a.key"
+            [attr.aria-controls]="'painel-' + a.key"
+            [attr.tabindex]="abaAtiva() === a.key ? 0 : -1"
+            (click)="selecionarAba(a.key)"
+            (keydown)="tecladoAbas($event, i)"
+          >
+            <app-icon [name]="a.icon" />
+            {{ a.titulo }}
+          </button>
+        }
+      </div>
+
+      <div
+        class="abas__painel"
+        role="tabpanel"
+        [id]="'painel-' + abaAtiva()"
+        [attr.aria-labelledby]="'aba-' + abaAtiva()"
+        tabindex="0"
+      >
+        @switch (abaAtiva()) {
+          @case ('convenios') {
+            <app-aba-convenios [pessoaId]="d.id" />
+          }
+          @case ('indicacoes') {
+            <app-aba-indicacoes [pessoaId]="d.id" />
+          }
+          @case ('dependentes') {
+            <app-aba-dependentes [pessoaId]="d.id" />
+          }
+          @case ('arquivos') {
+            <app-aba-arquivos [pessoaId]="d.id" />
+          }
+          @default {
+            <app-aba-dados [detalhe]="d" />
+          }
+        }
+      </div>
+    </section>
+
+    <!-- Janelas -->
+    <app-documento-dialog [open]="docAberto() !== null" [doc]="docAberto()" [detalhe]="d" (closed)="docAberto.set(null)" />
+
+    <app-desligar-dialog
+      [open]="desligarAberto()"
+      [nome]="d.pessoais.nome"
+      [rotulo]="pf.rotulo"
+      [enviando]="processando()"
+      [erro]="erroAcao()"
+      (confirmar)="desligar($event)"
+      (closed)="desligarAberto.set(false)"
+    />
+
+    <app-dialog [titulo]="'Reativar ' + pf.rotulo.toLowerCase()" [open]="reativarAberto()" (closed)="reativarAberto.set(false)">
+      <p class="dialog-texto">
+        <strong>{{ d.pessoais.nome }}</strong> voltará a ter vínculo ativo.
+      </p>
+      @if (erroAcao()) {
+        <app-alert tone="danger" heading="Não foi possível reativar">{{ erroAcao() }}</app-alert>
+      }
+      <div dialog-actions>
+        <button type="button" class="btn btn--secondary btn--sm" (click)="reativarAberto.set(false)" [disabled]="processando()">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn--primary btn--sm" (click)="reativar()" [disabled]="processando()">
+          @if (processando()) {
+            <span class="spinner" aria-hidden="true"></span> Reativando…
+          } @else {
+            <app-icon name="refresh-cw" /> Confirmar reativação
+          }
+        </button>
+      </div>
+    </app-dialog>
+  }
+} @else if (carregando()) {
+  <section class="card perfil" aria-busy="true" aria-label="Carregando pessoa">
+    <div class="perfil__identidade">
+      <span class="perfil__foto skeleton-bloco"></span>
+      <div class="perfil__texto">
+        <span class="skeleton" style="width: 6rem"></span>
+        <span class="skeleton skeleton--titulo" style="width: 18rem"></span>
+        <span class="skeleton" style="width: 24rem; max-width: 100%"></span>
+      </div>
+    </div>
+  </section>
+}

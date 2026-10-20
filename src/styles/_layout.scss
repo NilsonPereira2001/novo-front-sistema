@@ -141,7 +141,13 @@
   display: flex;
   align-items: flex-start;
   gap: var(--space-3);
+  width: 100%;
   padding: var(--space-3);
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
   border-radius: var(--radius-md);
   color: var(--color-gray-800);
   text-decoration: none;

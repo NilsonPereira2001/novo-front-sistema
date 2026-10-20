@@ -347,3 +347,69 @@
     }
   }
 }
+
+// Ações destrutivas (desligar, remover)
+.btn--danger {
+  background: var(--color-danger);
+  color: var(--color-white);
+
+  &:hover:not(:disabled) {
+    background: #a72323;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+  }
+}
+
+.btn--danger-outline {
+  background: var(--color-surface);
+  border-color: var(--color-danger-border);
+  color: var(--color-danger);
+
+  &:hover:not(:disabled) {
+    background: var(--color-danger-soft);
+  }
+}
+
+// Botão só com ícone (exige aria-label)
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-gray-500);
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: var(--color-gray-100);
+    color: var(--color-primary);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.5;
+  }
+}
+
+.icon-btn--danger:hover:not(:disabled) {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+// Botões projetados no rodapé das janelas (app-dialog)
+[dialog-actions] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
