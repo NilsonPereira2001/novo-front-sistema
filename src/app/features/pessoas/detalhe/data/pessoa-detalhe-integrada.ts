@@ -11,17 +11,16 @@ import { toPessoaDetalheDeAssociado } from './associado.adapter';
 import { PessoaDetalheDemo } from './pessoa-detalhe.demo';
 
 /**
- * Endpoints de detalhe já conhecidos.
+ * Endpoints de detalhe.
  *
- * ⚠️ PENDENTE: rota que devolve a entidade `Associado` (com `pessoa`) a partir
- * do **id da Pessoa** — é o id que a lista (`PessoaDTO.id`) e as rotas
- * `/pessoas/:id` usam. Enquanto for `null`, a ficha usa dados fictícios.
- *
- * Exemplo de configuração, quando a rota existir:
- *   associadoPorPessoa: (idPessoa) => `/associado/pessoa/${idPessoa}`
+ * `GET /associado/pessoa/{idPessoa}` (AssociadoController.buscarAssociadoPorPessoa):
+ * recebe o **id da Pessoa** — o mesmo da lista e das rotas `/pessoas/:id` —
+ * e devolve a entidade `Associado` com `pessoa`. 404 = pessoa não é associado.
  */
 export const DETALHE_API = {
-  associadoPorPessoa: null as ((idPessoa: number) => string) | null,
+  associadoPorPessoa: ((idPessoa: number) => `/associado/pessoa/${idPessoa}`) as
+    | ((idPessoa: number) => string)
+    | null,
 };
 
 /**

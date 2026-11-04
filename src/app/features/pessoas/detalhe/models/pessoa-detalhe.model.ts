@@ -73,6 +73,8 @@ export interface PessoaDetalhe {
   readonly bancarios: {
     readonly banco: string | null;
     readonly tipoConta: string | null;
+    /** Operação da conta (Caixa), quando houver. */
+    readonly operacao?: string | null;
     readonly agencia: string | null;
     readonly numeroConta: string | null;
     readonly tipoPix: string | null;

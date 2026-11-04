@@ -120,10 +120,32 @@ describe('toPessoaDetalheDeAssociado', () => {
   });
 });
 
+describe('versão do backend com Date, foto em texto e Conta com numero_conta/pix', () => {
+  it('lê os nomes dessa versão', () => {
+    const raw = associadoJson();
+    const pessoa = raw['pessoa'] as Record<string, unknown>;
+    delete pessoa['imgPerfil'];
+    pessoa['foto'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUg';
+    pessoa['data_nascimento'] = '1984-07-19';
+    pessoa['conta'] = { id: 1, agencia: '0055', operacao: '013', numero_conta: '10001-3', banco: { id: 1, nome: 'Caixa' }, tipoPix: { id: 1, tipo: 'CPF' }, pix: '52998224725' };
+    delete raw['tipoVinculo'];
+    raw['primeiraAdesao'] = '2023-02-01';
+    raw['data_incorporacao'] = '2008-05-02';
+    const d = toPessoaDetalheDeAssociado(raw)!;
+    expect(d.foto).toBe('data:image/png;base64,iVBORw0KGgoAAAANSUhEUg');
+    expect(d.bancarios).toEqual({ banco: 'Caixa', tipoConta: null, agencia: '0055', operacao: '013', numeroConta: '10001-3', tipoPix: 'CPF', chavePix: '52998224725' });
+    expect(d.adesao?.primeiraAdesao).toBe('2023-02-01');
+    expect(d.vinculo?.tipoVinculo).toBeNull();
+    expect(d.vinculo?.dataIncorporacao).toBe('2008-05-02');
+  });
+});
+
 describe('leitores de datas e imagens', () => {
   it('aceita LocalDate em texto ou em lista', () => {
     expect(dataLocal({ d: '2008-05-02' }, ['d'])).toBe('2008-05-02');
     expect(dataLocal({ d: [2008, 5, 2] }, ['d'])).toBe('2008-05-02');
+    expect(dataLocal({ d: '1990-04-12T03:00:00.000+00:00' }, ['d'])).toBe('1990-04-12');
+    expect(dataLocal({ d: new Date(2008, 4, 2).getTime() }, ['d'])).toBe('2008-05-02');
     expect(dataLocal({ d: 'x' }, ['d'])).toBeNull();
   });
 

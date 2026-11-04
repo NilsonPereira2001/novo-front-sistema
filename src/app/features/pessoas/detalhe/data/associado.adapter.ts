@@ -18,8 +18,12 @@
  * porque o Lombok gera getData_incorporacao(). A versão camelCase também é
  * aceita, caso o backend passe a usar @JsonProperty.
  *
- * ⚠️ A CONFIRMAR: campos de `EnderecoPessoa` e `Conta` (entidades não
- * informadas; usados os mesmos nomes do AssociadoNovoDTO) e o campo de texto
+ * `Conta` no repositório back-novo: agencia, operacao, numero_conta, banco,
+ * tipoPix, pix (também aceitos os nomes do AssociadoNovoDTO). Datas `Date`
+ * chegam como "yyyy-MM-dd" (spring.jackson.date-format) ou em milissegundos.
+ * Foto: `imgPerfil` (byte[]) ou `foto` (String), conforme a versão.
+ *
+ * ⚠️ A CONFIRMAR: o campo de texto
  * de EstadoCivil, TipoVinculo, Unidade, Graduacao, Quadro, TipoSocio e TipoPix
  * (lidos por `nome`/`descricao` ou pelo único campo de texto da entidade).
  */
@@ -54,7 +58,7 @@ export function toPessoaDetalheDeAssociado(raw: unknown): PessoaDetalhe | null {
     tipoNome: tipoNome ?? 'ASSOCIADO',
     status: s(raw, 'status') ?? s(pessoa, 'status'),
     restricao: s(raw, 'restricao') ?? s(pessoa, 'restricao'),
-    foto: imagemBase64(pessoa['imgPerfil']),
+    foto: imagemBase64(pessoa['imgPerfil'] ?? pessoa['foto']),
     qrcode: imagemBase64(pessoa['qrcodeValidador']),
     dataCadastro: instante(pessoa, ['data_cadastro', 'dataCadastro']),
 
@@ -93,9 +97,10 @@ export function toPessoaDetalheDeAssociado(raw: unknown): PessoaDetalhe | null {
           banco: rotulo(conta['banco'], LABELS.banco),
           tipoConta: s(conta, 'tipoConta', 'tipo_conta'),
           agencia: s(conta, 'agencia'),
+          operacao: s(conta, 'operacao'),
           numeroConta: s(conta, 'numeroConta', 'numero_conta', 'conta'),
           tipoPix: rotulo(conta['tipoPix']),
-          chavePix: s(conta, 'chavePix', 'chave_pix'),
+          chavePix: s(conta, 'chavePix', 'chave_pix', 'pix'),
         }
       : null,
 
@@ -168,14 +173,18 @@ function desligamento(raw: JsonRecord): PessoaDetalhe['desligamento'] {
 }
 
 /**
- * `LocalDate`: "2008-05-02" (padrão do Spring Boot) ou [2008, 5, 2]
- * (quando WRITE_DATES_AS_TIMESTAMPS está ligado). Sai sempre YYYY-MM-DD.
+ * `LocalDate`/`Date`: "2008-05-02", "2008-05-02T03:00:00.000+00:00",
+ * [2008, 5, 2] ou milissegundos. Sai sempre YYYY-MM-DD.
  */
 export function dataLocal(source: JsonRecord, keys: readonly string[]): string | null {
   for (const key of keys) {
     const v = source[key];
     if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v)) {
       return v.slice(0, 10);
+    }
+    if (typeof v === 'number' && Number.isFinite(v)) {
+      const d = new Date(v); // java.util.Date como timestamp (ms)
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
     if (Array.isArray(v) && v.length >= 3 && v.slice(0, 3).every((n) => Number.isInteger(n))) {
       const [y, m, d] = v as number[];

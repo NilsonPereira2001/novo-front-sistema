@@ -165,6 +165,7 @@ export function secoesDe(p: PessoaDetalhe, locale: string): Secao[] {
         { rotulo: 'Banco', valor: txt(b.banco) },
         { rotulo: 'Tipo de conta', valor: txt(b.tipoConta) },
         { rotulo: 'Agência', valor: txt(b.agencia) },
+        ...(b.operacao ? [{ rotulo: 'Operação', valor: b.operacao }] : []),
         { rotulo: 'Conta', valor: txt(b.numeroConta) },
         { rotulo: 'Tipo de Pix', valor: txt(b.tipoPix) },
         { rotulo: 'Chave Pix', valor: txt(b.chavePix) },

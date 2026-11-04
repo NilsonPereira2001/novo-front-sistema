@@ -180,11 +180,12 @@ Ao clicar no nome de uma pessoa na lista, abre o detalhe. É **uma tela só** pa
 - **Campos novos na tela e na ficha:** título de eleitor e carteira (impressa/entregue).
 - **Testes:** `associado.adapter.spec.ts`.
 
-**⚠️ Pendente — rota do detalhe:** `DETALHE_API.associadoPorPessoa`, em `detalhe/data/pessoa-detalhe-integrada.ts`, está `null`. Ela precisa receber o **id da Pessoa** (o da lista) e devolver o `Associado`. Quando for configurada:
+**Rota do detalhe:** `GET /associado/pessoa/{idPessoa}` (PR #1 do `back-novo`), configurada em `DETALHE_API`, no arquivo `detalhe/data/pessoa-detalhe-integrada.ts`. Ela recebe o **id da Pessoa**, o mesmo da lista.
 
 - **Cadastro de associado:** vem do servidor, com o aviso "Integração parcial".
-- **Continuam de demonstração:** funcionário, dependente, convênios, indicações, dependentes, arquivos, documentos e as ações de desligar e reativar, até terem endpoints próprios.
-- **Pessoa sem registro:** se o servidor responder 404, a tela mostra "Cadastro não encontrado".
+- **Continuam de demonstração:** funcionário, dependente, convênios, indicações, dependentes, arquivos, documentos e as ações de desligar e reativar.
+- **404:** a tela mostra "Cadastro não encontrado".
+- **Formatos aceitos:** o adaptador lê as duas versões da entidade, com `Instant`/`LocalDate` ou com `Date`, foto em `imgPerfil` ou em `foto`, e `Conta` com `numero_conta`/`pix`/`operacao` ou com os nomes do DTO.
 
 **A confirmar:**
 - Os campos de `EnderecoPessoa` e `Conta`; hoje usamos os mesmos nomes do `AssociadoNovoDTO`.
