@@ -32,6 +32,19 @@ import { secoesDe } from '../models/secoes';
           <p class="doc__texto">Por ser verdade, firmamos a presente declaração.</p>
         }
         @case ('ficha') {
+          @if (p().foto || p().qrcode) {
+            <div class="doc__imagens">
+              @if (p().foto; as foto) {
+                <img class="doc__foto" [src]="foto" [alt]="'Foto de ' + p().pessoais.nome" />
+              }
+              @if (p().qrcode; as qr) {
+                <figure class="doc__qr">
+                  <img [src]="qr" alt="QR code validador da carteira" />
+                  <figcaption>Validador da carteira</figcaption>
+                </figure>
+              }
+            </div>
+          }
           @for (s of secoes(); track s.titulo) {
             <section class="doc__secao">
               <h2>{{ s.titulo }}</h2>
@@ -110,6 +123,32 @@ import { secoesDe } from '../models/secoes';
       font-weight: 800;
       text-transform: uppercase;
       color: #0a1730;
+    }
+    .doc__imagens {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .doc__foto {
+      width: 6rem;
+      height: 7.5rem;
+      object-fit: cover;
+      border: 1px solid #d6dce5;
+      border-radius: 4px;
+    }
+    .doc__qr {
+      margin: 0 0 0 auto;
+      text-align: center;
+      font-size: 0.6875rem;
+      color: #627084;
+    }
+    .doc__qr img {
+      image-rendering: pixelated;
+      display: block;
+      width: 6rem;
+      height: 6rem;
     }
     .doc__texto {
       margin: 0 0 1rem;

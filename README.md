@@ -171,13 +171,26 @@ Ao clicar no nome de uma pessoa na lista, abre o detalhe. É **uma tela só** pa
 - **Regras de documentos:** a declaração de vínculo só fica disponível com status ativo, e o contrato de desligamento só depois do desligamento. ⚠️ A confirmar.
 - **Aba na URL:** `?aba=convenios`, para o "voltar" do navegador funcionar.
 
-**Como integrar:** a tela só conversa com `PessoaDetalheFonte` (`detalhe/data/pessoa-detalhe-fonte.ts`). Hoje quem responde é `PessoaDetalheDemo`, que gera dados fictícios em memória, não chama o backend e não salva nada. A tela mostra o aviso "Dados fictícios de demonstração" enquanto isso. Para integrar:
+**Ficha do associado (dados reais):** o adaptador `detalhe/data/associado.adapter.ts` lê a entidade `Associado`, com a `Pessoa` dentro, exatamente como o Jackson a serializa:
 
-1. Criar `PessoaDetalheApi` implementando a classe com os endpoints reais (detalhe, convênios, indicações, dependentes, arquivos, desligar, reativar, documentos).
-2. Trocar o provider da rota `:id` em `pessoas.routes.ts`.
-3. Apagar `pessoa-detalhe.demo.ts`.
+- **Campos com "_" do Lombok:** `data_incorporacao`, `nome_guerra`, `data_nascimento`, `data_cadastro` e `motivo_desligamento` são lidos com esse nome, e a forma camelCase também é aceita.
+- **Datas:** `LocalDate` vem em texto ou como `[a, m, d]`; `Instant` vem em ISO ou em segundos.
+- **Imagens:** `imgPerfil` e `qrcodeValidador` (`byte[]` em base64) viram a foto e o QR code da ficha. Só JPEG, PNG, GIF e WebP são aceitos.
+- **Indicador:** o link usa o id da **Pessoa** do associado indicador, não o id do Associado.
+- **Campos novos na tela e na ficha:** título de eleitor e carteira (impressa/entregue).
+- **Testes:** `associado.adapter.spec.ts`.
 
-Os documentos já aceitam PDF vindo da API: a janela exibe o arquivo e oferece Imprimir e Baixar.
+**⚠️ Pendente — rota do detalhe:** `DETALHE_API.associadoPorPessoa`, em `detalhe/data/pessoa-detalhe-integrada.ts`, está `null`. Ela precisa receber o **id da Pessoa** (o da lista) e devolver o `Associado`. Quando for configurada:
+
+- **Cadastro de associado:** vem do servidor, com o aviso "Integração parcial".
+- **Continuam de demonstração:** funcionário, dependente, convênios, indicações, dependentes, arquivos, documentos e as ações de desligar e reativar, até terem endpoints próprios.
+- **Pessoa sem registro:** se o servidor responder 404, a tela mostra "Cadastro não encontrado".
+
+**A confirmar:**
+- Os campos de `EnderecoPessoa` e `Conta`; hoje usamos os mesmos nomes do `AssociadoNovoDTO`.
+- O campo de texto de `EstadoCivil`, `TipoVinculo`, `Unidade`, `Graduacao`, `Quadro`, `TipoSocio` e `TipoPix`.
+
+**Para integrar o restante:** implemente os métodos de `PessoaDetalheFonte` em `PessoaDetalheIntegrada` à medida que os endpoints existirem e, no fim, apague `pessoa-detalhe.demo.ts`. Os documentos já aceitam PDF vindo da API, com as opções Imprimir e Baixar.
 
 **Faltam do backend:** os endpoints acima, os campos do funcionário (cargo, setor e admissão são provisórios) e as categorias de arquivo (hoje: Documentos pessoais, Comprovantes, Contratos, Outros).
 

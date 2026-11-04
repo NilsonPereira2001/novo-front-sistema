@@ -3,7 +3,14 @@
   Pessoas
 </a>
 
-@if (demonstracao) {
+@if (detalhe()?.origem === 'api') {
+  @if (demonstracao) {
+    <app-alert tone="info" heading="Integração parcial">
+      Os dados cadastrais vêm do servidor. Convênios, indicações, dependentes, arquivos,
+      documentos e as ações de desligar e reativar ainda são de demonstração.
+    </app-alert>
+  }
+} @else if (demonstracao) {
   <app-alert tone="warning" heading="Dados fictícios de demonstração">
     Esta tela ainda não está ligada ao servidor. As informações são de exemplo e as ações
     (desligar, reativar, enviar arquivos) não são salvas.
@@ -12,7 +19,16 @@
 
 @if (erro(); as kind) {
   <section class="card">
-    <app-load-error [kind]="kind" (retry)="tentarDeNovo()" />
+    @if (kind === 'not-found') {
+      <div class="state">
+        <span class="state__icon"><app-icon name="search" /></span>
+        <p class="state__title">Cadastro não encontrado</p>
+        <p class="state__text">Não há cadastro para esta pessoa no servidor. Volte à lista e confira o registro.</p>
+        <a class="btn btn--secondary btn--sm" routerLink="/pessoas">Voltar para Pessoas</a>
+      </div>
+    } @else {
+      <app-load-error [kind]="kind" (retry)="tentarDeNovo()" />
+    }
   </section>
 } @else if (detalhe(); as d) {
   <!-- Cabeçalho da pessoa -->

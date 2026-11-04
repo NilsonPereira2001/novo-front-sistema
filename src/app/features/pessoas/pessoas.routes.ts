@@ -2,7 +2,7 @@ import { CanDeactivateFn, Routes } from '@angular/router';
 
 import { pageTitle } from '../../core/config/app-title';
 import { TERMOS } from '../../core/config/terminologia';
-import { PessoaDetalheDemo } from './detalhe/data/pessoa-detalhe.demo';
+import { PessoaDetalheIntegrada } from './detalhe/data/pessoa-detalhe-integrada';
 import { PessoaDetalheFonte } from './detalhe/data/pessoa-detalhe-fonte';
 
 /** Pede confirmação antes de sair de um cadastro com dados não salvos. */
@@ -48,10 +48,10 @@ const routes: Routes = [
   {
     path: ':id',
     /**
-     * ⚠️ DEMONSTRAÇÃO: troque `PessoaDetalheDemo` pela implementação da API
-     * quando os endpoints de detalhe existirem (ver data/pessoa-detalhe-fonte.ts).
+     * Cadastro do associado pela API (quando DETALHE_API estiver configurada);
+     * o restante ainda é demonstração. Ver data/pessoa-detalhe-integrada.ts.
      */
-    providers: [{ provide: PessoaDetalheFonte, useClass: PessoaDetalheDemo }],
+    providers: [{ provide: PessoaDetalheFonte, useClass: PessoaDetalheIntegrada }],
     children: [
       {
         path: '',

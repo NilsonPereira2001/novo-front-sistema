@@ -23,7 +23,12 @@ export interface TelefoneDetalhe {
 }
 
 export interface PessoaDetalhe {
+  /** Id da Pessoa (o mesmo da lista e das rotas /pessoas/:id). */
   readonly id: number;
+  /** Id do registro em `associados`, quando a pessoa é membro. */
+  readonly associadoId?: number | null;
+  /** De onde vieram os dados: a tela avisa quando são fictícios. */
+  readonly origem: 'api' | 'demonstracao';
   readonly perfil: PerfilPessoa;
   /** Nome do tipo como vem do banco (ex.: "AFILIADO", "FUNCIONARIO"). */
   readonly tipoNome: string;
@@ -32,6 +37,8 @@ export interface PessoaDetalhe {
   readonly restricao: string | null;
   /** Imagem pronta para `<img src>` (data URL). */
   readonly foto: string | null;
+  /** QR code validador da carteira, pronto para `<img src>`. */
+  readonly qrcode?: string | null;
   /** `Instant` em ISO 8601. */
   readonly dataCadastro: string | null;
 
@@ -48,6 +55,7 @@ export interface PessoaDetalhe {
     readonly nomePai: string | null;
     readonly nomeMae: string | null;
     readonly matricula: string | null;
+    readonly tituloEleitor?: string | null;
   };
 
   readonly endereco: {
@@ -91,6 +99,12 @@ export interface PessoaDetalhe {
     readonly codigoCadastramento: string | null;
     readonly valorCredito: number | null;
     readonly indicador: PessoaRef | null;
+  };
+
+  /** Carteira do membro (`carteira_impressa`, `carteira_entregue` de Pessoa). */
+  readonly carteira?: {
+    readonly impressa: boolean | null;
+    readonly entregue: boolean | null;
   };
 
   /** Preenchido quando a pessoa foi desligada. */

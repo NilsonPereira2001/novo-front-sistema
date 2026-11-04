@@ -44,6 +44,7 @@ export function secoesDe(p: PessoaDetalhe, locale: string): Secao[] {
         { rotulo: 'Nome completo', valor: txt(ps.nome), largo: true },
         { rotulo: 'CPF', valor: formatCpf(ps.cpf) || VAZIO },
         { rotulo: 'RG', valor: txt(ps.rg) },
+        ...(ps.tituloEleitor !== undefined ? [{ rotulo: 'Título de eleitor', valor: txt(ps.tituloEleitor) }] : []),
         ...(p.perfil === 'membro' ? [{ rotulo: 'Nome de guerra', valor: txt(ps.nomeGuerra) }] : []),
         { rotulo: 'Data de nascimento', valor: data(ps.dataNascimento) },
         { rotulo: 'Sexo', valor: txt(ps.sexo) },
@@ -139,6 +140,18 @@ export function secoesDe(p: PessoaDetalhe, locale: string): Secao[] {
         a.indicador
           ? { rotulo: 'Indicado por', valor: a.indicador.nome, link: ['/pessoas', a.indicador.id] }
           : { rotulo: 'Indicado por', valor: VAZIO },
+      ],
+    });
+  }
+
+  if (p.carteira) {
+    const simNao = (v: boolean | null) => (v === null ? VAZIO : v ? 'Sim' : 'Não');
+    secoes.push({
+      titulo: `Carteira de ${TERMOS.membroMin}`,
+      icon: 'badge-check',
+      campos: [
+        { rotulo: 'Impressa', valor: simNao(p.carteira.impressa) },
+        { rotulo: 'Entregue', valor: simNao(p.carteira.entregue) },
       ],
     });
   }

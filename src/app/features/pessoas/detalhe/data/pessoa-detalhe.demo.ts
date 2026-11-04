@@ -177,7 +177,12 @@ export class PessoaDetalheDemo extends PessoaDetalheFonte {
 
   // --- Geração dos registros fictícios ---------------------------------------
 
-  private salvar(p: PessoaDetalhe): PessoaDetalhe {
+  /** Id gerado por esta demonstração (não existe no backend). */
+  protected ehFicticio(id: number): boolean {
+    return this.pessoas.get(id)?.origem === 'demonstracao';
+  }
+
+  protected salvar(p: PessoaDetalhe): PessoaDetalhe {
     this.pessoas.set(p.id, p);
     return p;
   }
@@ -207,6 +212,7 @@ export class PessoaDetalheDemo extends PessoaDetalheFonte {
 
     const base: PessoaDetalhe = {
       id,
+      origem: 'demonstracao',
       perfil,
       tipoNome: resumo?.tipo ?? (perfil === 'funcionario' ? 'FUNCIONARIO' : TERMOS.membro.toUpperCase()),
       status,
@@ -264,6 +270,7 @@ export class PessoaDetalheDemo extends PessoaDetalheFonte {
 
     return {
       ...base,
+      carteira: { impressa: true, entregue: id % 3 !== 0 },
       vinculo: {
         tipoVinculo: 'MILITAR',
         instituicao: 'Polícia Militar de Alagoas',
@@ -301,6 +308,7 @@ export class PessoaDetalheDemo extends PessoaDetalheFonte {
     const nome = resumo?.nome?.trim() || (filho ? `${FILHOS[id % FILHOS.length]} ${sobrenome}` : `Cláudia ${sobrenome}`);
     return {
       id,
+      origem: 'demonstracao',
       perfil: 'dependente',
       tipoNome: resumo?.tipo ?? 'DEPENDENTE',
       status: resumo?.status ?? 'ATIVO',
