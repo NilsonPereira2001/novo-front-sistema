@@ -180,6 +180,19 @@ Ao clicar no nome de uma pessoa na lista, abre o detalhe. É **uma tela só** pa
 - **Campos novos na tela e na ficha:** título de eleitor e carteira (impressa/entregue).
 - **Testes:** `associado.adapter.spec.ts`.
 
+**Dependentes (dados reais):** usam o `DependenteController`, com os ajustes do PR #3 do `back-novo`.
+
+- **Aba Dependentes do titular:** lista em `GET dependente/titular/{idPessoaTitular}`, com parentesco, CPF, nascimento, agregado e status. Cada nome abre o detalhe do dependente.
+- **Incluir dependente:** formulário em janela que envia `POST dependente/novo` (`DependenteNovoDTO`). Nome, CPF e parentesco são obrigatórios; o tipo de vínculo agregado é obrigatório e enviado só quando "Agregado" está marcado.
+  - O `tipoPessoa` vai como o tipo "DEPENDENTE" de `/tipo/pessoas/listar`.
+  - O `dataCadastro` não é enviado; o backend usa a data atual.
+  - CPF duplicado mostra a mensagem do servidor.
+- **Listas do formulário:** `dependente/parentesco`, `dependente/listar/tipos/agregado`, `/sexo/todos` e `/estado/civil/todos`.
+- **Detalhe do dependente:** vem de `GET dependente/listar/dependente/pessoa/{idPessoa}`, com titular, parentesco, agregado e data de inclusão.
+  - **Desligar e reativar:** usam `dependente/desligar/{id}` e `dependente/reativar/{id}`, só com confirmação, porque o backend não registra motivo para dependente.
+- **Link sem o tipo da pessoa:** quando a tela não sabe o tipo, tenta associado e, se receber 404, dependente.
+- **Arquivos:** `detalhe/data/dependente.adapter.ts`, com testes em `dependente.adapter.spec.ts`.
+
 **Arquivos (dados reais):** a aba Arquivos usa o `ArquivoPessoaController` para qualquer pessoa real (associado, funcionário ou dependente); só as pessoas inventadas pela demonstração continuam de exemplo.
 
 - **Rotas:** `GET files/pessoa/{idPessoa}` lista, `POST files/upload` envia (multipart com `pessoaId`, `arquivo`, `departamentoId` e `nome`), `GET files/api/file/{id}` baixa e `DELETE files/{id}` remove (PR #2 do `back-novo`).
@@ -192,7 +205,7 @@ Ao clicar no nome de uma pessoa na lista, abre o detalhe. É **uma tela só** pa
 **Rota do detalhe:** `GET /associado/pessoa/{idPessoa}` (PR #1 do `back-novo`), configurada em `DETALHE_API`, no arquivo `detalhe/data/pessoa-detalhe-integrada.ts`. Ela recebe o **id da Pessoa**, o mesmo da lista.
 
 - **Cadastro de associado:** vem do servidor, com o aviso "Integração parcial".
-- **Continuam de demonstração:** cadastro de funcionário e dependente, convênios, indicações, dependentes, os demais documentos e as ações de desligar e reativar.
+- **Continuam de demonstração:** cadastro de funcionário, convênios, indicações, os demais documentos e desligar/reativar do associado.
 - **404:** a tela mostra "Cadastro não encontrado".
 - **Formatos aceitos:** o adaptador lê as duas versões da entidade, com `Instant`/`LocalDate` ou com `Date`, foto em `imgPerfil` ou em `foto`, e `Conta` com `numero_conta`/`pix`/`operacao` ou com os nomes do DTO.
 

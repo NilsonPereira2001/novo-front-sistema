@@ -9,6 +9,8 @@ import {
   DependenteResumo,
   DocumentoGerado,
   Indicacao,
+  NovoDependente,
+  OpcoesDependente,
   PessoaDetalhe,
   TipoDocumento,
 } from '../models/pessoa-detalhe.model';
@@ -34,6 +36,10 @@ export abstract class PessoaDetalheFonte {
   abstract convenios(id: number): Observable<ConvenioDoMembro[]>;
   abstract indicacoes(id: number): Observable<Indicacao[]>;
   abstract dependentes(id: number): Observable<DependenteResumo[]>;
+  /** Listas do formulário de inclusão de dependente. */
+  abstract opcoesDependente(): Observable<OpcoesDependente>;
+  /** Inclui um dependente para o titular (id da Pessoa); a tela recarrega a lista. */
+  abstract incluirDependente(idTitular: number, dados: NovoDependente): Observable<void>;
 
   abstract arquivos(id: number): Observable<ArquivoPessoa[]>;
   /** Categorias para classificar o arquivo no envio (no backend: departamentos). */

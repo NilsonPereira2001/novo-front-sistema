@@ -351,3 +351,10 @@
     height: 1rem;
   }
 }
+
+// Barra de ações acima de uma lista dentro de aba
+.lista-barra {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-4);
+}

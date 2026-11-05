@@ -1,16 +1,33 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, catchError, forkJoin, map, switchMap, throwError } from 'rxjs';
 
 import { apiUrl } from '../../../../core/http/api-url';
 import { UnexpectedResponseError } from '../../../../core/http/load-error';
 import { Opcao, toOpcao } from '../../../../shared/data/opcao.model';
 import { isRecord } from '../../../../shared/utils/json-read';
 import { PessoaDTO } from '../../models/pessoa.dto';
-import { ArquivoPessoa, DocumentoGerado, PessoaDetalhe, TipoDocumento } from '../models/pessoa-detalhe.model';
+import {
+  ArquivoPessoa,
+  DadosDesligamento,
+  DependenteResumo,
+  DocumentoGerado,
+  NovoDependente,
+  OpcoesDependente,
+  PessoaDetalhe,
+  TipoDocumento,
+} from '../models/pessoa-detalhe.model';
 import { perfilDoTipo } from '../models/perfil-config';
 import { ARQUIVOS_API, ordenarArquivos, toArquivoPessoa, toUploadBody } from './arquivo.adapter';
+import { CadastroLookupsService } from '../../cadastro-membro/data/cadastro-lookups.service';
+import { normalizeKey } from '../../../../shared/utils/text';
 import { toPessoaDetalheDeAssociado } from './associado.adapter';
+import {
+  DEPENDENTES_API,
+  toDependenteResumo,
+  toNovoDependentePayload,
+  toPessoaDetalheDeDependente,
+} from './dependente.adapter';
 import { PessoaDetalheDemo } from './pessoa-detalhe.demo';
 
 /**
@@ -34,32 +51,139 @@ export const DETALHE_API = {
 };
 
 /**
- * Fonte usada pela tela: dados cadastrais e ficha em PDF do associado e os
- * arquivos de qualquer pessoa vêm da API; funcionário,
- * dependente, abas, demais documentos e ações seguem na demonstração até terem
- * endpoints próprios.
+ * Fonte usada pela tela. Da API: cadastro e ficha em PDF do associado,
+ * cadastro do dependente (com desligar/reativar), dependentes do titular e
+ * inclusão de dependente, e arquivos de qualquer pessoa. Funcionário,
+ * convênios, indicações, demais documentos e desligar/reativar do associado
+ * seguem na demonstração até terem endpoints próprios.
  */
 @Injectable()
 export class PessoaDetalheIntegrada extends PessoaDetalheDemo {
   private readonly http = inject(HttpClient);
 
+  private readonly lookups = inject(CadastroLookupsService);
+
+  /**
+   * Associado → `associado/pessoa/{id}`; dependente → `dependente/listar/dependente/pessoa/{id}`;
+   * funcionário → demonstração. Sem a linha da lista (link ou URL direta),
+   * tenta associado e, se 404, dependente.
+   */
   override detalhe(id: number, resumo?: PessoaDTO | null): Observable<PessoaDetalhe> {
-    const rota = DETALHE_API.associadoPorPessoa;
-    const perfil = resumo ? perfilDoTipo(resumo.tipo) : 'membro';
     // Registros criados pela demonstração (dependentes/indicados fictícios) não existem no backend.
-    if (!rota || perfil !== 'membro' || this.ehFicticio(id)) {
+    if (!DETALHE_API.associadoPorPessoa || this.ehIdInventado(id)) {
       return super.detalhe(id, resumo);
     }
-    return this.http.get<unknown>(apiUrl(rota(id))).pipe(
+    const perfil = resumo ? perfilDoTipo(resumo.tipo) : null;
+    if (perfil === 'funcionario') {
+      return super.detalhe(id, resumo);
+    }
+    if (perfil === 'dependente') {
+      return this.buscarDependente(id);
+    }
+    if (perfil === 'membro') {
+      return this.buscarAssociado(id);
+    }
+    return this.buscarAssociado(id).pipe(
+      catchError((erro: unknown) =>
+        erro instanceof HttpErrorResponse && erro.status === 404 ? this.buscarDependente(id) : throwError(() => erro),
+      ),
+    );
+  }
+
+  private buscarAssociado(id: number): Observable<PessoaDetalhe> {
+    return this.http.get<unknown>(apiUrl(DETALHE_API.associadoPorPessoa!(id))).pipe(
+      map((raw) => this.guardar(toPessoaDetalheDeAssociado(raw))),
+    );
+  }
+
+  private buscarDependente(id: number): Observable<PessoaDetalhe> {
+    return this.http.get<unknown>(apiUrl(DEPENDENTES_API.porPessoa(id))).pipe(
+      map((raw) => this.guardar(toPessoaDetalheDeDependente(raw))),
+    );
+  }
+
+  /** Guarda para as abas/ações de demonstração operarem sobre os dados reais. */
+  private guardar(detalhe: PessoaDetalhe | null): PessoaDetalhe {
+    if (!detalhe) {
+      throw new UnexpectedResponseError();
+    }
+    return this.salvar(detalhe);
+  }
+
+  // --- Dependentes (DependenteController) ------------------------------------------
+
+  override dependentes(id: number): Observable<DependenteResumo[]> {
+    if (this.ehIdInventado(id) || this.registrado(id)?.origem !== 'api') {
+      return super.dependentes(id);
+    }
+    return this.http.get<unknown>(apiUrl(DEPENDENTES_API.porTitular(id))).pipe(
       map((raw) => {
-        const detalhe = toPessoaDetalheDeAssociado(raw);
-        if (!detalhe) {
+        if (!Array.isArray(raw)) {
           throw new UnexpectedResponseError();
         }
-        // Guarda para as abas/ações de demonstração operarem sobre os dados reais.
-        return this.salvar(detalhe);
+        return raw
+          .map(toDependenteResumo)
+          .filter((d): d is DependenteResumo => d !== null)
+          .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
       }),
     );
+  }
+
+  override opcoesDependente(): Observable<OpcoesDependente> {
+    const lista = (url: string) =>
+      this.http.get<unknown>(apiUrl(url)).pipe(
+        map((raw) =>
+          (Array.isArray(raw) ? raw : [])
+            .filter(isRecord)
+            .map((r) => toOpcao(r, ['nome']))
+            .filter((o): o is Opcao => o !== null),
+        ),
+      );
+    return forkJoin({
+      parentescos: lista(DEPENDENTES_API.parentescos),
+      tiposAgregado: lista(DEPENDENTES_API.tiposAgregado),
+      sexos: this.lookups.sexos(),
+      estadosCivis: this.lookups.estadosCivis(),
+      tiposPessoa: this.lookups.tiposPessoa(),
+    }).pipe(
+      map(({ tiposPessoa, ...resto }) => ({
+        ...resto,
+        idTipoDependente: tiposPessoa.find((t) => normalizeKey(t.label).startsWith('DEPENDENTE'))?.id ?? null,
+      })),
+    );
+  }
+
+  override incluirDependente(idTitular: number, dados: NovoDependente): Observable<void> {
+    if (this.ehIdInventado(idTitular) || this.registrado(idTitular)?.origem !== 'api') {
+      return super.incluirDependente(idTitular, dados);
+    }
+    return this.opcoesDependente().pipe(
+      switchMap((op) =>
+        this.http.post(apiUrl(DEPENDENTES_API.novo), toNovoDependentePayload(dados, idTitular, op.idTipoDependente)),
+      ),
+      map(() => undefined),
+    );
+  }
+
+  /** Dependente real: `dependente/desligar/{id}` (sem motivo no backend). Demais perfis: demonstração. */
+  override desligar(id: number, dados: DadosDesligamento): Observable<PessoaDetalhe> {
+    const atual = this.registrado(id);
+    if (atual?.origem === 'api' && atual.perfil === 'dependente' && atual.dependenteId) {
+      return this.http
+        .post(apiUrl(DEPENDENTES_API.desligar(atual.dependenteId)), null)
+        .pipe(switchMap(() => this.buscarDependente(id)));
+    }
+    return super.desligar(id, dados);
+  }
+
+  override reativar(id: number): Observable<PessoaDetalhe> {
+    const atual = this.registrado(id);
+    if (atual?.origem === 'api' && atual.perfil === 'dependente' && atual.dependenteId) {
+      return this.http
+        .post(apiUrl(DEPENDENTES_API.reativar(atual.dependenteId)), null)
+        .pipe(switchMap(() => this.buscarDependente(id)));
+    }
+    return super.reativar(id);
   }
 
   /** Ficha do associado real: PDF gerado pelo backend. Demais documentos seguem na prévia. */

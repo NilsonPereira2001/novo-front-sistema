@@ -31,6 +31,7 @@ const hojeIso = () => {
           sistema e pode ser reativado depois.
         </p>
 
+        @if (comMotivo()) {
         <app-text-field label="Data do desligamento" type="date" [control]="form.controls.data" [required]="true" />
 
         <div class="field" [class.field--invalid]="motivoInvalido()">
@@ -52,6 +53,7 @@ const hojeIso = () => {
           </p>
           <app-field-error [control]="form.controls.motivo" errorId="motivo-desligamento-erro" />
         </div>
+        }
 
         @if (erro()) {
           <app-alert tone="danger" heading="Não foi possível desligar">{{ erro() }}</app-alert>
@@ -94,6 +96,8 @@ export class DesligarDialog {
   readonly rotulo = input.required<string>();
   readonly enviando = input(false);
   readonly erro = input<string | null>(null);
+  /** false: só confirmação (dependente — o backend não registra data nem motivo). */
+  readonly comMotivo = input(true);
   readonly confirmar = output<DadosDesligamento>();
   readonly closed = output<void>();
 
@@ -118,6 +122,12 @@ export class DesligarDialog {
   }
 
   protected enviar(): void {
+    if (!this.comMotivo()) {
+      if (!this.enviando()) {
+        this.confirmar.emit({ data: hojeIso(), motivo: '' });
+      }
+      return;
+    }
     this.form.markAllAsTouched();
     if (this.form.invalid || this.enviando()) {
       return;

@@ -38,26 +38,66 @@ export function toPessoaDetalheDeAssociado(raw: unknown): PessoaDetalhe | null {
   if (!isRecord(raw)) {
     return null;
   }
-  const pessoa = readRecord(raw, ['pessoa']);
+  const base = dadosDaPessoa(readRecord(raw, ['pessoa']));
+  if (!base) {
+    return null; // sem a pessoa não há o que mostrar
+  }
+  const s = (...keys: string[]) => readString(raw, keys);
+
+  return {
+    ...base,
+    associadoId: readNumber(raw, ['id']),
+    perfil: base.tipoNome ? perfilDoTipo(base.tipoNome) : 'membro',
+    tipoNome: base.tipoNome ?? 'ASSOCIADO',
+    status: s('status') ?? base.status,
+    restricao: s('restricao') ?? base.restricao,
+
+    vinculo: {
+      tipoVinculo: rotulo(raw['tipoVinculo']),
+      instituicao: rotulo(raw['instituicao']),
+      unidade: rotulo(raw['unidade']),
+      graduacao: rotulo(raw['graduacao']),
+      quadro: rotulo(raw['quadro']),
+      dataIncorporacao: dataLocal(raw, ['data_incorporacao', 'dataIncorporacao']),
+      empresaConveniada: rotulo(raw['empresaConveniada'], LABELS.empresa),
+    },
+
+    adesao: {
+      tipoSocio: rotulo(raw['tipoSocio']),
+      formaPagamento: rotulo(raw['formaPagamento'], LABELS.formaPagamento),
+      primeiraAdesao: instante(raw, ['primeiraAdesao', 'primeira_adesao']),
+      ultimaAdesao: instante(raw, ['ultimaAdesao', 'ultima_adesao']),
+      codigoCadastramento: s('codigoCadastramento', 'codigo_cadastramento'),
+      valorCredito: readNumber(raw, ['valorCredito', 'valor_credito']),
+      indicador: indicador(raw['associadoIndicador']),
+    },
+
+    desligamento: desligamento(raw),
+  };
+}
+
+/** Partes de PessoaDetalhe que vêm só da entidade `Pessoa`. */
+export type DadosDaPessoa = Omit<PessoaDetalhe, 'perfil' | 'tipoNome'> & { readonly tipoNome: string | null };
+
+/**
+ * Lê a entidade `Pessoa` (comum a associado e dependente). `null` sem id ou nome.
+ */
+export function dadosDaPessoa(pessoa: JsonRecord | null): DadosDaPessoa | null {
   const id = pessoa ? readNumber(pessoa, ['id']) : null;
   const nome = pessoa ? readString(pessoa, ['nome']) : null;
   if (!pessoa || id === null || !Number.isSafeInteger(id) || id <= 0 || !nome) {
-    return null; // sem a pessoa não há o que mostrar
+    return null;
   }
-
   const s = (src: JsonRecord | null, ...keys: string[]) => (src ? readString(src, keys) : null);
-  const tipoNome = rotulo(pessoa['tipo']);
   const endereco = readRecord(pessoa, ['endereco']);
   const conta = readRecord(pessoa, ['conta']);
 
   return {
     id,
-    associadoId: readNumber(raw, ['id']),
     origem: 'api',
-    perfil: tipoNome ? perfilDoTipo(tipoNome) : 'membro',
-    tipoNome: tipoNome ?? 'ASSOCIADO',
-    status: s(raw, 'status') ?? s(pessoa, 'status'),
-    restricao: s(raw, 'restricao') ?? s(pessoa, 'restricao'),
+    tipoNome: rotulo(pessoa['tipo']),
+    status: s(pessoa, 'status'),
+    restricao: s(pessoa, 'restricao'),
     foto: imagemBase64(pessoa['imgPerfil'] ?? pessoa['foto']),
     qrcode: imagemBase64(pessoa['qrcodeValidador']),
     dataCadastro: instante(pessoa, ['data_cadastro', 'dataCadastro']),
@@ -78,17 +118,18 @@ export function toPessoaDetalheDeAssociado(raw: unknown): PessoaDetalhe | null {
       tituloEleitor: s(pessoa, 'tituloEleitor', 'titulo_eleitor'),
     },
 
-    endereco: endereco
-      ? {
-          cep: s(endereco, 'cep'),
-          logradouro: s(endereco, 'logradouro'),
-          numero: s(endereco, 'numero'),
-          complemento: s(endereco, 'complemento'),
-          bairro: s(endereco, 'bairro'),
-          cidade: s(endereco, 'cidade'),
-          estado: rotulo(endereco['estado'], LABELS.estado),
-        }
-      : null,
+    endereco:
+      endereco && ['cep', 'logradouro', 'cidade', 'bairro'].some((k) => s(endereco, k))
+        ? {
+            cep: s(endereco, 'cep'),
+            logradouro: s(endereco, 'logradouro'),
+            numero: s(endereco, 'numero'),
+            complemento: s(endereco, 'complemento'),
+            bairro: s(endereco, 'bairro'),
+            cidade: s(endereco, 'cidade'),
+            estado: rotulo(endereco['estado'], LABELS.estado),
+          }
+        : null,
 
     telefones: telefones(pessoa['telefones']),
 
@@ -108,35 +149,13 @@ export function toPessoaDetalheDeAssociado(raw: unknown): PessoaDetalhe | null {
       impressa: booleano(pessoa['carteiraImpressa']),
       entregue: booleano(pessoa['carteiraEntregue']),
     },
-
-    vinculo: {
-      tipoVinculo: rotulo(raw['tipoVinculo']),
-      instituicao: rotulo(raw['instituicao']),
-      unidade: rotulo(raw['unidade']),
-      graduacao: rotulo(raw['graduacao']),
-      quadro: rotulo(raw['quadro']),
-      dataIncorporacao: dataLocal(raw, ['data_incorporacao', 'dataIncorporacao']),
-      empresaConveniada: rotulo(raw['empresaConveniada'], LABELS.empresa),
-    },
-
-    adesao: {
-      tipoSocio: rotulo(raw['tipoSocio']),
-      formaPagamento: rotulo(raw['formaPagamento'], LABELS.formaPagamento),
-      primeiraAdesao: instante(raw, ['primeiraAdesao', 'primeira_adesao']),
-      ultimaAdesao: instante(raw, ['ultimaAdesao', 'ultima_adesao']),
-      codigoCadastramento: s(raw, 'codigoCadastramento', 'codigo_cadastramento'),
-      valorCredito: readNumber(raw, ['valorCredito', 'valor_credito']),
-      indicador: indicador(raw['associadoIndicador']),
-    },
-
-    desligamento: desligamento(raw),
   };
 }
 
 // --- Leitores ------------------------------------------------------------------
 
 /** Texto de uma entidade auxiliar (`{ id, nome }`, `{ id, sexo }`...). */
-function rotulo(value: unknown, keys?: readonly string[]): string | null {
+export function rotulo(value: unknown, keys?: readonly string[]): string | null {
   if (!isRecord(value)) {
     return null;
   }

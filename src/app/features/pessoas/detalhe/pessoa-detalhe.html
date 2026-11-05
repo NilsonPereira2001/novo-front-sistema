@@ -6,8 +6,8 @@
 @if (detalhe()?.origem === 'api') {
   @if (demonstracao) {
     <app-alert tone="info" heading="Integração parcial">
-      Dados cadastrais, ficha em PDF e arquivos vêm do servidor. Convênios, indicações,
-      dependentes, os demais documentos e as ações de desligar e reativar ainda são de demonstração.
+      Dados cadastrais, dependentes, ficha em PDF e arquivos vêm do servidor. Convênios,
+      indicações, os demais documentos e desligar/reativar do associado ainda são de demonstração.
     </app-alert>
   }
 } @else if (demonstracao) {
@@ -140,7 +140,7 @@
 
   @if (d.desligamento; as dl) {
     <app-alert tone="danger" heading="Desligado">
-      Desde {{ (dl.data | date: 'dd/MM/yyyy') ?? '—' }}. Motivo: {{ dl.motivo || '—' }}
+      Desde {{ (dl.data | date: 'dd/MM/yyyy') ?? '—' }}.@if (dl.motivo) { Motivo: {{ dl.motivo }}}
     </app-alert>
   }
 
@@ -182,7 +182,7 @@
             <app-aba-indicacoes [pessoaId]="d.id" />
           }
           @case ('dependentes') {
-            <app-aba-dependentes [pessoaId]="d.id" />
+            <app-aba-dependentes [pessoaId]="d.id" [nomeTitular]="d.pessoais.nome" />
           }
           @case ('arquivos') {
             <app-aba-arquivos [pessoaId]="d.id" />
@@ -201,6 +201,7 @@
       [open]="desligarAberto()"
       [nome]="d.pessoais.nome"
       [rotulo]="pf.rotulo"
+      [comMotivo]="pf.desligarComMotivo ?? false"
       [enviando]="processando()"
       [erro]="erroAcao()"
       (confirmar)="desligar($event)"

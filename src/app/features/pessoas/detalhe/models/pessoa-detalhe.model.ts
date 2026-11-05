@@ -27,6 +27,8 @@ export interface PessoaDetalhe {
   readonly id: number;
   /** Id do registro em `associados`, quando a pessoa é membro. */
   readonly associadoId?: number | null;
+  /** Id do registro em `dependentes_pessoas`, quando a pessoa é dependente. */
+  readonly dependenteId?: number | null;
   /** De onde vieram os dados: a tela avisa quando são fictícios. */
   readonly origem: 'api' | 'demonstracao';
   readonly perfil: PerfilPessoa;
@@ -122,8 +124,13 @@ export interface PessoaDetalhe {
     readonly dataAdmissao: string | null;
   };
 
-  /** Só para dependentes. */
-  readonly titular?: PessoaRef & { readonly parentesco: string | null };
+  /** Só para dependentes (entidade `DependentePessoa`). */
+  readonly titular?: PessoaRef & {
+    readonly parentesco: string | null;
+    readonly agregado?: boolean | null;
+    readonly vinculoAgregado?: string | null;
+    readonly dataInclusao?: string | null;
+  };
 }
 
 export interface ConvenioDoMembro {
@@ -145,12 +152,45 @@ export interface Indicacao {
 }
 
 export interface DependenteResumo {
+  /** Id da Pessoa do dependente (link para o detalhe). */
   readonly id: number;
   readonly nome: string;
   readonly cpf: string | null;
   readonly parentesco: string | null;
   readonly dataNascimento: string | null;
   readonly status: string | null;
+  readonly agregado?: boolean | null;
+}
+
+/** Dados da inclusão de dependente (formulário → DependenteNovoDTO). */
+export interface NovoDependente {
+  readonly nome: string;
+  readonly cpf: string;
+  readonly apelido: string;
+  /** YYYY-MM-DD ou vazio. */
+  readonly dataNascimento: string;
+  readonly idSexo: number | null;
+  readonly idEstadoCivil: number | null;
+  readonly idParentesco: number;
+  readonly naturalidade: string;
+  readonly email: string;
+  readonly agregado: boolean;
+  readonly idVinculoAgregado: number | null;
+}
+
+export interface OpcaoSimples {
+  readonly id: number;
+  readonly label: string;
+}
+
+/** Listas do formulário de inclusão de dependente. */
+export interface OpcoesDependente {
+  readonly parentescos: readonly OpcaoSimples[];
+  readonly tiposAgregado: readonly OpcaoSimples[];
+  readonly sexos: readonly OpcaoSimples[];
+  readonly estadosCivis: readonly OpcaoSimples[];
+  /** Id do TipoPessoa "DEPENDENTE" (null se não existir no cadastro). */
+  readonly idTipoDependente: number | null;
 }
 
 export interface ArquivoPessoa {

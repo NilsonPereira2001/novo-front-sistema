@@ -3,12 +3,14 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal } f
 import { RouterLink } from '@angular/router';
 
 import { TERMOS } from '../../../../core/config/terminologia';
+import { Alert } from '../../../../shared/components/alert/alert';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { LoadError } from '../../../../shared/components/load-error/load-error';
 import { loadFrom } from '../../../../shared/data/load-state';
 import { CpfPipe } from '../../../../shared/pipes/cpf.pipe';
 import { DisplayValuePipe } from '../../../../shared/pipes/display-value.pipe';
 import { normalizeKey } from '../../../../shared/utils/text';
+import { IncluirDependenteDialog } from '../components/incluir-dependente-dialog';
 import { PessoaDetalheFonte } from '../data/pessoa-detalhe-fonte';
 
 /** Cor da bolinha de status (somente visual; o texto vem do backend). */
@@ -162,8 +164,17 @@ export class AbaIndicacoes {
 // --- Dependentes --------------------------------------------------------------
 @Component({
   selector: 'app-aba-dependentes',
-  imports: [DatePipe, RouterLink, Icon, LoadError, CpfPipe, DisplayValuePipe],
+  imports: [DatePipe, RouterLink, Alert, Icon, LoadError, CpfPipe, DisplayValuePipe, IncluirDependenteDialog],
   template: `
+    <div class="lista-barra">
+      <button type="button" class="btn btn--primary btn--sm" (click)="incluirAberto.set(true)">
+        <app-icon name="user-plus" /> Incluir dependente
+      </button>
+    </div>
+    @if (aviso(); as texto) {
+      <app-alert tone="success">{{ texto }}</app-alert>
+    }
+
     @switch (estado().status) {
       @case ('error') {
         <app-load-error [kind]="erro()!" (retry)="recarregar()" />
@@ -174,6 +185,9 @@ export class AbaIndicacoes {
             <span class="state__icon"><app-icon name="users" /></span>
             <p class="state__title">Nenhum dependente</p>
             <p class="state__text">Este {{ termos.membroMin }} não tem dependentes cadastrados.</p>
+            <button type="button" class="btn btn--secondary btn--sm" (click)="incluirAberto.set(true)">
+              <app-icon name="user-plus" /> Incluir o primeiro
+            </button>
           </div>
         } @else {
           <div class="table-scroll">
@@ -185,16 +199,18 @@ export class AbaIndicacoes {
                   <th scope="col">Parentesco</th>
                   <th scope="col">CPF</th>
                   <th scope="col">Nascimento</th>
+                  <th scope="col">Agregado</th>
                   <th scope="col">Status</th>
                 </tr>
               </thead>
               <tbody>
                 @for (d of itens(); track d.id) {
                   <tr>
-                    <td><a class="person-cell" [routerLink]="['/pessoas', d.id]">{{ d.nome }}</a></td>
+                    <td><a class="person-cell" [routerLink]="['/pessoas', d.id]" [state]="{ resumo: { id: d.id, nome: d.nome, cpf: d.cpf, tipo: 'DEPENDENTE', status: d.status } }">{{ d.nome }}</a></td>
                     <td>{{ d.parentesco | displayValue }}</td>
                     <td class="cell-mono">{{ d.cpf | cpf }}</td>
                     <td class="cell-mono">{{ (d.dataNascimento | date: 'dd/MM/yyyy') ?? '—' }}</td>
+                    <td>{{ d.agregado === true ? 'Sim' : d.agregado === false ? 'Não' : '—' }}</td>
                     <td><span class="status" [attr.data-tone]="tom(d.status)"><span class="status__dot"></span>{{ d.status | displayValue }}</span></td>
                   </tr>
                 }
@@ -209,11 +225,28 @@ export class AbaIndicacoes {
         </div>
       }
     }
+
+    <app-incluir-dependente-dialog
+      [open]="incluirAberto()"
+      [idTitular]="pessoaId()"
+      [nomeTitular]="nomeTitular()"
+      (incluido)="incluiu($event)"
+      (closed)="incluirAberto.set(false)"
+    />
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AbaDependentes {
   readonly pessoaId = input.required<number>();
+  readonly nomeTitular = input.required<string>();
+  protected readonly incluirAberto = signal(false);
+  protected readonly aviso = signal<string | null>(null);
+
+  protected incluiu(nome: string): void {
+    this.incluirAberto.set(false);
+    this.aviso.set(`${nome} foi incluído(a) como dependente.`);
+    this.recarregar();
+  }
   private readonly fonte = inject(PessoaDetalheFonte);
   protected readonly termos = TERMOS;
   protected readonly skeleton = SKELETON;

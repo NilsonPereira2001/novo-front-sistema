@@ -64,6 +64,10 @@ export function secoesDe(p: PessoaDetalhe, locale: string): Secao[] {
       campos: [
         { rotulo: `${TERMOS.membro} titular`, valor: p.titular.nome, link: ['/pessoas', p.titular.id] },
         { rotulo: 'Parentesco', valor: txt(p.titular.parentesco) },
+        ...(p.titular.agregado !== undefined && p.titular.agregado !== null
+          ? [{ rotulo: 'Agregado', valor: p.titular.agregado ? `Sim${p.titular.vinculoAgregado ? ` (${p.titular.vinculoAgregado})` : ''}` : 'Não' }]
+          : []),
+        ...(p.titular.dataInclusao ? [{ rotulo: 'Incluído em', valor: data(p.titular.dataInclusao) }] : []),
       ],
     });
   }

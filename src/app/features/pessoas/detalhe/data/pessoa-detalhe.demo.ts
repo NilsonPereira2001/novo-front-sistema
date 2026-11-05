@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, delay, of, throwError } from 'rxjs';
+import { Observable, delay, map, of, throwError } from 'rxjs';
 
 import { TERMOS } from '../../../../core/config/terminologia';
 import { onlyDigits } from '../../../../shared/utils/cpf';
@@ -12,6 +12,8 @@ import {
   DependenteResumo,
   DocumentoGerado,
   Indicacao,
+  NovoDependente,
+  OpcoesDependente,
   PerfilPessoa,
   PessoaDetalhe,
   TipoDocumento,
@@ -67,6 +69,9 @@ export class PessoaDetalheDemo extends PessoaDetalheFonte {
   private proximoArquivo = 1;
   /** Ids que só existem nesta demonstração (dependentes e indicados fictícios). */
   private readonly inventados = new Set<number>();
+  /** Dependentes incluídos pela tela durante a demonstração, por titular. */
+  private readonly incluidos = new Map<number, number[]>();
+  private proximoDependente = 990000;
 
   detalhe(id: number, resumo?: PessoaDTO | null): Observable<PessoaDetalhe> {
     return espera(this.obter(id, resumo));
@@ -113,7 +118,7 @@ export class PessoaDetalheDemo extends PessoaDetalheFonte {
       return espera([]);
     }
     return espera(
-      this.idsDependentes(id).map((depId) => {
+      [...this.idsDependentes(id), ...(this.incluidos.get(id) ?? [])].map((depId) => {
         const d = this.obter(depId);
         return {
           id: d.id,
@@ -123,6 +128,54 @@ export class PessoaDetalheDemo extends PessoaDetalheFonte {
           dataNascimento: d.pessoais.dataNascimento,
           status: d.status,
         };
+      }),
+    );
+  }
+
+  opcoesDependente(): Observable<OpcoesDependente> {
+    const lista = (...labels: string[]) => labels.map((label, i) => ({ id: i + 1, label }));
+    return espera({
+      parentescos: lista('Filho(a)', 'Cônjuge', 'Pai', 'Mãe', 'Enteado(a)'),
+      tiposAgregado: lista('Universitário', 'Pessoa com deficiência'),
+      sexos: lista('Masculino', 'Feminino'),
+      estadosCivis: lista('Solteiro(a)', 'Casado(a)', 'Divorciado(a)', 'Viúvo(a)'),
+      idTipoDependente: 2,
+    });
+  }
+
+  incluirDependente(idTitular: number, dados: NovoDependente): Observable<void> {
+    return this.opcoesDependente().pipe(
+      map((op) => {
+        const titular = this.obter(idTitular);
+        const id = this.proximoDependente++;
+        const label = (lista: readonly { id: number; label: string }[], idOpcao: number | null) =>
+          lista.find((o) => o.id === idOpcao)?.label ?? null;
+        this.inventados.add(id);
+        this.incluidos.set(idTitular, [...(this.incluidos.get(idTitular) ?? []), id]);
+        const base = this.gerarDependente(id, null, { id: idTitular, nome: titular.pessoais.nome });
+        this.salvar({
+          ...base,
+          pessoais: {
+            ...base.pessoais,
+            nome: dados.nome.trim(),
+            cpf: onlyDigits(dados.cpf),
+            nomeGuerra: dados.apelido.trim() || null,
+            dataNascimento: dados.dataNascimento || null,
+            sexo: label(op.sexos, dados.idSexo),
+            estadoCivil: label(op.estadosCivis, dados.idEstadoCivil),
+            email: dados.email.trim() || null,
+            naturalidade: dados.naturalidade.trim() || null,
+            nomePai: null,
+          },
+          titular: {
+            id: idTitular,
+            nome: titular.pessoais.nome,
+            parentesco: label(op.parentescos, dados.idParentesco),
+            agregado: dados.agregado,
+            vinculoAgregado: dados.agregado ? label(op.tiposAgregado, dados.idVinculoAgregado) : null,
+            dataInclusao: new Date().toISOString(),
+          },
+        });
       }),
     );
   }
@@ -196,11 +249,6 @@ export class PessoaDetalheDemo extends PessoaDetalheFonte {
   /** Pessoa criada pela demonstração: não existe no backend. */
   protected ehIdInventado(id: number): boolean {
     return this.inventados.has(id);
-  }
-
-  /** Id gerado por esta demonstração (não existe no backend). */
-  protected ehFicticio(id: number): boolean {
-    return this.pessoas.get(id)?.origem === 'demonstracao';
   }
 
   protected salvar(p: PessoaDetalhe): PessoaDetalhe {
@@ -318,7 +366,7 @@ export class PessoaDetalheDemo extends PessoaDetalheFonte {
     };
   }
 
-  private gerarDependente(
+  protected gerarDependente(
     id: number,
     resumo?: PessoaDTO | null,
     titular?: { id: number; nome: string },

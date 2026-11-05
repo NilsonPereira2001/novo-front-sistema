@@ -29,6 +29,8 @@ export interface PerfilConfig {
   readonly documentos: readonly DocumentoConfig[];
   /** Mostra Desligar/Reativar. */
   readonly podeDesligar: boolean;
+  /** Desligar pede data e motivo (associado). Dependente: só confirmação. */
+  readonly desligarComMotivo?: boolean;
 }
 
 const ABA = {
@@ -62,18 +64,20 @@ export const PERFIS: Readonly<Record<PerfilPessoa, PerfilConfig>> = {
     abas: [ABA.dados, ABA.convenios, ABA.indicacoes, ABA.dependentes, ABA.arquivos],
     documentos: [DOC.declaracao, DOC.ficha, DOC.adesao, DOC.desligamento],
     podeDesligar: true,
+    desligarComMotivo: true,
   },
   funcionario: {
     rotulo: 'Funcionário',
     abas: [ABA.dados, ABA.arquivos],
     documentos: [DOC.declaracao, DOC.fichaFuncionario],
     podeDesligar: true,
+    desligarComMotivo: true,
   },
   dependente: {
     rotulo: 'Dependente',
     abas: [ABA.dados, ABA.arquivos],
     documentos: [DOC.fichaDependente],
-    podeDesligar: false,
+    podeDesligar: true,
   },
 };
 
