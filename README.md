@@ -180,10 +180,12 @@ Ao clicar no nome de uma pessoa na lista, abre o detalhe. É **uma tela só** pa
 - **Campos novos na tela e na ficha:** título de eleitor e carteira (impressa/entregue).
 - **Testes:** `associado.adapter.spec.ts`.
 
+**Ficha em PDF:** "Ficha do associado", no menu Documentos, chama `POST /ficha/associado/3/{idAssociado}` (`ficha_associado.jasper`) e mostra o PDF com Imprimir e Baixar. O backend ignora o `idEmpresa` da rota e usa a empresa 3, que está fixa no `AssociadoReport`.
+
 **Rota do detalhe:** `GET /associado/pessoa/{idPessoa}` (PR #1 do `back-novo`), configurada em `DETALHE_API`, no arquivo `detalhe/data/pessoa-detalhe-integrada.ts`. Ela recebe o **id da Pessoa**, o mesmo da lista.
 
 - **Cadastro de associado:** vem do servidor, com o aviso "Integração parcial".
-- **Continuam de demonstração:** funcionário, dependente, convênios, indicações, dependentes, arquivos, documentos e as ações de desligar e reativar.
+- **Continuam de demonstração:** funcionário, dependente, convênios, indicações, dependentes, arquivos, os demais documentos e as ações de desligar e reativar.
 - **404:** a tela mostra "Cadastro não encontrado".
 - **Formatos aceitos:** o adaptador lê as duas versões da entidade, com `Instant`/`LocalDate` ou com `Date`, foto em `imgPerfil` ou em `foto`, e `Conta` com `numero_conta`/`pix`/`operacao` ou com os nomes do DTO.
 

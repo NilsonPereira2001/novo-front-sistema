@@ -177,6 +177,11 @@ export class PessoaDetalheDemo extends PessoaDetalheFonte {
 
   // --- Geração dos registros fictícios ---------------------------------------
 
+  /** Registro já carregado (real ou fictício), se houver. */
+  protected registrado(id: number): PessoaDetalhe | undefined {
+    return this.pessoas.get(id);
+  }
+
   /** Id gerado por esta demonstração (não existe no backend). */
   protected ehFicticio(id: number): boolean {
     return this.pessoas.get(id)?.origem === 'demonstracao';

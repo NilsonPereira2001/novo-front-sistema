@@ -5,7 +5,7 @@ import { Observable, map } from 'rxjs';
 import { apiUrl } from '../../../../core/http/api-url';
 import { UnexpectedResponseError } from '../../../../core/http/load-error';
 import { PessoaDTO } from '../../models/pessoa.dto';
-import { PessoaDetalhe } from '../models/pessoa-detalhe.model';
+import { DocumentoGerado, PessoaDetalhe, TipoDocumento } from '../models/pessoa-detalhe.model';
 import { perfilDoTipo } from '../models/perfil-config';
 import { toPessoaDetalheDeAssociado } from './associado.adapter';
 import { PessoaDetalheDemo } from './pessoa-detalhe.demo';
@@ -21,12 +21,19 @@ export const DETALHE_API = {
   associadoPorPessoa: ((idPessoa: number) => `/associado/pessoa/${idPessoa}`) as
     | ((idPessoa: number) => string)
     | null,
+  /**
+   * `POST /ficha/associado/{idEmpresa}/{idAssociado}` → PDF (ficha_associado.jasper).
+   * Usa o id do **Associado**. O `idEmpresa` da rota não é usado pelo backend
+   * (AssociadoReport.gerarFichaAssociado busca a empresa 3 fixa); vai 3 para
+   * manter a mesma empresa.
+   */
+  fichaPdf: (idAssociado: number) => `/ficha/associado/3/${idAssociado}`,
 };
 
 /**
- * Fonte usada pela tela: os dados cadastrais do associado vêm da API (assim
- * que `DETALHE_API.associadoPorPessoa` for configurada); funcionário,
- * dependente, abas, documentos e ações seguem na demonstração até terem
+ * Fonte usada pela tela: os dados cadastrais e a ficha em PDF do associado
+ * vêm da API; funcionário,
+ * dependente, abas, demais documentos e ações seguem na demonstração até terem
  * endpoints próprios.
  */
 @Injectable()
@@ -50,5 +57,16 @@ export class PessoaDetalheIntegrada extends PessoaDetalheDemo {
         return this.salvar(detalhe);
       }),
     );
+  }
+
+  /** Ficha do associado real: PDF gerado pelo backend. Demais documentos seguem na prévia. */
+  override documento(id: number, tipo: TipoDocumento): Observable<DocumentoGerado> {
+    const atual = this.registrado(id);
+    if (tipo !== 'ficha' || atual?.origem !== 'api' || !atual.associadoId) {
+      return super.documento(id, tipo);
+    }
+    return this.http
+      .post(apiUrl(DETALHE_API.fichaPdf(atual.associadoId)), null, { responseType: 'blob' })
+      .pipe(map((arquivo): DocumentoGerado => ({ formato: 'pdf', arquivo })));
   }
 }
