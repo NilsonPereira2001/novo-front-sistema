@@ -85,7 +85,7 @@ describe('dependente.adapter', () => {
       3,
     );
     expect(payload).toEqual({
-      nome: 'Lucas Moura',
+      nome: 'LUCAS MOURA',
       cpf: '11144477735',
       dataNascimento: '2012-09-03',
       tipoPessoa: { id: 3 },
@@ -116,7 +116,7 @@ describe('dependente.adapter', () => {
       2,
     );
     expect('cpf' in payload).toBe(false);
-    expect(payload['nome']).toBe('Bebê Moura');
+    expect(payload['nome']).toBe('BEBÊ MOURA');
   });
 
   it('descreve a relação com o titular', () => {

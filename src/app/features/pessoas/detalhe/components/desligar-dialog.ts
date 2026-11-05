@@ -10,6 +10,7 @@ import {
   isoDateValidator,
   notFutureDateValidator,
 } from '../../../../shared/validators/brazil.validators';
+import { maiusculas } from '../../../../shared/utils/text';
 import { requiredTrimmed } from '../../../../shared/validators/text.validators';
 import { DadosDesligamento } from '../models/pessoa-detalhe.model';
 
@@ -83,6 +84,7 @@ const hojeIso = () => {
     }
     .desligar__motivo {
       height: auto;
+      text-transform: uppercase;
       padding: var(--space-3);
       resize: vertical;
       font-family: inherit;
@@ -133,6 +135,6 @@ export class DesligarDialog {
       return;
     }
     const { data, motivo } = this.form.getRawValue();
-    this.confirmar.emit({ data, motivo: motivo.trim() });
+    this.confirmar.emit({ data, motivo: maiusculas(motivo) });
   }
 }

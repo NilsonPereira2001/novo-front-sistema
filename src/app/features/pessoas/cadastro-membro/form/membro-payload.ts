@@ -1,4 +1,5 @@
 import { onlyDigits } from '../../../../shared/utils/cpf';
+import { maiusculas } from '../../../../shared/utils/text';
 import { FOTO_FORMATO } from '../data/cadastro-api';
 import { AssociadoNovoPayload, Referencia, TelefonePayload } from '../models/associado-novo.dto';
 import { MembroFormValue } from './membro-form';
@@ -9,6 +10,7 @@ import { MembroFormValue } from './membro-form';
  * - Não envia `id` nem `dataCadastro` (gerados pelo backend).
  * - Opcionais vazios são omitidos; `telefones` e `convenios` vão sempre como lista.
  * - Relacionamentos como `{ id }`; datas `YYYY-MM-DD`; CPF/CEP/telefone só dígitos.
+ * - Textos em MAIÚSCULAS, exceto e-mail e chave Pix.
  */
 export function toAssociadoNovoPayload(
   v: MembroFormValue,
@@ -19,37 +21,37 @@ export function toAssociadoNovoPayload(
   const payload: AssociadoNovoPayload = {
     foto: toFoto(p.foto, fotoFormato),
     cpf: onlyDigits(p.cpf),
-    nome: p.nome.trim(),
-    nomeGuerra: text(p.nomeGuerra),
+    nome: maiusculas(p.nome),
+    nomeGuerra: upper(p.nomeGuerra),
     dataNascimento: text(p.dataNascimento),
     sexo: ref(p.sexo),
     estadoCivil: ref(p.estadoCivil),
     email: text(p.email),
-    rg: text(p.rg),
-    naturalidade: text(p.naturalidade),
+    rg: upper(p.rg),
+    naturalidade: upper(p.naturalidade),
     tipoPessoa: ref(p.tipoPessoa),
 
     cep: digits(e.cep),
-    logradouro: text(e.logradouro),
-    numero: text(e.numero),
-    complemento: text(e.complemento),
+    logradouro: upper(e.logradouro),
+    numero: upper(e.numero),
+    complemento: upper(e.complemento),
     estado: ref(e.estado),
-    cidade: text(e.cidade),
-    bairro: text(e.bairro),
+    cidade: upper(e.cidade),
+    bairro: upper(e.bairro),
 
     telefones: toTelefones(v.telefones),
 
     banco: ref(b.banco),
-    tipoConta: text(b.tipoConta),
-    agencia: text(b.agencia),
-    numeroConta: text(b.numeroConta),
+    tipoConta: upper(b.tipoConta),
+    agencia: upper(b.agencia),
+    numeroConta: upper(b.numeroConta),
     tipoPix: ref(b.tipoPix),
     chavePix: text(b.chavePix),
     formaPagamento: ref(b.formaPagamento),
 
     tipoVinculo: ref(vi.tipoVinculo),
     empresaConveniada: ref(vi.empresaConveniada?.id ?? null),
-    matricula: text(vi.matricula),
+    matricula: upper(vi.matricula),
     instituicao: ref(vi.instituicao),
     unidade: ref(vi.unidade),
     graduacao: ref(vi.graduacao),
@@ -60,8 +62,8 @@ export function toAssociadoNovoPayload(
     associadoIndicador: ref(a.associadoIndicador?.id ?? null),
     convenios: [...new Set(a.convenios)].map((id) => ({ id })),
 
-    nomePai: text(f.nomePai),
-    nomeMae: text(f.nomeMae),
+    nomePai: upper(f.nomePai),
+    nomeMae: upper(f.nomeMae),
   };
 
   return withoutUndefined(payload);
@@ -69,6 +71,12 @@ export function toAssociadoNovoPayload(
 
 function text(value: string): string | undefined {
   const t = value.trim();
+  return t === '' ? undefined : t;
+}
+
+/** Texto do cadastro em MAIÚSCULAS (e-mail, chave Pix e datas ficam como estão). */
+function upper(value: string): string | undefined {
+  const t = maiusculas(value);
   return t === '' ? undefined : t;
 }
 

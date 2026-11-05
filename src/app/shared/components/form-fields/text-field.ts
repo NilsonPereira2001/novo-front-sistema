@@ -44,6 +44,8 @@ let nextId = 0;
           [attr.placeholder]="placeholder()"
           [attr.autocomplete]="autocomplete()"
           [attr.maxlength]="maxlength()"
+          [attr.autocapitalize]="emMaiusculas() ? 'characters' : null"
+          (input)="paraMaiusculas($event)"
           [attr.aria-required]="required() || null"
           [attr.aria-invalid]="invalid()"
           [attr.aria-describedby]="describedBy()"
@@ -66,6 +68,12 @@ export class TextField {
   readonly maxlength = input<number | null>(null);
   readonly hint = input<string | null>(null);
   readonly required = input(false);
+  /**
+   * Cadastros são gravados em MAIÚSCULAS: o texto é convertido enquanto se
+   * digita. Vale para campos `text` sem máscara; e-mail e data ficam de fora.
+   * Use `[maiusculas]="false"` em campos que diferenciam caixa (ex.: chave Pix).
+   */
+  readonly maiusculas = input(true);
   /** Desabilita o campo pelo FormControl (forma recomendada em Reactive Forms). */
   readonly blocked = input(false);
 
@@ -80,6 +88,26 @@ export class TextField {
         control.enable({ emitEvent: false });
       }
     });
+  }
+
+  protected emMaiusculas(): boolean {
+    return this.maiusculas() && this.type() === 'text' && !this.mask();
+  }
+
+  /** Converte para maiúsculas mantendo a posição do cursor. */
+  protected paraMaiusculas(event: Event): void {
+    if (!this.emMaiusculas()) {
+      return;
+    }
+    const el = event.target as HTMLInputElement;
+    const maiusculo = el.value.toLocaleUpperCase('pt-BR');
+    if (maiusculo === el.value) {
+      return;
+    }
+    const { selectionStart, selectionEnd } = el;
+    el.value = maiusculo;
+    el.setSelectionRange(selectionStart, selectionEnd);
+    this.control().setValue(maiusculo);
   }
 
   protected invalid(): boolean {

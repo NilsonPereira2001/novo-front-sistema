@@ -24,3 +24,8 @@ export function normalizeKey(value: string | null | undefined): string {
     .toUpperCase()
     .replace(/\s+/g, '_');
 }
+
+/** Padrão dos cadastros: texto aparado e em MAIÚSCULAS (pt-BR). */
+export function maiusculas(value: string): string {
+  return value.trim().toLocaleUpperCase('pt-BR');
+}

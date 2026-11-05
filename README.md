@@ -142,11 +142,17 @@ O botão fica bloqueado durante o envio para evitar cadastro duplicado.
 - CPF, CEP e telefones vão só com dígitos.
 - `telefones` vai como `[{ telefone, principal }]`, sem `pessoa`, e `convenios` como `[{ id }]`.
 
+**Maiúsculas:** todos os cadastros são gravados em MAIÚSCULAS.
+
+- **Na digitação:** o `app-text-field` converte enquanto se digita, nos campos de texto sem máscara. Para um campo ficar de fora, use `[maiusculas]="false"`.
+- **No envio:** os montadores do JSON (`membro-payload.ts` e `dependente.adapter.ts`) aplicam `maiusculas()` de novo.
+- **Exceções:** e-mail, chave Pix e datas ficam como foram digitados.
+
 **Vínculo militar:** matrícula, unidade, graduação, quadro e data de incorporação só ficam habilitados quando o tipo de vínculo é **MILITAR**, comparado pelo nome que vem de `/listar/tipo/vinculo`, sem diferenciar maiúsculas e acentos. Ao trocar para outro vínculo, esses campos são limpos e não são enviados. A instituição vale para qualquer vínculo.
 
 **Vínculo conveniado:** quando o tipo de vínculo é **CONVENIADO**, aparece o campo "Empresa conveniada" na etapa de dados funcionais, e ele passa a ser obrigatório. Nos demais vínculos o campo não aparece, e a empresa não é enviada.
 
-**Validação:** CPF e nome são obrigatórios, e a empresa conveniada também, quando o vínculo é CONVENIADO. Outras obrigatoriedades do backend não foram informadas e por isso não foram inventadas. Há validação de formato de CPF, e-mail, CEP, telefone e datas.
+**Validação:** CPF, nome, data de nascimento e sexo são obrigatórios, e a empresa conveniada também, quando o vínculo é CONVENIADO. Outras obrigatoriedades do backend não foram informadas e por isso não foram inventadas. Há validação de formato de CPF, e-mail, CEP, telefone e datas.
 
 **⚠️ Pendências do backend:**
 
@@ -183,7 +189,7 @@ Ao clicar no nome de uma pessoa na lista, abre o detalhe. É **uma tela só** pa
 **Dependentes (dados reais):** usam o `DependenteController`, com os ajustes do PR #3 do `back-novo`.
 
 - **Aba Dependentes do titular:** lista em `GET dependente/titular/{idPessoaTitular}`, com parentesco, CPF, nascimento, agregado e status. Cada nome abre o detalhe do dependente.
-- **Incluir dependente:** formulário em janela que envia `POST dependente/novo` (`DependenteNovoDTO`). Só o nome é obrigatório; o CPF é opcional (por exemplo, criança sem CPF), mas é validado quando preenchido. O usuário escolhe **Dependente direto**, que exige o parentesco (lista de `dependente/parentesco`), ou **Agregado**, que exige o tipo de vínculo agregado (lista de `dependente/listar/tipos/agregado`). Só o campo do tipo escolhido é enviado, junto com `agregado: true/false`, e o backend valida a mesma regra (PR #3).
+- **Incluir dependente:** formulário em janela que envia `POST dependente/novo` (`DependenteNovoDTO`). Nome, data de nascimento e sexo são obrigatórios; o CPF é opcional (por exemplo, criança sem CPF), mas é validado quando preenchido. Os textos vão em MAIÚSCULAS. O usuário escolhe **Dependente direto**, que exige o parentesco (lista de `dependente/parentesco`), ou **Agregado**, que exige o tipo de vínculo agregado (lista de `dependente/listar/tipos/agregado`). Só o campo do tipo escolhido é enviado, junto com `agregado: true/false`, e o backend valida a mesma regra (PR #3).
   - O `tipoPessoa` vai como o tipo "DEPENDENTE" de `/tipo/pessoas/listar`.
   - O `dataCadastro` não é enviado; o backend usa a data atual.
   - CPF duplicado mostra a mensagem do servidor.

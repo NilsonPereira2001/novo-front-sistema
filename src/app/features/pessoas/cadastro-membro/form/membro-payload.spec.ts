@@ -57,7 +57,7 @@ describe('toAssociadoNovoPayload', () => {
     v.pessoais.nome = '  Maria Souza ';
     expect(toAssociadoNovoPayload(v, null)).toEqual({
       cpf: '52998224725',
-      nome: 'Maria Souza',
+      nome: 'MARIA SOUZA',
       telefones: [],
       convenios: [],
     });
@@ -101,6 +101,21 @@ describe('toAssociadoNovoPayload', () => {
       { telefone: '82999998888', principal: true },
       { telefone: '8233334444', principal: false },
     ]);
+  });
+
+  it('grava textos em MAIÚSCULAS, exceto e-mail e chave Pix', () => {
+    const v = formVazio();
+    v.pessoais.nome = 'joão da silva';
+    v.pessoais.email = 'Joao.Silva@Exemplo.com';
+    v.endereco.logradouro = 'rua do comércio';
+    v.bancarios.chavePix = 'Joao.Silva@Exemplo.com';
+    v.familia.nomeMae = 'maria josé';
+    const payload = toAssociadoNovoPayload(v, null);
+    expect(payload.nome).toBe('JOÃO DA SILVA');
+    expect(payload.logradouro).toBe('RUA DO COMÉRCIO');
+    expect(payload.nomeMae).toBe('MARIA JOSÉ');
+    expect(payload.email).toBe('Joao.Silva@Exemplo.com');
+    expect(payload.chavePix).toBe('Joao.Silva@Exemplo.com');
   });
 
   it('só envia a foto quando o formato estiver configurado', () => {

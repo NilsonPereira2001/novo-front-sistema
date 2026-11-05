@@ -33,8 +33,9 @@ import { PessoaDetalheFonte } from '../data/pessoa-detalhe-fonte';
 import { OpcoesDependente } from '../models/pessoa-detalhe.model';
 
 /**
- * Inclusão de dependente (POST dependente/novo). Só o nome é obrigatório; o CPF é
- * opcional (validado quando preenchido).
+ * Inclusão de dependente (POST dependente/novo). Obrigatórios: nome, data de
+ * nascimento e sexo; o CPF é opcional (validado quando preenchido). Textos em
+ * MAIÚSCULAS.
  * Dependente direto exige parentesco; agregado exige tipo de vínculo agregado
  * (as duas listas vêm do backend).
  */
@@ -85,8 +86,8 @@ import { OpcoesDependente } from '../models/pessoa-detalhe.model';
           }
           <app-text-field class="span-2" label="Nome completo" [control]="form.controls.nome" [required]="true" [maxlength]="150" autocomplete="off" />
           <app-text-field label="CPF" [control]="form.controls.cpf" mask="cpf" placeholder="000.000.000-00" hint="Opcional (ex.: criança ainda sem CPF)." />
-          <app-text-field label="Data de nascimento" type="date" [control]="form.controls.dataNascimento" />
-          <app-select-field label="Sexo" [control]="form.controls.idSexo" [state]="sexos()" />
+          <app-text-field label="Data de nascimento" type="date" [control]="form.controls.dataNascimento" [required]="true" />
+          <app-select-field label="Sexo" [control]="form.controls.idSexo" [state]="sexos()" [required]="true" />
           <app-select-field label="Estado civil" [control]="form.controls.idEstadoCivil" [state]="estadosCivis()" />
           <app-text-field label="Apelido" [control]="form.controls.apelido" [maxlength]="60" />
           <app-text-field label="Naturalidade" [control]="form.controls.naturalidade" [maxlength]="80" />
@@ -214,9 +215,9 @@ export class IncluirDependenteDialog {
   protected readonly form = inject(NonNullableFormBuilder).group({
     nome: ['', [requiredTrimmed, Validators.maxLength(150)]],
     cpf: ['', [cpfValidator]], // opcional; se preenchido, precisa ser válido
-    dataNascimento: ['', [isoDateValidator, notFutureDateValidator, minYearValidator(1900)]],
+    dataNascimento: ['', [Validators.required, isoDateValidator, notFutureDateValidator, minYearValidator(1900)]],
     idParentesco: this.id(true),
-    idSexo: this.id(),
+    idSexo: this.id(true),
     idEstadoCivil: this.id(),
     apelido: [''],
     naturalidade: [''],

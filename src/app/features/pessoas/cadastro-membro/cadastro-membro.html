@@ -93,8 +93,8 @@
               <app-text-field class="span-8" label="Nome completo" [control]="p.nome" autocomplete="name" [required]="true" />
 
               <app-text-field class="span-4" label="Nome de guerra" [control]="p.nomeGuerra" />
-              <app-text-field class="span-4" label="Data de nascimento" type="date" [control]="p.dataNascimento" autocomplete="bday" />
-              <app-select-field class="span-4" label="Sexo" [control]="p.sexo" [state]="sexos.state()" (retry)="sexos.retry()" />
+              <app-text-field class="span-4" label="Data de nascimento" type="date" [control]="p.dataNascimento" autocomplete="bday" [required]="true" />
+              <app-select-field class="span-4" label="Sexo" [control]="p.sexo" [state]="sexos.state()" (retry)="sexos.retry()" [required]="true" />
 
               <app-select-field class="span-4" label="Estado civil" [control]="p.estadoCivil" [state]="estadosCivis.state()" (retry)="estadosCivis.retry()" />
               <app-text-field class="span-8" label="E-mail" type="email" [control]="p.email" autocomplete="email" placeholder="nome@exemplo.com" />
@@ -130,7 +130,7 @@
               <app-text-field class="span-6" label="Número da conta" [control]="b.numeroConta" />
 
               <app-select-field class="span-6" label="Tipo de Pix" [control]="b.tipoPix" [state]="tiposPix.state()" (retry)="tiposPix.retry()" />
-              <app-text-field class="span-6" label="Chave Pix" [control]="b.chavePix" />
+              <app-text-field class="span-6" label="Chave Pix" [control]="b.chavePix" [maiusculas]="false" />
 
               <app-select-field class="span-6" label="Forma de pagamento" [control]="b.formaPagamento" [state]="formasPagamento.state()" (retry)="formasPagamento.retry()" />
             </div>

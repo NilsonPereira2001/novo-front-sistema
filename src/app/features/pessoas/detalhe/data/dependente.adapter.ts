@@ -14,6 +14,7 @@
  */
 
 import { onlyDigits } from '../../../../shared/utils/cpf';
+import { maiusculas } from '../../../../shared/utils/text';
 import { isRecord, readNumber, readRecord, readString } from '../../../../shared/utils/json-read';
 import { DependenteResumo, NovoDependente, PessoaDetalhe } from '../models/pessoa-detalhe.model';
 import { dadosDaPessoa, dataLocal, instante, rotulo } from './associado.adapter';
@@ -101,6 +102,7 @@ export function relacaoComTitular(d: { agregado?: boolean | null; parentesco: st
 /**
  * Corpo de `POST dependente/novo` (DependenteNovoDTO). Sem `id` e sem
  * `dataCadastro` (o backend usa a data atual). Opcionais vazios são omitidos.
+ * Textos em MAIÚSCULAS (exceto e-mail).
  */
 export function toNovoDependentePayload(
   dados: NovoDependente,
@@ -108,16 +110,17 @@ export function toNovoDependentePayload(
   idTipoDependente: number | null,
 ): Record<string, unknown> {
   const texto = (v: string) => (v.trim() ? v.trim() : undefined);
+  const upper = (v: string) => (v.trim() ? maiusculas(v) : undefined);
   const ref = (id: number | null) => (id === null ? undefined : { id });
   const payload: Record<string, unknown> = {
-    nome: dados.nome.trim(),
+    nome: maiusculas(dados.nome),
     cpf: onlyDigits(dados.cpf) || undefined, // opcional para dependente
-    apelido: texto(dados.apelido),
+    apelido: upper(dados.apelido),
     dataNascimento: texto(dados.dataNascimento),
     tipoPessoa: ref(idTipoDependente),
     sexo: ref(dados.idSexo),
     estadoCivil: ref(dados.idEstadoCivil),
-    naturalidade: texto(dados.naturalidade),
+    naturalidade: upper(dados.naturalidade),
     email: texto(dados.email),
     // Dependente direto leva parentesco; agregado leva o tipo de vínculo agregado.
     parentesco: dados.agregado ? undefined : ref(dados.idParentesco),
