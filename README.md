@@ -180,12 +180,19 @@ Ao clicar no nome de uma pessoa na lista, abre o detalhe. É **uma tela só** pa
 - **Campos novos na tela e na ficha:** título de eleitor e carteira (impressa/entregue).
 - **Testes:** `associado.adapter.spec.ts`.
 
+**Arquivos (dados reais):** a aba Arquivos usa o `ArquivoPessoaController` para qualquer pessoa real (associado, funcionário ou dependente); só as pessoas inventadas pela demonstração continuam de exemplo.
+
+- **Rotas:** `GET files/pessoa/{idPessoa}` lista, `POST files/upload` envia (multipart com `pessoaId`, `arquivo`, `departamentoId` e `nome`), `GET files/api/file/{id}` baixa e `DELETE files/{id}` remove (PR #2 do `back-novo`).
+- **Departamento:** a categoria do envio é o departamento, vindo de `GET departamento/todos`.
+- **Limites:** PDF, PNG ou JPG de até 10 MB. O backend precisa de `spring.servlet.multipart.max-file-size=10MB`, também incluído no PR #2.
+- **Arquivos:** `detalhe/data/arquivo.adapter.ts`, com testes em `arquivo.adapter.spec.ts`.
+
 **Ficha em PDF:** "Ficha do associado", no menu Documentos, chama `POST /ficha/associado/3/{idAssociado}` (`ficha_associado.jasper`) e mostra o PDF com Imprimir e Baixar. O backend ignora o `idEmpresa` da rota e usa a empresa 3, que está fixa no `AssociadoReport`.
 
 **Rota do detalhe:** `GET /associado/pessoa/{idPessoa}` (PR #1 do `back-novo`), configurada em `DETALHE_API`, no arquivo `detalhe/data/pessoa-detalhe-integrada.ts`. Ela recebe o **id da Pessoa**, o mesmo da lista.
 
 - **Cadastro de associado:** vem do servidor, com o aviso "Integração parcial".
-- **Continuam de demonstração:** funcionário, dependente, convênios, indicações, dependentes, arquivos, os demais documentos e as ações de desligar e reativar.
+- **Continuam de demonstração:** cadastro de funcionário e dependente, convênios, indicações, dependentes, os demais documentos e as ações de desligar e reativar.
 - **404:** a tela mostra "Cadastro não encontrado".
 - **Formatos aceitos:** o adaptador lê as duas versões da entidade, com `Instant`/`LocalDate` ou com `Date`, foto em `imgPerfil` ou em `foto`, e `Conta` com `numero_conta`/`pix`/`operacao` ou com os nomes do DTO.
 

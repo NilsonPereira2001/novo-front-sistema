@@ -4,9 +4,12 @@ import { Observable, map } from 'rxjs';
 
 import { apiUrl } from '../../../../core/http/api-url';
 import { UnexpectedResponseError } from '../../../../core/http/load-error';
+import { Opcao, toOpcao } from '../../../../shared/data/opcao.model';
+import { isRecord } from '../../../../shared/utils/json-read';
 import { PessoaDTO } from '../../models/pessoa.dto';
-import { DocumentoGerado, PessoaDetalhe, TipoDocumento } from '../models/pessoa-detalhe.model';
+import { ArquivoPessoa, DocumentoGerado, PessoaDetalhe, TipoDocumento } from '../models/pessoa-detalhe.model';
 import { perfilDoTipo } from '../models/perfil-config';
+import { ARQUIVOS_API, ordenarArquivos, toArquivoPessoa, toUploadBody } from './arquivo.adapter';
 import { toPessoaDetalheDeAssociado } from './associado.adapter';
 import { PessoaDetalheDemo } from './pessoa-detalhe.demo';
 
@@ -31,8 +34,8 @@ export const DETALHE_API = {
 };
 
 /**
- * Fonte usada pela tela: os dados cadastrais e a ficha em PDF do associado
- * vêm da API; funcionário,
+ * Fonte usada pela tela: dados cadastrais e ficha em PDF do associado e os
+ * arquivos de qualquer pessoa vêm da API; funcionário,
  * dependente, abas, demais documentos e ações seguem na demonstração até terem
  * endpoints próprios.
  */
@@ -68,5 +71,58 @@ export class PessoaDetalheIntegrada extends PessoaDetalheDemo {
     return this.http
       .post(apiUrl(DETALHE_API.fichaPdf(atual.associadoId)), null, { responseType: 'blob' })
       .pipe(map((arquivo): DocumentoGerado => ({ formato: 'pdf', arquivo })));
+  }
+
+  // --- Arquivos (ArquivoPessoaController) — valem para qualquer pessoa real ----------
+
+  override arquivos(id: number): Observable<ArquivoPessoa[]> {
+    if (this.ehIdInventado(id)) {
+      return super.arquivos(id);
+    }
+    return this.http.get<unknown>(apiUrl(ARQUIVOS_API.listar(id))).pipe(
+      map((raw) => {
+        if (!Array.isArray(raw)) {
+          throw new UnexpectedResponseError();
+        }
+        return ordenarArquivos(raw.map(toArquivoPessoa).filter((a): a is ArquivoPessoa => a !== null));
+      }),
+    );
+  }
+
+  override categoriasArquivo(): Observable<Opcao[]> {
+    return this.http.get<unknown>(apiUrl(ARQUIVOS_API.departamentos)).pipe(
+      map((raw) => {
+        if (!Array.isArray(raw)) {
+          throw new UnexpectedResponseError();
+        }
+        return raw
+          .filter(isRecord)
+          .map((d) => toOpcao(d, ['nome']))
+          .filter((o): o is Opcao => o !== null);
+      }),
+    );
+  }
+
+  override enviarArquivo(id: number, arquivo: File, categoria: Opcao): Observable<void> {
+    if (this.ehIdInventado(id)) {
+      return super.enviarArquivo(id, arquivo, categoria);
+    }
+    return this.http
+      .post(apiUrl(ARQUIVOS_API.enviar), toUploadBody(id, arquivo, categoria.id))
+      .pipe(map(() => undefined));
+  }
+
+  override baixarArquivo(id: number, arquivoId: number): Observable<Blob> {
+    if (this.ehIdInventado(id)) {
+      return super.baixarArquivo(id, arquivoId);
+    }
+    return this.http.get(apiUrl(ARQUIVOS_API.baixar(arquivoId)), { responseType: 'blob' });
+  }
+
+  override removerArquivo(id: number, arquivoId: number): Observable<void> {
+    if (this.ehIdInventado(id)) {
+      return super.removerArquivo(id, arquivoId);
+    }
+    return this.http.delete(apiUrl(ARQUIVOS_API.remover(arquivoId))).pipe(map(() => undefined));
   }
 }

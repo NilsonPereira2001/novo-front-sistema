@@ -3,6 +3,7 @@ import { Observable, delay, of, throwError } from 'rxjs';
 
 import { TERMOS } from '../../../../core/config/terminologia';
 import { onlyDigits } from '../../../../shared/utils/cpf';
+import { Opcao } from '../../../../shared/data/opcao.model';
 import { PessoaDTO } from '../../models/pessoa.dto';
 import {
   ArquivoPessoa,
@@ -64,6 +65,8 @@ export class PessoaDetalheDemo extends PessoaDetalheFonte {
   private readonly listaArquivos = new Map<number, ArquivoPessoa[]>();
   private readonly conteudos = new Map<number, Blob>();
   private proximoArquivo = 1;
+  /** Ids que só existem nesta demonstração (dependentes e indicados fictícios). */
+  private readonly inventados = new Set<number>();
 
   detalhe(id: number, resumo?: PessoaDTO | null): Observable<PessoaDetalhe> {
     return espera(this.obter(id, resumo));
@@ -90,7 +93,9 @@ export class PessoaDetalheDemo extends PessoaDetalheFonte {
     }
     return espera(
       [1, 2].map((k) => {
-        const indicado = this.obter(800000 + id * 10 + k);
+        const indicadoId = 800000 + id * 10 + k;
+        this.inventados.add(indicadoId);
+        const indicado = this.obter(indicadoId);
         return {
           id: indicado.id,
           nome: indicado.pessoais.nome,
@@ -126,11 +131,17 @@ export class PessoaDetalheDemo extends PessoaDetalheFonte {
     return espera([...this.arquivosDe(id)]);
   }
 
-  enviarArquivo(id: number, arquivo: File, categoria: string): Observable<ArquivoPessoa> {
+  categoriasArquivo(): Observable<Opcao[]> {
+    return espera(
+      ['Documentos pessoais', 'Comprovantes', 'Contratos', 'Outros'].map((label, i) => ({ id: i + 1, label })),
+    );
+  }
+
+  enviarArquivo(id: number, arquivo: File, categoria: Opcao): Observable<void> {
     const novo: ArquivoPessoa = {
       id: this.proximoArquivo++,
       nome: arquivo.name,
-      categoria,
+      categoria: categoria.label,
       tipo: arquivo.type || null,
       tamanho: arquivo.size,
       enviadoEm: new Date().toISOString(),
@@ -138,7 +149,7 @@ export class PessoaDetalheDemo extends PessoaDetalheFonte {
     };
     this.conteudos.set(novo.id, arquivo);
     this.listaArquivos.set(id, [novo, ...this.arquivosDe(id)]);
-    return espera(novo);
+    return espera(undefined);
   }
 
   baixarArquivo(id: number, arquivoId: number): Observable<Blob> {
@@ -182,6 +193,11 @@ export class PessoaDetalheDemo extends PessoaDetalheFonte {
     return this.pessoas.get(id);
   }
 
+  /** Pessoa criada pela demonstração: não existe no backend. */
+  protected ehIdInventado(id: number): boolean {
+    return this.inventados.has(id);
+  }
+
   /** Id gerado por esta demonstração (não existe no backend). */
   protected ehFicticio(id: number): boolean {
     return this.pessoas.get(id)?.origem === 'demonstracao';
@@ -197,7 +213,9 @@ export class PessoaDetalheDemo extends PessoaDetalheFonte {
   }
 
   private idsDependentes(titularId: number): number[] {
-    return [1, 2].map((k) => 900000 + titularId * 10 + k);
+    const ids = [1, 2].map((k) => 900000 + titularId * 10 + k);
+    ids.forEach((depId) => this.inventados.add(depId));
+    return ids;
   }
 
   private gerar(id: number, resumo?: PessoaDTO | null): PessoaDetalhe {

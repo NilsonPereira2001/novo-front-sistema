@@ -18,10 +18,9 @@ import { LoadError } from '../../../../shared/components/load-error/load-error';
 import { loadFrom } from '../../../../shared/data/load-state';
 import { DisplayValuePipe } from '../../../../shared/pipes/display-value.pipe';
 import { PessoaDetalheFonte } from '../data/pessoa-detalhe-fonte';
+import { Opcao } from '../../../../shared/data/opcao.model';
 import { ArquivoPessoa } from '../models/pessoa-detalhe.model';
 
-/** ⚠️ Categorias provisórias — confirmar a lista com o backend. */
-const CATEGORIAS = ['Documentos pessoais', 'Comprovantes', 'Contratos', 'Outros'];
 const TAMANHO_MAXIMO = 10 * 1024 * 1024;
 const TIPOS_ACEITOS = '.pdf,.png,.jpg,.jpeg';
 
@@ -45,14 +44,31 @@ export function tamanhoLegivel(bytes: number | null): string {
   template: `
     <div class="arquivos__barra">
       <div class="arquivos__envio">
-        <label class="sr-only" for="categoria-arquivo">Categoria do arquivo</label>
-        <select id="categoria-arquivo" class="field__select arquivos__categoria" [value]="categoria()" (change)="categoria.set($any($event.target).value)">
-          @for (c of categorias; track c) {
-            <option [value]="c">{{ c }}</option>
+        <label class="sr-only" for="categoria-arquivo">Departamento do arquivo</label>
+        <select
+          id="categoria-arquivo"
+          class="field__select arquivos__categoria"
+          [disabled]="categorias().length === 0"
+          (change)="escolherCategoria($any($event.target).value)"
+        >
+          @switch (estadoCategorias().status) {
+            @case ('ready') {
+              @for (c of categorias(); track c.id) {
+                <option [value]="c.id" [selected]="c.id === categoria()?.id">{{ c.label }}</option>
+              } @empty {
+                <option value="">Nenhum departamento</option>
+              }
+            }
+            @case ('error') {
+              <option value="">Departamentos indisponíveis</option>
+            }
+            @default {
+              <option value="">Carregando departamentos…</option>
+            }
           }
         </select>
         <input #arquivo type="file" class="sr-only" [accept]="tiposAceitos" (change)="selecionou($event)" tabindex="-1" aria-hidden="true" />
-        <button type="button" class="btn btn--primary btn--sm" (click)="arquivo.click()" [disabled]="enviando()">
+        <button type="button" class="btn btn--primary btn--sm" (click)="arquivo.click()" [disabled]="enviando() || !categoria()">
           @if (enviando()) {
             <span class="spinner" aria-hidden="true"></span> Enviando…
           } @else {
@@ -60,7 +76,14 @@ export function tamanhoLegivel(bytes: number | null): string {
           }
         </button>
       </div>
-      <p class="field__hint">PDF, PNG ou JPG de até 10 MB.</p>
+      @if (estadoCategorias().status === 'error') {
+        <p class="field__hint arquivos__erro">
+          Não foi possível carregar os departamentos.
+          <button type="button" class="link-button" (click)="recarregarCategorias()">Tentar novamente</button>
+        </p>
+      } @else {
+        <p class="field__hint">PDF, PNG ou JPG de até 10 MB.</p>
+      }
     </div>
 
     @if (aviso(); as a) {
@@ -148,6 +171,9 @@ export function tamanhoLegivel(bytes: number | null): string {
       height: 2.25rem;
       font-size: var(--text-sm);
     }
+    .arquivos__erro {
+      color: var(--color-danger);
+    }
     .arquivos__lista {
       display: flex;
       flex-direction: column;
@@ -205,11 +231,20 @@ export class AbaArquivos {
   private readonly fonte = inject(PessoaDetalheFonte);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly categorias = CATEGORIAS;
   protected readonly tiposAceitos = TIPOS_ACEITOS;
   protected readonly tamanho = tamanhoLegivel;
 
-  protected readonly categoria = signal(CATEGORIAS[0]);
+  protected readonly tentarCategorias = signal(0);
+  protected readonly estadoCategorias = loadFrom(signal(null), () => this.fonte.categoriasArquivo(), this.tentarCategorias);
+  protected readonly categorias = computed(() => {
+    const e = this.estadoCategorias();
+    return e.status === 'ready' ? e.data : [];
+  });
+  /** Departamento escolhido; começa no primeiro da lista. */
+  protected readonly categoria = linkedSignal<Opcao[], Opcao | null>({
+    source: this.categorias,
+    computation: (lista, anterior) => lista.find((c) => c.id === anterior?.value?.id) ?? lista[0] ?? null,
+  });
   protected readonly enviando = signal(false);
   protected readonly baixando = signal<number | null>(null);
   protected readonly removendo = signal(false);
@@ -231,6 +266,14 @@ export class AbaArquivos {
     return e.status === 'error' ? e.kind : null;
   });
 
+  protected recarregarCategorias(): void {
+    this.tentarCategorias.update((n) => n + 1);
+  }
+
+  protected escolherCategoria(id: string): void {
+    this.categoria.set(this.categorias().find((c) => String(c.id) === id) ?? null);
+  }
+
   protected selecionou(event: Event): void {
     const input = event.target as HTMLInputElement;
     const arquivo = input.files?.[0];
@@ -246,15 +289,19 @@ export class AbaArquivos {
       this.aviso.set({ tom: 'danger', texto: 'Formato não aceito. Envie PDF, PNG ou JPG.' });
       return;
     }
+    const categoria = this.categoria();
+    if (!categoria) {
+      return;
+    }
     this.enviando.set(true);
     this.aviso.set(null);
     this.fonte
-      .enviarArquivo(this.pessoaId(), arquivo, this.categoria())
+      .enviarArquivo(this.pessoaId(), arquivo, categoria)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (novo) => {
-          this.itens.update((lista) => [novo, ...lista]);
-          this.aviso.set({ tom: 'success', texto: `"${novo.nome}" foi enviado.` });
+        next: () => {
+          this.recarregar(); // o backend não devolve o arquivo criado
+          this.aviso.set({ tom: 'success', texto: `"${arquivo.name}" foi enviado.` });
           this.enviando.set(false);
         },
         error: () => {

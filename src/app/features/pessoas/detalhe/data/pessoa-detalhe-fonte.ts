@@ -1,5 +1,6 @@
 import { Observable } from 'rxjs';
 
+import { Opcao } from '../../../../shared/data/opcao.model';
 import { PessoaDTO } from '../../models/pessoa.dto';
 import {
   ArquivoPessoa,
@@ -35,7 +36,10 @@ export abstract class PessoaDetalheFonte {
   abstract dependentes(id: number): Observable<DependenteResumo[]>;
 
   abstract arquivos(id: number): Observable<ArquivoPessoa[]>;
-  abstract enviarArquivo(id: number, arquivo: File, categoria: string): Observable<ArquivoPessoa>;
+  /** Categorias para classificar o arquivo no envio (no backend: departamentos). */
+  abstract categoriasArquivo(): Observable<Opcao[]>;
+  /** Envia; a tela recarrega a lista em seguida. */
+  abstract enviarArquivo(id: number, arquivo: File, categoria: Opcao): Observable<void>;
   abstract baixarArquivo(id: number, arquivoId: number): Observable<Blob>;
   abstract removerArquivo(id: number, arquivoId: number): Observable<void>;
 
