@@ -111,7 +111,7 @@ export function toNovoDependentePayload(
   const ref = (id: number | null) => (id === null ? undefined : { id });
   const payload: Record<string, unknown> = {
     nome: dados.nome.trim(),
-    cpf: onlyDigits(dados.cpf),
+    cpf: onlyDigits(dados.cpf) || undefined, // opcional para dependente
     apelido: texto(dados.apelido),
     dataNascimento: texto(dados.dataNascimento),
     tipoPessoa: ref(idTipoDependente),

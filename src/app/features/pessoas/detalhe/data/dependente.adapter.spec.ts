@@ -109,6 +109,16 @@ describe('dependente.adapter', () => {
     expect('tipoPessoa' in agregado).toBe(false);
   });
 
+  it('CPF é opcional: vazio não é enviado', () => {
+    const payload = toNovoDependentePayload(
+      { nome: 'Bebê Moura', cpf: '', apelido: '', dataNascimento: '2026-01-10', idSexo: null, idEstadoCivil: null, idParentesco: 1, naturalidade: '', email: '', agregado: false, idVinculoAgregado: null },
+      1,
+      2,
+    );
+    expect('cpf' in payload).toBe(false);
+    expect(payload['nome']).toBe('Bebê Moura');
+  });
+
   it('descreve a relação com o titular', () => {
     expect(relacaoComTitular({ agregado: false, parentesco: 'FILHO(A)' })).toBe('FILHO(A)');
     expect(relacaoComTitular({ agregado: true, parentesco: null, vinculoAgregado: 'UNIVERSITÁRIO' })).toBe('Agregado — UNIVERSITÁRIO');

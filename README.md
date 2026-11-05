@@ -183,7 +183,7 @@ Ao clicar no nome de uma pessoa na lista, abre o detalhe. É **uma tela só** pa
 **Dependentes (dados reais):** usam o `DependenteController`, com os ajustes do PR #3 do `back-novo`.
 
 - **Aba Dependentes do titular:** lista em `GET dependente/titular/{idPessoaTitular}`, com parentesco, CPF, nascimento, agregado e status. Cada nome abre o detalhe do dependente.
-- **Incluir dependente:** formulário em janela que envia `POST dependente/novo` (`DependenteNovoDTO`). Nome e CPF são obrigatórios. O usuário escolhe **Dependente direto**, que exige o parentesco (lista de `dependente/parentesco`), ou **Agregado**, que exige o tipo de vínculo agregado (lista de `dependente/listar/tipos/agregado`). Só o campo do tipo escolhido é enviado, junto com `agregado: true/false`, e o backend valida a mesma regra (PR #3).
+- **Incluir dependente:** formulário em janela que envia `POST dependente/novo` (`DependenteNovoDTO`). Só o nome é obrigatório; o CPF é opcional (por exemplo, criança sem CPF), mas é validado quando preenchido. O usuário escolhe **Dependente direto**, que exige o parentesco (lista de `dependente/parentesco`), ou **Agregado**, que exige o tipo de vínculo agregado (lista de `dependente/listar/tipos/agregado`). Só o campo do tipo escolhido é enviado, junto com `agregado: true/false`, e o backend valida a mesma regra (PR #3).
   - O `tipoPessoa` vai como o tipo "DEPENDENTE" de `/tipo/pessoas/listar`.
   - O `dataCadastro` não é enviado; o backend usa a data atual.
   - CPF duplicado mostra a mensagem do servidor.

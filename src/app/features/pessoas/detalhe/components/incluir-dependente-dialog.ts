@@ -33,7 +33,8 @@ import { PessoaDetalheFonte } from '../data/pessoa-detalhe-fonte';
 import { OpcoesDependente } from '../models/pessoa-detalhe.model';
 
 /**
- * Inclusão de dependente (POST dependente/novo). Nome e CPF são obrigatórios.
+ * Inclusão de dependente (POST dependente/novo). Só o nome é obrigatório; o CPF é
+ * opcional (validado quando preenchido).
  * Dependente direto exige parentesco; agregado exige tipo de vínculo agregado
  * (as duas listas vêm do backend).
  */
@@ -83,7 +84,7 @@ import { OpcoesDependente } from '../models/pessoa-detalhe.model';
             <app-select-field class="span-2" label="Parentesco" [control]="form.controls.idParentesco" [state]="parentescos()" [required]="true" />
           }
           <app-text-field class="span-2" label="Nome completo" [control]="form.controls.nome" [required]="true" [maxlength]="150" autocomplete="off" />
-          <app-text-field label="CPF" [control]="form.controls.cpf" mask="cpf" placeholder="000.000.000-00" [required]="true" />
+          <app-text-field label="CPF" [control]="form.controls.cpf" mask="cpf" placeholder="000.000.000-00" hint="Opcional (ex.: criança ainda sem CPF)." />
           <app-text-field label="Data de nascimento" type="date" [control]="form.controls.dataNascimento" />
           <app-select-field label="Sexo" [control]="form.controls.idSexo" [state]="sexos()" />
           <app-select-field label="Estado civil" [control]="form.controls.idEstadoCivil" [state]="estadosCivis()" />
@@ -212,7 +213,7 @@ export class IncluirDependenteDialog {
 
   protected readonly form = inject(NonNullableFormBuilder).group({
     nome: ['', [requiredTrimmed, Validators.maxLength(150)]],
-    cpf: ['', [Validators.required, cpfValidator]],
+    cpf: ['', [cpfValidator]], // opcional; se preenchido, precisa ser válido
     dataNascimento: ['', [isoDateValidator, notFutureDateValidator, minYearValidator(1900)]],
     idParentesco: this.id(true),
     idSexo: this.id(),
