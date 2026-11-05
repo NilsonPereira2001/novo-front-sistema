@@ -196,10 +196,9 @@ export class AbaIndicacoes {
               <thead>
                 <tr>
                   <th scope="col">Nome</th>
-                  <th scope="col">Parentesco</th>
+                  <th scope="col">Parentesco / vínculo</th>
                   <th scope="col">CPF</th>
                   <th scope="col">Nascimento</th>
-                  <th scope="col">Agregado</th>
                   <th scope="col">Status</th>
                 </tr>
               </thead>
@@ -207,10 +206,15 @@ export class AbaIndicacoes {
                 @for (d of itens(); track d.id) {
                   <tr>
                     <td><a class="person-cell" [routerLink]="['/pessoas', d.id]" [state]="{ resumo: { id: d.id, nome: d.nome, cpf: d.cpf, tipo: 'DEPENDENTE', status: d.status } }">{{ d.nome }}</a></td>
-                    <td>{{ d.parentesco | displayValue }}</td>
+                    <td>
+                      @if (d.agregado) {
+                        <span class="tag">Agregado</span> {{ d.vinculoAgregado | displayValue }}
+                      } @else {
+                        {{ d.parentesco | displayValue }}
+                      }
+                    </td>
                     <td class="cell-mono">{{ d.cpf | cpf }}</td>
                     <td class="cell-mono">{{ (d.dataNascimento | date: 'dd/MM/yyyy') ?? '—' }}</td>
-                    <td>{{ d.agregado === true ? 'Sim' : d.agregado === false ? 'Não' : '—' }}</td>
                     <td><span class="status" [attr.data-tone]="tom(d.status)"><span class="status__dot"></span>{{ d.status | displayValue }}</span></td>
                   </tr>
                 }

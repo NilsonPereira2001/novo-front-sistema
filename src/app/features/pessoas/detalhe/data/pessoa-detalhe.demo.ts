@@ -125,6 +125,8 @@ export class PessoaDetalheDemo extends PessoaDetalheFonte {
           nome: d.pessoais.nome,
           cpf: d.pessoais.cpf,
           parentesco: d.titular?.parentesco ?? null,
+          agregado: d.titular?.agregado ?? false,
+          vinculoAgregado: d.titular?.vinculoAgregado ?? null,
           dataNascimento: d.pessoais.dataNascimento,
           status: d.status,
         };
@@ -170,7 +172,7 @@ export class PessoaDetalheDemo extends PessoaDetalheFonte {
           titular: {
             id: idTitular,
             nome: titular.pessoais.nome,
-            parentesco: label(op.parentescos, dados.idParentesco),
+            parentesco: dados.agregado ? null : label(op.parentescos, dados.idParentesco),
             agregado: dados.agregado,
             vinculoAgregado: dados.agregado ? label(op.tiposAgregado, dados.idVinculoAgregado) : null,
             dataInclusao: new Date().toISOString(),

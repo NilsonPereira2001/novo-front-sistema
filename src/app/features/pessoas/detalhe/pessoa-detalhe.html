@@ -56,7 +56,7 @@
         <h1 class="perfil__nome" id="nome-pessoa">{{ d.pessoais.nome }}</h1>
         @if (d.titular; as t) {
           <p class="perfil__sub">
-            {{ t.parentesco ?? 'Dependente' }} de <a [routerLink]="['/pessoas', t.id]">{{ t.nome }}</a>
+            {{ (t.agregado ? (t.vinculoAgregado ? 'Agregado (' + t.vinculoAgregado + ')' : 'Agregado') : t.parentesco) ?? 'Dependente' }} de <a [routerLink]="['/pessoas', t.id]">{{ t.nome }}</a>
           </p>
         }
         <dl class="perfil__meta">

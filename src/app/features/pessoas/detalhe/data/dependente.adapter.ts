@@ -47,6 +47,7 @@ export function toDependenteResumo(raw: unknown): DependenteResumo | null {
     dataNascimento: dataLocal(pessoa, ['data_nascimento', 'dataNascimento']),
     status: readString(raw, ['status']) ?? readString(pessoa, ['status']),
     agregado: typeof raw['agregado'] === 'boolean' ? raw['agregado'] : null,
+    vinculoAgregado: rotulo(raw['vinculoAgregado']),
   };
 }
 
@@ -89,6 +90,14 @@ export function toPessoaDetalheDeDependente(raw: unknown): PessoaDetalhe | null 
   };
 }
 
+/** "FILHO(A)" para dependente direto; "Agregado — UNIVERSITÁRIO" para agregado. */
+export function relacaoComTitular(d: { agregado?: boolean | null; parentesco: string | null; vinculoAgregado?: string | null }): string | null {
+  if (d.agregado) {
+    return d.vinculoAgregado ? `Agregado — ${d.vinculoAgregado}` : 'Agregado';
+  }
+  return d.parentesco;
+}
+
 /**
  * Corpo de `POST dependente/novo` (DependenteNovoDTO). Sem `id` e sem
  * `dataCadastro` (o backend usa a data atual). Opcionais vazios são omitidos.
@@ -110,7 +119,8 @@ export function toNovoDependentePayload(
     estadoCivil: ref(dados.idEstadoCivil),
     naturalidade: texto(dados.naturalidade),
     email: texto(dados.email),
-    parentesco: { id: dados.idParentesco },
+    // Dependente direto leva parentesco; agregado leva o tipo de vínculo agregado.
+    parentesco: dados.agregado ? undefined : ref(dados.idParentesco),
     pessoaTitular: { id: idPessoaTitular },
     agregado: dados.agregado,
     vinculoAgregado: dados.agregado ? ref(dados.idVinculoAgregado) : undefined,

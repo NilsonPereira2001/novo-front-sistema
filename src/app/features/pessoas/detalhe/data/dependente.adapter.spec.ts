@@ -1,4 +1,4 @@
-import { toDependenteResumo, toNovoDependentePayload, toPessoaDetalheDeDependente } from './dependente.adapter';
+import { relacaoComTitular, toDependenteResumo, toNovoDependentePayload, toPessoaDetalheDeDependente } from './dependente.adapter';
 
 /** DependentePessoa como o Jackson serializa (pessoa e pessoaTitular são Pessoa). */
 function dependenteJson(): Record<string, unknown> {
@@ -36,6 +36,7 @@ describe('dependente.adapter', () => {
       dataNascimento: '2012-09-03',
       status: 'ATIVO',
       agregado: true,
+      vinculoAgregado: 'UNIVERSITÁRIO',
     });
     expect(toDependenteResumo({ id: 1 })).toBeNull();
   });
@@ -95,9 +96,21 @@ describe('dependente.adapter', () => {
     });
   });
 
-  it('envia o vínculo agregado só quando marcado como agregado', () => {
-    const base = { nome: 'X', cpf: '11144477735', apelido: '', dataNascimento: '', idSexo: null, idEstadoCivil: null, idParentesco: 1, naturalidade: '', email: '' };
-    expect(toNovoDependentePayload({ ...base, agregado: true, idVinculoAgregado: 2 }, 1, null)['vinculoAgregado']).toEqual({ id: 2 });
-    expect('tipoPessoa' in toNovoDependentePayload({ ...base, agregado: true, idVinculoAgregado: 2 }, 1, null)).toBe(false);
+  it('dependente direto envia só parentesco; agregado envia só o tipo de vínculo', () => {
+    const base = { nome: 'X', cpf: '11144477735', apelido: '', dataNascimento: '', idSexo: null, idEstadoCivil: null, naturalidade: '', email: '' };
+    const direto = toNovoDependentePayload({ ...base, agregado: false, idParentesco: 1, idVinculoAgregado: 2 }, 1, null);
+    expect(direto['parentesco']).toEqual({ id: 1 });
+    expect('vinculoAgregado' in direto).toBe(false);
+    expect(direto['agregado']).toBe(false);
+    const agregado = toNovoDependentePayload({ ...base, agregado: true, idParentesco: 1, idVinculoAgregado: 2 }, 1, null);
+    expect(agregado['vinculoAgregado']).toEqual({ id: 2 });
+    expect('parentesco' in agregado).toBe(false);
+    expect(agregado['agregado']).toBe(true);
+    expect('tipoPessoa' in agregado).toBe(false);
+  });
+
+  it('descreve a relação com o titular', () => {
+    expect(relacaoComTitular({ agregado: false, parentesco: 'FILHO(A)' })).toBe('FILHO(A)');
+    expect(relacaoComTitular({ agregado: true, parentesco: null, vinculoAgregado: 'UNIVERSITÁRIO' })).toBe('Agregado — UNIVERSITÁRIO');
   });
 });

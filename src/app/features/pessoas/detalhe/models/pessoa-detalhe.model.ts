@@ -160,6 +160,7 @@ export interface DependenteResumo {
   readonly dataNascimento: string | null;
   readonly status: string | null;
   readonly agregado?: boolean | null;
+  readonly vinculoAgregado?: string | null;
 }
 
 /** Dados da inclusão de dependente (formulário → DependenteNovoDTO). */
@@ -171,10 +172,13 @@ export interface NovoDependente {
   readonly dataNascimento: string;
   readonly idSexo: number | null;
   readonly idEstadoCivil: number | null;
-  readonly idParentesco: number;
+  /** Dependente direto: parentesco (null quando agregado). */
+  readonly idParentesco: number | null;
   readonly naturalidade: string;
   readonly email: string;
+  /** true = agregado; false = dependente direto. */
   readonly agregado: boolean;
+  /** Agregado: tipo de vínculo (null quando dependente direto). */
   readonly idVinculoAgregado: number | null;
 }
 

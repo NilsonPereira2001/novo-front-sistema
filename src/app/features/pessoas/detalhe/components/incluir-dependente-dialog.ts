@@ -33,8 +33,9 @@ import { PessoaDetalheFonte } from '../data/pessoa-detalhe-fonte';
 import { OpcoesDependente } from '../models/pessoa-detalhe.model';
 
 /**
- * Inclusão de dependente (POST dependente/novo). Nome, CPF e parentesco são
- * obrigatórios; tipo de vínculo agregado só quando "Agregado" estiver marcado.
+ * Inclusão de dependente (POST dependente/novo). Nome e CPF são obrigatórios.
+ * Dependente direto exige parentesco; agregado exige tipo de vínculo agregado
+ * (as duas listas vêm do backend).
  */
 @Component({
   selector: 'app-incluir-dependente-dialog',
@@ -55,32 +56,41 @@ import { OpcoesDependente } from '../models/pessoa-detalhe.model';
           </app-alert>
         }
 
+        <fieldset class="dep-form__tipo">
+          <legend class="field__label">Incluir como <span class="field__req" aria-hidden="true">*</span></legend>
+          <div class="dep-form__opcoes" role="radiogroup">
+            <label class="radio" [class.is-checked]="!form.controls.agregado.value">
+              <input type="radio" name="tipo-inclusao" [value]="false" [formControl]="form.controls.agregado" />
+              <span><strong>Dependente direto</strong><small>Informe o parentesco com o titular</small></span>
+            </label>
+            <label class="radio" [class.is-checked]="form.controls.agregado.value">
+              <input type="radio" name="tipo-inclusao" [value]="true" [formControl]="form.controls.agregado" />
+              <span><strong>Agregado</strong><small>Informe o tipo de vínculo agregado</small></span>
+            </label>
+          </div>
+        </fieldset>
+
         <div class="dep-form__grid">
+          @if (form.controls.agregado.value) {
+            <app-select-field
+              class="span-2"
+              label="Tipo de vínculo agregado"
+              [control]="form.controls.idVinculoAgregado"
+              [state]="tiposAgregado()"
+              [required]="true"
+            />
+          } @else {
+            <app-select-field class="span-2" label="Parentesco" [control]="form.controls.idParentesco" [state]="parentescos()" [required]="true" />
+          }
           <app-text-field class="span-2" label="Nome completo" [control]="form.controls.nome" [required]="true" [maxlength]="150" autocomplete="off" />
           <app-text-field label="CPF" [control]="form.controls.cpf" mask="cpf" placeholder="000.000.000-00" [required]="true" />
           <app-text-field label="Data de nascimento" type="date" [control]="form.controls.dataNascimento" />
-          <app-select-field label="Parentesco" [control]="form.controls.idParentesco" [state]="parentescos()" [required]="true" />
           <app-select-field label="Sexo" [control]="form.controls.idSexo" [state]="sexos()" />
           <app-select-field label="Estado civil" [control]="form.controls.idEstadoCivil" [state]="estadosCivis()" />
           <app-text-field label="Apelido" [control]="form.controls.apelido" [maxlength]="60" />
           <app-text-field label="Naturalidade" [control]="form.controls.naturalidade" [maxlength]="80" />
           <app-text-field label="E-mail" type="email" [control]="form.controls.email" autocomplete="off" />
 
-          <div class="span-2 dep-form__agregado">
-            <label class="check">
-              <input type="checkbox" [formControl]="form.controls.agregado" />
-              <span>Agregado</span>
-            </label>
-            <p class="field__hint">Marque quando o dependente entra como agregado (ex.: universitário).</p>
-          </div>
-          @if (form.controls.agregado.value) {
-            <app-select-field
-              label="Tipo de vínculo agregado"
-              [control]="form.controls.idVinculoAgregado"
-              [state]="tiposAgregado()"
-              [required]="true"
-            />
-          }
         </div>
 
         @if (erro()) {
@@ -118,25 +128,50 @@ import { OpcoesDependente } from '../models/pessoa-detalhe.model';
     .span-2 {
       grid-column: 1 / -1;
     }
-    .dep-form__agregado {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-1);
+    .dep-form__tipo {
+      margin: 0;
+      padding: 0;
+      border: 0;
     }
-    .check {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--space-2);
-      font-size: var(--text-sm);
-      font-weight: 600;
+    .dep-form__opcoes {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-3);
+      margin-top: var(--space-2);
+    }
+    .radio {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
       cursor: pointer;
     }
-    .check input {
+    .radio.is-checked {
+      border-color: var(--color-primary);
+      background: var(--color-primary-soft);
+    }
+    .radio:focus-within {
+      box-shadow: var(--focus-ring);
+    }
+    .radio input {
       width: 1.125rem;
       height: 1.125rem;
+      margin-top: 0.125rem;
       accent-color: var(--color-primary);
     }
+    .radio span {
+      display: flex;
+      flex-direction: column;
+      font-size: var(--text-sm);
+    }
+    .radio small {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+    }
     @media (max-width: 640px) {
+      .dep-form__opcoes,
       .dep-form__grid {
         grid-template-columns: minmax(0, 1fr);
       }
@@ -197,16 +232,17 @@ export class IncluirDependenteDialog {
         this.erro.set(null);
       }
     });
-    // Tipo de vínculo agregado: obrigatório e enviado só quando "Agregado" está marcado.
+    // Dependente direto → parentesco obrigatório; agregado → tipo de vínculo obrigatório.
+    // O campo do outro tipo é limpo e não vai no envio.
     this.form.controls.agregado.valueChanges.pipe(takeUntilDestroyed()).subscribe((agregado) => {
-      const c = this.form.controls.idVinculoAgregado;
-      if (agregado) {
-        c.setValidators(Validators.required);
-      } else {
-        c.clearValidators();
-        c.setValue(null);
-      }
-      c.updateValueAndValidity();
+      const [usar, limpar] = agregado
+        ? [this.form.controls.idVinculoAgregado, this.form.controls.idParentesco]
+        : [this.form.controls.idParentesco, this.form.controls.idVinculoAgregado];
+      usar.setValidators(Validators.required);
+      limpar.clearValidators();
+      limpar.setValue(null);
+      usar.updateValueAndValidity();
+      limpar.updateValueAndValidity();
     });
   }
 
@@ -236,11 +272,11 @@ export class IncluirDependenteDialog {
         dataNascimento: v.dataNascimento,
         idSexo: v.idSexo,
         idEstadoCivil: v.idEstadoCivil,
-        idParentesco: v.idParentesco!,
+        idParentesco: v.agregado ? null : v.idParentesco,
         naturalidade: v.naturalidade,
         email: v.email,
         agregado: v.agregado,
-        idVinculoAgregado: v.idVinculoAgregado,
+        idVinculoAgregado: v.agregado ? v.idVinculoAgregado : null,
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
