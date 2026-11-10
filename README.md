@@ -110,7 +110,18 @@ Listagem integrada a `GET /pessoas/listar/filtradas/paginada` (`Page<PessoaDTO>`
 
 **Filtro por tipo:** as opções vêm de `GET /tipo/pessoas/listar` (`TipoPessoaController`), com `id` e `nome`. O seletor mostra o `nome` e envia o `id` em `idTipoPessoa`, sem nenhuma lista fixa no frontend. Pesquisa e tipo funcionam juntos, e limpar um não apaga o outro. O seletor tem estado de carregamento e mensagem de erro com "Tentar novamente".
 
-Ainda são telas em construção: aguardando deferimento, novo funcionário e edição de dependente e de funcionário.
+Ainda são telas em construção: novo funcionário e edição de dependente e de funcionário.
+
+### Aguardando deferimento (`/pessoas/aguardando-deferimento`)
+
+Pedidos de **adesão** (cadastro novo ou reativação, restrição `AGUARDANDO ADESÃO`) e de **desligamento** (`AGUARDANDO DESLIGAMENTO`) que precisam ser analisados. Código em `features/pessoas/deferimento/`.
+
+- **Lista:** `GET associado/aguardando/resumo` (`AguardandoDeferimentoDTO`, leve, sem foto). O tipo do pedido sai da restrição; a data mostrada é `ultimaAdesao` (adesão) ou `dataDesligamento` (desligamento). Filtro Todos / Adesão / Desligamento com contagem e busca local por nome ou CPF.
+- **Deferir:** `POST associado/deferir/{idAssociado}`, com o usuário logado tirado do token pelo backend (`AFILIADO_DEFERIR`). Adesão → associado e dependentes ATIVOS; desligamento → INATIVO / DESLIGADO.
+- **Indeferir:** `PUT associado/indeferir/{idAssociado}?motivo=` com motivo obrigatório em maiúsculas (`AFILIADO_INDEFERIR`). Adesão → `ADESÃO INDEFERIDO`; desligamento → pedido cancelado, associado e dependentes voltam a ATIVO.
+- **Erros:** 400 mostra o texto do backend (sem o prefixo "Erro:"), 403 avisa que falta permissão.
+- **Detalhe:** com pedido pendente, Desligar e Reativar dão lugar a "Ver pedido" e aparece um alerta com link para esta tela.
+- **Testes:** `deferimento-api.spec.ts`.
 
 ### Cadastro de membro (`/pessoas/novo/membro`)
 
@@ -238,7 +249,8 @@ Ao clicar no nome de uma pessoa na lista, abre o detalhe. É **uma tela só** pa
 **Rota do detalhe:** `GET /associado/pessoa/{idPessoa}` (PR #1 do `back-novo`), configurada em `DETALHE_API`, no arquivo `detalhe/data/pessoa-detalhe-integrada.ts`. Ela recebe o **id da Pessoa**, o mesmo da lista.
 
 - **Cadastro de associado:** vem do servidor, com o aviso "Integração parcial".
-- **Continuam de demonstração:** cadastro de funcionário, os demais documentos e desligar/reativar do associado.
+- **Desligar e reativar do associado:** `POST associado/desligar/{id}?motivo=&dataDesligamento=` (data do formulário enviada como Instant ao meio-dia UTC) e `POST associado/reativar/{id}?dataReinclusao=`. Os dois **viram pedidos** que só valem depois do deferimento; o 400 `{"error": ...}` (ex.: diretor ativo) aparece no diálogo.
+- **Continuam de demonstração:** cadastro de funcionário e os demais documentos (declaração e contratos).
 - **404:** a tela mostra "Cadastro não encontrado".
 - **Formatos aceitos:** o adaptador lê as duas versões da entidade, com `Instant`/`LocalDate` ou com `Date`, foto em `imgPerfil` ou em `foto`, e `Conta` com `numero_conta`/`pix`/`operacao` ou com os nomes do DTO.
 

@@ -1,4 +1,4 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, LOCALE_ID, inject } from '@angular/core';
 import { Observable, catchError, forkJoin, map, switchMap, throwError } from 'rxjs';
 
@@ -52,6 +52,10 @@ export const DETALHE_API = {
    * manter a mesma empresa.
    */
   fichaPdf: (idAssociado: number) => `/ficha/associado/3/${idAssociado}`,
+  /** POST ?motivo=&dataDesligamento=<Instant> → associado fica "AGUARDANDO DESLIGAMENTO". */
+  desligar: (idAssociado: number) => `/associado/desligar/${idAssociado}`,
+  /** POST ?dataReinclusao=<Instant> → associado fica "AGUARDANDO ADESÃO". */
+  reativar: (idAssociado: number) => `/associado/reativar/${idAssociado}`,
 };
 
 /**
@@ -242,13 +246,23 @@ export class PessoaDetalheIntegrada extends PessoaDetalheDemo {
     );
   }
 
-  /** Dependente real: `dependente/desligar/{id}` (sem motivo no backend). Demais perfis: demonstração. */
+  /**
+   * Dependente real: `dependente/desligar/{id}` (sem motivo no backend).
+   * Associado real: `associado/desligar/{id}` — vira pedido "AGUARDANDO DESLIGAMENTO",
+   * efetivado na tela Aguardando deferimento. Funcionário: demonstração.
+   */
   override desligar(id: number, dados: DadosDesligamento): Observable<PessoaDetalhe> {
     const atual = this.registrado(id);
     if (atual?.origem === 'api' && atual.perfil === 'dependente' && atual.dependenteId) {
       return this.http
         .post(apiUrl(DEPENDENTES_API.desligar(atual.dependenteId)), null)
         .pipe(switchMap(() => this.buscarDependente(id)));
+    }
+    if (atual?.origem === 'api' && atual.perfil === 'membro' && atual.associadoId) {
+      const params = new HttpParams().set('motivo', dados.motivo.trim()).set('dataDesligamento', instanteDoDia(dados.data));
+      return this.http
+        .post(apiUrl(DETALHE_API.desligar(atual.associadoId)), null, { params, responseType: 'text' })
+        .pipe(switchMap(() => this.buscarAssociado(id)));
     }
     return super.desligar(id, dados);
   }
@@ -259,6 +273,12 @@ export class PessoaDetalheIntegrada extends PessoaDetalheDemo {
       return this.http
         .post(apiUrl(DEPENDENTES_API.reativar(atual.dependenteId)), null)
         .pipe(switchMap(() => this.buscarDependente(id)));
+    }
+    if (atual?.origem === 'api' && atual.perfil === 'membro' && atual.associadoId) {
+      const params = new HttpParams().set('dataReinclusao', new Date().toISOString());
+      return this.http
+        .post(apiUrl(DETALHE_API.reativar(atual.associadoId)), null, { params, responseType: 'text' })
+        .pipe(switchMap(() => this.buscarAssociado(id)));
     }
     return super.reativar(id);
   }
@@ -326,4 +346,12 @@ export class PessoaDetalheIntegrada extends PessoaDetalheDemo {
     }
     return this.http.delete(apiUrl(ARQUIVOS_API.remover(arquivoId))).pipe(map(() => undefined));
   }
+}
+
+/**
+ * Data do formulário (YYYY-MM-DD) → Instant ISO ao meio-dia UTC, para o dia
+ * não mudar em nenhum fuso ao ser lido de volta.
+ */
+export function instanteDoDia(data: string): string {
+  return /^\d{4}-\d{2}-\d{2}$/.test(data) ? `${data}T12:00:00Z` : new Date().toISOString();
 }

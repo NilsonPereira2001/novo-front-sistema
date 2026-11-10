@@ -1,0 +1,213 @@
+<a class="back-link" routerLink="/pessoas">
+  <app-icon name="arrow-left" />
+  Pessoas
+</a>
+
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">{{ termos.membros }}</p>
+    <h1 class="page-title">Aguardando deferimento</h1>
+    <p class="page-subtitle">
+      Pedidos de adesão (cadastro novo ou reativação) e de desligamento que precisam ser analisados.
+    </p>
+  </div>
+  <div class="page-header__actions">
+    <button type="button" class="btn btn--secondary" (click)="recarregar()" [disabled]="carregando()">
+      <app-icon name="refresh-cw" />
+      Atualizar
+    </button>
+  </div>
+</header>
+
+@if (aviso(); as texto) {
+  <div class="aviso">
+    <app-alert tone="success">{{ texto }}</app-alert>
+    <button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button>
+  </div>
+}
+
+<section class="card table-card" aria-labelledby="titulo-pedidos">
+  <h2 id="titulo-pedidos" class="sr-only">Pedidos aguardando deferimento</h2>
+
+  <div class="toolbar">
+    <app-search-field
+      label="Pesquisar pedidos"
+      placeholder="Pesquisar por nome ou CPF"
+      [value]="busca()"
+      (valueChange)="busca.set($event)"
+      (clear)="busca.set('')"
+    />
+    <div class="segmented" role="group" aria-label="Tipo de pedido">
+      @for (f of filtros; track f.key) {
+        <button
+          type="button"
+          class="segmented__item"
+          [class.is-active]="filtro() === f.key"
+          [attr.aria-pressed]="filtro() === f.key"
+          (click)="filtro.set(f.key)"
+        >
+          {{ f.titulo }}
+          <span class="contador">{{ contagem()[f.key] }}</span>
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (erro(); as kind) {
+    <app-load-error [kind]="kind" (retry)="recarregar()" />
+  } @else if (estado().status === 'ready' && visiveis().length === 0) {
+    <div class="state">
+      <span class="state__icon"><app-icon name="inbox" /></span>
+      @if (pedidos().length === 0) {
+        <p class="state__title">Nenhum pedido pendente</p>
+        <p class="state__text">Todos os pedidos de adesão e desligamento já foram analisados.</p>
+      } @else {
+        <p class="state__title">Nenhum pedido encontrado</p>
+        <p class="state__text">Nenhum pedido corresponde aos filtros selecionados.</p>
+        <button type="button" class="btn btn--secondary" (click)="limparFiltros()">Limpar filtros</button>
+      }
+    </div>
+  } @else {
+    <div class="table-scroll">
+      <table class="data-table" [attr.aria-busy]="carregando()">
+        <caption class="sr-only">Pedidos aguardando deferimento</caption>
+        <thead>
+          <tr>
+            <th scope="col">Nome</th>
+            <th scope="col">CPF</th>
+            <th scope="col">Pedido</th>
+            <th scope="col">Vínculo</th>
+            <th scope="col">Motivo</th>
+            <th scope="col"><span class="sr-only">Ações</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (estado().status === 'ready') {
+            @for (p of visiveis(); track p.idAssociado) {
+              <tr>
+                <td>
+                  <a class="person-cell" [routerLink]="['/pessoas', p.idPessoa]">
+                    <span class="avatar-sm" aria-hidden="true">{{ initials(p.nome) }}</span>
+                    {{ p.nome }}
+                  </a>
+                </td>
+                <td class="cell-mono">{{ p.cpf | cpf }}</td>
+                <td>
+                  <span class="pedido" [attr.data-tipo]="p.tipo">
+                    <app-icon [name]="p.tipo === 'adesao' ? 'arrow-down-circle' : 'arrow-up-circle'" />
+                    {{ p.tipo === 'adesao' ? 'Adesão' : 'Desligamento' }}
+                  </span>
+                  <span class="sub cell-mono">{{ (p.data | date: 'dd/MM/yyyy') ?? 'Sem data' }}</span>
+                </td>
+                <td>
+                  {{ p.tipoVinculo | displayValue }}
+                  @if (p.instituicao) {
+                    <span class="sub">{{ p.instituicao }}</span>
+                  }
+                </td>
+                <td class="motivo">{{ p.motivo | displayValue }}</td>
+                <td>
+                  <div class="acoes">
+                    <button type="button" class="btn btn--primary btn--sm" (click)="abrir('deferir', p)" [attr.aria-label]="'Deferir pedido de ' + p.nome">
+                      <app-icon name="check-circle" /> Deferir
+                    </button>
+                    <button type="button" class="btn btn--danger-outline btn--sm" (click)="abrir('indeferir', p)" [attr.aria-label]="'Indeferir pedido de ' + p.nome">
+                      <app-icon name="x" /> Indeferir
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          } @else {
+            @for (row of skeleton; track row) {
+              <tr aria-hidden="true">
+                <td><span class="skeleton" style="width: 12rem"></span></td>
+                <td><span class="skeleton" style="width: 7rem"></span></td>
+                <td><span class="skeleton" style="width: 6rem"></span></td>
+                <td><span class="skeleton" style="width: 6rem"></span></td>
+                <td><span class="skeleton" style="width: 8rem"></span></td>
+                <td><span class="skeleton" style="width: 10rem"></span></td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+@let a = acao();
+<app-dialog
+  [titulo]="a?.tipo === 'indeferir' ? 'Indeferir pedido' : 'Deferir pedido'"
+  [open]="a !== null"
+  (closed)="fechar()"
+>
+  @if (a) {
+    <form id="form-deferimento" class="confirmacao" [formGroup]="form" (ngSubmit)="confirmar()" novalidate>
+      <p>
+        Pedido de <strong>{{ a.pedido.tipo === 'adesao' ? 'adesão' : 'desligamento' }}</strong> de
+        <strong>{{ a.pedido.nome }}</strong>.
+      </p>
+      @if (a.tipo === 'deferir') {
+        <p class="explica">
+          @if (a.pedido.tipo === 'adesao') {
+            O {{ termos.membroMin }} passa a ficar <strong>ativo</strong>, junto com os dependentes.
+          } @else {
+            O desligamento é efetivado: o {{ termos.membroMin }} e os dependentes ficam <strong>desligados</strong>.
+          }
+        </p>
+      } @else {
+        <p class="explica">
+          @if (a.pedido.tipo === 'adesao') {
+            A adesão é recusada e o cadastro fica como <strong>ADESÃO INDEFERIDO</strong>.
+          } @else {
+            O pedido é cancelado: o {{ termos.membroMin }} e os dependentes voltam a ficar <strong>ativos</strong>.
+          }
+        </p>
+        <div class="field" [class.field--invalid]="motivoInvalido()">
+          <label class="field__label" for="motivo-indeferimento">
+            Motivo <span class="field__req" aria-hidden="true">*</span>
+          </label>
+          <textarea
+            id="motivo-indeferimento"
+            class="field__input motivo-input"
+            rows="4"
+            [formControl]="form.controls.motivo"
+            [attr.maxlength]="motivoMax"
+            aria-required="true"
+            [attr.aria-invalid]="motivoInvalido()"
+            [attr.aria-describedby]="motivoInvalido() ? 'motivo-indeferimento-erro' : 'motivo-indeferimento-ajuda'"
+          ></textarea>
+          <p class="field__hint" id="motivo-indeferimento-ajuda">
+            {{ form.controls.motivo.value.length }}/{{ motivoMax }} caracteres
+          </p>
+          <app-field-error [control]="form.controls.motivo" errorId="motivo-indeferimento-erro" />
+        </div>
+      }
+      @if (erroAcao()) {
+        <app-alert tone="danger" [heading]="a.tipo === 'deferir' ? 'Não foi possível deferir' : 'Não foi possível indeferir'">
+          {{ erroAcao() }}
+        </app-alert>
+      }
+    </form>
+  }
+  <div dialog-actions>
+    <button type="button" class="btn btn--secondary btn--sm" (click)="fechar()" [disabled]="processando()">Cancelar</button>
+    <button
+      type="submit"
+      form="form-deferimento"
+      class="btn btn--sm"
+      [class.btn--primary]="a?.tipo === 'deferir'"
+      [class.btn--danger]="a?.tipo === 'indeferir'"
+      [disabled]="processando()"
+    >
+      @if (processando()) {
+        <span class="spinner" aria-hidden="true"></span> Enviando…
+      } @else if (a?.tipo === 'indeferir') {
+        <app-icon name="x" /> Confirmar indeferimento
+      } @else {
+        <app-icon name="check-circle" /> Confirmar deferimento
+      }
+    </button>
+  </div>
+</app-dialog>

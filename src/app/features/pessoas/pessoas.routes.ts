@@ -26,7 +26,7 @@ const routes: Routes = [
       titulo: 'Aguardando deferimento',
       descricao: 'Pedidos de associação que ainda precisam ser analisados.',
     },
-    loadComponent: () => import('./em-construcao/em-construcao').then((m) => m.EmConstrucao),
+    loadComponent: () => import('./deferimento/deferimento').then((m) => m.DeferimentoPage),
   },
   {
     path: 'novo/membro',

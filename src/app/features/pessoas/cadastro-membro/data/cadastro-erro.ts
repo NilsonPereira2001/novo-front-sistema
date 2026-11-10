@@ -62,7 +62,9 @@ export function toCadastroErro(error: unknown): CadastroErro {
  * Só repassa textos curtos e sem cara de detalhe técnico.
  */
 export function mensagemAmigavel(body: unknown): string | null {
-  const texto = typeof body === 'string' ? body : isRecord(body) ? readString(body, ['message']) : null;
+  // Com responseType 'text', um corpo JSON ({"error": "..."}) chega como string.
+  const obj = typeof body === 'string' && body.trim().startsWith('{') ? lerJson(body) : body;
+  const texto = typeof obj === 'string' ? obj : isRecord(obj) ? readString(obj, ['message', 'error']) : null;
   if (!texto) {
     return null;
   }
@@ -82,3 +84,11 @@ export const CADASTRO_ERRO_MENSAGENS: Readonly<Record<CadastroErroKind, string>>
     'O servidor não conseguiu salvar o cadastro. Tente novamente; se o problema continuar, contate o suporte.',
   unexpected: 'Não foi possível concluir o cadastro. Tente novamente.',
 };
+
+function lerJson(texto: string): unknown {
+  try {
+    return JSON.parse(texto);
+  } catch {
+    return texto;
+  }
+}

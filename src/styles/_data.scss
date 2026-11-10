@@ -114,6 +114,9 @@
 
 // --- Tabela ------------------------------------------------------------------
 .table-scroll {
+  // relative: textos .sr-only (absolute) nas células ficam presos à rolagem da tabela
+  // em vez de alargar a página no celular.
+  position: relative;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }

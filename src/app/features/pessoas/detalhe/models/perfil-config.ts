@@ -126,3 +126,16 @@ export function perfilDoTipo(tipo: string | null | undefined): PerfilPessoa {
   }
   return 'membro';
 }
+
+/**
+ * Pedido aguardando deferimento, pela restrição gravada pelo backend
+ * ("AGUARDANDO ADESÃO" / "AGUARDANDO DESLIGAMENTO"). Enquanto houver um,
+ * desligar e reativar ficam bloqueados.
+ */
+export function pedidoPendente(restricao: string | null): 'adesao' | 'desligamento' | null {
+  const key = normalizeKey(restricao);
+  if (!key.startsWith('AGUARDANDO')) {
+    return null;
+  }
+  return key.includes('DESLIGAMENTO') ? 'desligamento' : 'adesao';
+}

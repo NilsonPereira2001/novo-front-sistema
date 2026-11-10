@@ -1,0 +1,99 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.toolbar {
+  flex-wrap: wrap;
+}
+
+.contador {
+  min-width: 1.5rem;
+  padding: 0 var(--space-2);
+  border-radius: 999px;
+  background: var(--color-gray-100);
+  font-size: var(--text-xs);
+  line-height: 1.25rem;
+  text-align: center;
+}
+
+.pedido {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-weight: 600;
+  white-space: nowrap;
+
+  &[data-tipo='adesao'] {
+    color: var(--color-success);
+  }
+  &[data-tipo='desligamento'] {
+    color: var(--color-danger);
+  }
+}
+
+.sub {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+}
+
+.motivo {
+  min-width: 8rem;
+  max-width: 14rem;
+  white-space: normal;
+}
+
+.acoes {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+
+.aviso {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+
+  app-alert {
+    flex: 1;
+  }
+}
+
+.confirmacao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  font-size: var(--text-sm);
+}
+
+.explica {
+  color: var(--color-gray-600);
+}
+
+.motivo-input {
+  height: auto;
+  padding: var(--space-3);
+  text-transform: uppercase;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.segmented {
+  max-width: 100%;
+}
+
+@media (max-width: 40rem) {
+  .segmented {
+    width: 100%;
+    flex-wrap: nowrap;
+  }
+  .segmented__item {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0 var(--space-2);
+    gap: var(--space-1);
+  }
+}

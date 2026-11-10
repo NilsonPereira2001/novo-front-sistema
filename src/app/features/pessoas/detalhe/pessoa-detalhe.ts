@@ -1,4 +1,5 @@
 import { DatePipe } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -28,6 +29,7 @@ import { DisplayValuePipe } from '../../../shared/pipes/display-value.pipe';
 import { TelefonePipe } from '../../../shared/pipes/telefone.pipe';
 import { isRecord } from '../../../shared/utils/json-read';
 import { initials } from '../../../shared/utils/text';
+import { mensagemAmigavel } from '../cadastro-membro/data/cadastro-erro';
 import { PessoaDTO } from '../models/pessoa.dto';
 import { AbaArquivos } from './abas/aba-arquivos';
 import { AbaDados } from './abas/aba-dados';
@@ -42,6 +44,7 @@ import {
   DocumentoConfig,
   PERFIS,
   motivoIndisponivel,
+  pedidoPendente,
   situacaoDe,
   temRestricao,
 } from './models/perfil-config';
@@ -129,6 +132,8 @@ export class PessoaDetalhePage {
   });
   protected readonly situacao = computed(() => situacaoDe(this.detalhe()?.status ?? null));
   protected readonly restricao = computed(() => temRestricao(this.detalhe()?.restricao ?? null));
+  /** Pedido de adesão/desligamento ainda não analisado (bloqueia desligar/reativar). */
+  protected readonly pendente = computed(() => pedidoPendente(this.detalhe()?.restricao ?? null));
   protected readonly abaAtiva = computed<AbaKey>(() => {
     const abas = this.perfil()?.abas ?? [];
     return abas.find((a) => a.key === this.aba())?.key ?? 'dados';
@@ -215,24 +220,28 @@ export class PessoaDetalhePage {
   protected desligar(dados: DadosDesligamento): void {
     const d = this.detalhe();
     if (!d) return;
-    this.executar(this.fonte.desligar(d.id, dados), () => {
+    this.executar(this.fonte.desligar(d.id, dados), (novo) => {
       this.desligarAberto.set(false);
-      return `${d.pessoais.nome} foi desligado(a).`;
+      return pedidoPendente(novo.restricao) === 'desligamento'
+        ? `Pedido de desligamento de ${d.pessoais.nome} enviado. Ele será efetivado após o deferimento.`
+        : `${d.pessoais.nome} foi desligado(a).`;
     });
   }
 
   protected reativar(): void {
     const d = this.detalhe();
     if (!d) return;
-    this.executar(this.fonte.reativar(d.id), () => {
+    this.executar(this.fonte.reativar(d.id), (novo) => {
       this.reativarAberto.set(false);
-      return `${d.pessoais.nome} foi reativado(a).`;
+      return pedidoPendente(novo.restricao) === 'adesao'
+        ? `Pedido de reativação de ${d.pessoais.nome} enviado. Ele será efetivado após o deferimento.`
+        : `${d.pessoais.nome} foi reativado(a).`;
     });
   }
 
   private executar(
     acao: ReturnType<PessoaDetalheFonte['reativar']>,
-    sucesso: () => string,
+    sucesso: (atualizado: PessoaDetalhe) => string,
   ): void {
     this.processando.set(true);
     this.erroAcao.set(null);
@@ -240,11 +249,11 @@ export class PessoaDetalhePage {
       next: (atualizado) => {
         this.detalhe.set(atualizado);
         this.processando.set(false);
-        this.aviso.set(sucesso());
+        this.aviso.set(sucesso(atualizado));
       },
-      error: () => {
+      error: (e: unknown) => {
         this.processando.set(false);
-        this.erroAcao.set('O servidor não concluiu a operação. Tente novamente.');
+        this.erroAcao.set(mensagemDaAcao(e));
       },
     });
   }
@@ -267,6 +276,21 @@ function resumoDaNavegacao(id: number | null): PessoaDTO | null {
   }
   const resumo = state['resumo'] as unknown as PessoaDTO;
   return Number(resumo.id) === id ? resumo : null;
+}
+
+function mensagemDaAcao(e: unknown): string {
+  if (e instanceof HttpErrorResponse) {
+    if (e.status === 400) {
+      return mensagemAmigavel(e.error) ?? 'O servidor recusou a operação.';
+    }
+    if (e.status === 403) {
+      return 'Seu usuário não tem permissão para esta operação.';
+    }
+    if (e.status === 0) {
+      return 'Sem conexão com o servidor. Verifique a rede e tente novamente.';
+    }
+  }
+  return 'O servidor não concluiu a operação. Tente novamente.';
 }
 
 /** Mensagem enviada no `state` da navegação (ex.: depois de salvar a edição). */

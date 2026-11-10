@@ -6,8 +6,8 @@
 @if (detalhe()?.origem === 'api') {
   @if (demonstracao) {
     <app-alert tone="info" heading="Integração parcial">
-      Dados cadastrais, convênios, indicações, dependentes, ficha em PDF e arquivos vêm do
-      servidor. Os demais documentos e desligar/reativar do associado ainda são de demonstração.
+      Dados cadastrais, convênios, indicações, dependentes, ficha em PDF, arquivos e
+      desligar/reativar vêm do servidor. Os demais documentos ainda são de demonstração.
     </app-alert>
   }
 } @else if (demonstracao) {
@@ -118,7 +118,12 @@
           }
         </div>
 
-        @if (pf.podeDesligar && situacao() === 'ativo') {
+        @if (pendente()) {
+          <a class="btn btn--secondary btn--sm" routerLink="/pessoas/aguardando-deferimento">
+            <app-icon name="clock" />
+            Ver pedido
+          </a>
+        } @else if (pf.podeDesligar && situacao() === 'ativo') {
           <button type="button" class="btn btn--danger-outline btn--sm" (click)="abrirDesligar()">
             <app-icon name="power" />
             Desligar
@@ -140,7 +145,16 @@
     </div>
   }
 
-  @if (d.desligamento; as dl) {
+  @if (pendente(); as tipo) {
+    <app-alert tone="warning" [heading]="tipo === 'adesao' ? 'Adesão aguardando deferimento' : 'Desligamento aguardando deferimento'">
+      @if (tipo === 'adesao') {
+        O cadastro só fica ativo depois que o pedido de adesão for deferido.
+      } @else {
+        O desligamento só é efetivado depois que o pedido for deferido; até lá, desligar e reativar ficam bloqueados.
+      }
+      <a routerLink="/pessoas/aguardando-deferimento">Ir para Aguardando deferimento</a>
+    </app-alert>
+  } @else if (d.desligamento; as dl) {
     <app-alert tone="danger" heading="Desligado">
       Desde {{ (dl.data | date: 'dd/MM/yyyy') ?? '—' }}.@if (dl.motivo) { Motivo: {{ dl.motivo }}}
     </app-alert>

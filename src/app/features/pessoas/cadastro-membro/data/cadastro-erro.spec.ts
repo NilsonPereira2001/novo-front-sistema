@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 
-import { CADASTRO_ERRO_MENSAGENS, CadastroErro, toCadastroErro } from './cadastro-erro';
+import { CADASTRO_ERRO_MENSAGENS, CadastroErro, mensagemAmigavel, toCadastroErro } from './cadastro-erro';
 
 const resposta = (status: number, error: unknown) =>
   new HttpErrorResponse({ status, error, url: '/backend/associado/salvar/novo' });
@@ -34,5 +34,11 @@ describe('toCadastroErro (POST /associado/salvar/novo)', () => {
     expect(toCadastroErro(new CadastroErro('rota-pendente')).kind).toBe('rota-pendente');
     expect(toCadastroErro(new Error('x')).kind).toBe('unexpected');
     expect(typeof CADASTRO_ERRO_MENSAGENS.server).toBe('string');
+  });
+
+  it('lê {error}/{message} também quando o JSON chega como texto', () => {
+    expect(mensagemAmigavel({ error: 'Associado não pode ser desligado' })).toBe('Associado não pode ser desligado');
+    expect(mensagemAmigavel('{"error":"Associado não pode ser desligado"}')).toBe('Associado não pode ser desligado');
+    expect(mensagemAmigavel('Erro: Não há pedido aguardando deferimento para este associado.')).toBe('Não há pedido aguardando deferimento para este associado.');
   });
 });
