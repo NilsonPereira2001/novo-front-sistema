@@ -1,4 +1,4 @@
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
@@ -26,74 +26,6 @@ export function tomDoStatus(status: string | null): 'success' | 'danger' | 'warn
 }
 
 const SKELETON = [0, 1, 2];
-
-// --- Convênios ----------------------------------------------------------------
-@Component({
-  selector: 'app-aba-convenios',
-  imports: [DatePipe, CurrencyPipe, Icon, LoadError, DisplayValuePipe],
-  template: `
-    @switch (estado().status) {
-      @case ('error') {
-        <app-load-error [kind]="erro()!" (retry)="recarregar()" />
-      }
-      @case ('ready') {
-        @if (itens().length === 0) {
-          <div class="state">
-            <span class="state__icon"><app-icon name="receipt" /></span>
-            <p class="state__title">Nenhum convênio</p>
-            <p class="state__text">Este {{ termos.membroMin }} não participa de nenhum convênio.</p>
-          </div>
-        } @else {
-          <div class="table-scroll">
-            <table class="data-table">
-              <caption class="sr-only">Convênios do {{ termos.membroMin }}</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Convênio</th>
-                  <th scope="col">Tipo</th>
-                  <th scope="col">Valor mensal</th>
-                  <th scope="col">Adesão</th>
-                  <th scope="col">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (c of itens(); track c.id) {
-                  <tr>
-                    <td class="cell-strong">{{ c.nome }}</td>
-                    <td><span class="tag" [class.tag--primary]="c.fixo">{{ c.fixo ? 'Fixo' : 'Variável' }}</span></td>
-                    <td class="cell-mono">{{ c.valor === null ? 'Conforme uso' : (c.valor | currency: 'BRL') }}</td>
-                    <td class="cell-mono">{{ (c.dataAdesao | date: 'dd/MM/yyyy') ?? '—' }}</td>
-                    <td><span class="status" [attr.data-tone]="tom(c.status)"><span class="status__dot"></span>{{ c.status | displayValue }}</span></td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        }
-      }
-      @default {
-        <div class="lista-carregando" aria-busy="true" aria-label="Carregando convênios">
-          @for (i of skeleton; track i) {<span class="skeleton"></span>}
-        </div>
-      }
-    }
-  `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-})
-export class AbaConvenios {
-  readonly pessoaId = input.required<number>();
-  private readonly fonte = inject(PessoaDetalheFonte);
-  protected readonly termos = TERMOS;
-  protected readonly skeleton = SKELETON;
-  protected readonly tom = tomDoStatus;
-  protected readonly tentar = signal(0);
-  protected recarregar(): void {
-    this.tentar.update((n) => n + 1);
-  }
-  protected readonly estado = loadFrom(this.pessoaId, (id) => this.fonte.convenios(id), this.tentar);
-  protected readonly itens = computed(() => { const e = this.estado(); return e.status === 'ready' ? e.data : []; });
-  protected readonly erro = computed(() => { const e = this.estado(); return e.status === 'error' ? e.kind : null; });
-}
 
 // --- Indicações ---------------------------------------------------------------
 @Component({

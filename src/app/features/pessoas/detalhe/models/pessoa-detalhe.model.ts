@@ -133,13 +133,21 @@ export interface PessoaDetalhe {
   };
 }
 
+/** Vínculo do associado com um convênio (entidade `ConvenioAssociado`). */
 export interface ConvenioDoMembro {
+  /** Id do vínculo (ConvenioAssociado) — usado para desligar. */
   readonly id: number;
+  /** Id do Convenio. */
+  readonly convenioId: number | null;
   readonly nome: string;
   /** "Fixo" ou "Variável" (campo `fixo` da entidade Convenio). */
   readonly fixo: boolean;
+  /** Convênio nativo do sistema (ex.: mensalidade): não é desligado pela tela. */
+  readonly nativo: boolean;
   readonly valor: number | null;
   readonly dataAdesao: string | null;
+  readonly dataExclusao: string | null;
+  /** "ATIVO" ou "DESLIGADO". */
   readonly status: string | null;
 }
 

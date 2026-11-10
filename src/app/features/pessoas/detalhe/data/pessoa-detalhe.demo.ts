@@ -77,18 +77,58 @@ export class PessoaDetalheDemo extends PessoaDetalheFonte {
     return espera(this.obter(id, resumo));
   }
 
+  private readonly vinculos = new Map<number, ConvenioDoMembro[]>();
+  private proximoVinculo = 1;
+  private readonly catalogo = [
+    { id: 1, nome: 'PLANO ODONTOLÓGICO', valor: 32.9 },
+    { id: 2, nome: 'SEGURO DE VIDA EM GRUPO', valor: 18.5 },
+    { id: 3, nome: 'ASSISTÊNCIA FUNERAL', valor: 12 },
+  ];
+
   convenios(id: number): Observable<ConvenioDoMembro[]> {
-    const p = this.obter(id);
-    if (p.perfil !== 'membro') {
-      return espera([]);
+    return espera([...this.vinculosDe(id)]);
+  }
+
+  conveniosDisponiveis(): Observable<Opcao[]> {
+    return espera(this.catalogo.map((c) => ({ id: c.id, label: c.nome, detalhe: `R$ ${c.valor.toFixed(2).replace('.', ',')} por mês` })));
+  }
+
+  adicionarConvenio(id: number, idConvenio: number): Observable<void> {
+    const lista = this.vinculosDe(id);
+    if (lista.some((v) => v.convenioId === idConvenio && v.status === 'ATIVO')) {
+      return throwError(() => new Error('já ativo'));
     }
-    const desde = p.adesao?.primeiraAdesao?.slice(0, 10) ?? '2023-02-01';
-    const status = situacaoDe(p.status) === 'desligado' ? 'CANCELADO' : 'ATIVO';
-    return espera([
-      { id: 1, nome: 'Plano odontológico', fixo: true, valor: 32.9, dataAdesao: desde, status },
-      { id: 2, nome: 'Seguro de vida em grupo', fixo: true, valor: 18.5, dataAdesao: desde, status },
-      { id: 3, nome: 'Farmácia conveniada', fixo: false, valor: null, dataAdesao: '2024-06-12', status },
-    ]);
+    const c = this.catalogo.find((x) => x.id === idConvenio);
+    if (c) {
+      lista.push({ id: this.proximoVinculo++, convenioId: c.id, nome: c.nome, fixo: true, nativo: false, valor: c.valor, dataAdesao: new Date().toISOString(), dataExclusao: null, status: 'ATIVO' });
+    }
+    return espera(undefined);
+  }
+
+  desligarConvenio(id: number, idVinculo: number): Observable<void> {
+    this.vinculos.set(
+      id,
+      this.vinculosDe(id).map((v) => (v.id === idVinculo ? { ...v, status: 'DESLIGADO', dataExclusao: new Date().toISOString().slice(0, 19) } : v)),
+    );
+    return espera(undefined);
+  }
+
+  private vinculosDe(id: number): ConvenioDoMembro[] {
+    let lista = this.vinculos.get(id);
+    if (!lista) {
+      const p = this.obter(id);
+      const desde = p.adesao?.primeiraAdesao ?? '2023-02-01T13:20:00Z';
+      lista =
+        p.perfil !== 'membro'
+          ? []
+          : [
+              { id: this.proximoVinculo++, convenioId: 0, nome: 'MENSALIDADE', fixo: true, nativo: true, valor: 45, dataAdesao: desde, dataExclusao: null, status: 'ATIVO' },
+              { id: this.proximoVinculo++, convenioId: 1, nome: 'PLANO ODONTOLÓGICO', fixo: true, nativo: false, valor: 32.9, dataAdesao: desde, dataExclusao: null, status: 'ATIVO' },
+              { id: this.proximoVinculo++, convenioId: 2, nome: 'SEGURO DE VIDA EM GRUPO', fixo: true, nativo: false, valor: 18.5, dataAdesao: desde, dataExclusao: '2025-08-01T10:00:00', status: 'DESLIGADO' },
+            ];
+      this.vinculos.set(id, lista);
+    }
+    return lista;
   }
 
   indicacoes(id: number): Observable<Indicacao[]> {

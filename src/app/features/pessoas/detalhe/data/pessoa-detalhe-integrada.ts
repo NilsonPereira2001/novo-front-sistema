@@ -1,5 +1,5 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
+import { Injectable, LOCALE_ID, inject } from '@angular/core';
 import { Observable, catchError, forkJoin, map, switchMap, throwError } from 'rxjs';
 
 import { apiUrl } from '../../../../core/http/api-url';
@@ -9,6 +9,7 @@ import { isRecord } from '../../../../shared/utils/json-read';
 import { PessoaDTO } from '../../models/pessoa.dto';
 import {
   ArquivoPessoa,
+  ConvenioDoMembro,
   DadosDesligamento,
   DependenteResumo,
   DocumentoGerado,
@@ -19,6 +20,7 @@ import {
   TipoDocumento,
 } from '../models/pessoa-detalhe.model';
 import { perfilDoTipo } from '../models/perfil-config';
+import { CONVENIOS_API, ordenarConvenios, toConvenioDoMembro, toConvenioOpcao } from './convenio.adapter';
 import { INDICACOES_API, toIndicacao } from './indicacao.adapter';
 import { ARQUIVOS_API, ordenarArquivos, toArquivoPessoa, toUploadBody } from './arquivo.adapter';
 import { CadastroLookupsService } from '../../cadastro-membro/data/cadastro-lookups.service';
@@ -53,10 +55,10 @@ export const DETALHE_API = {
 };
 
 /**
- * Fonte usada pela tela. Da API: cadastro, ficha em PDF e indicações do associado,
+ * Fonte usada pela tela. Da API: cadastro, ficha em PDF, convênios e indicações do associado,
  * cadastro do dependente (com desligar/reativar), dependentes do titular e
  * inclusão de dependente, e arquivos de qualquer pessoa. Funcionário,
- * convênios, demais documentos e desligar/reativar do associado
+ * demais documentos e desligar/reativar do associado
  * seguem na demonstração até terem endpoints próprios.
  */
 @Injectable()
@@ -110,6 +112,61 @@ export class PessoaDetalheIntegrada extends PessoaDetalheDemo {
       throw new UnexpectedResponseError();
     }
     return this.salvar(detalhe);
+  }
+
+  // --- Convênios do associado (ConvenioController / convenios_associados) ---------
+
+  private readonly locale = inject(LOCALE_ID);
+
+  /** Id do Associado do cadastro real carregado, ou null (demonstração). */
+  private associadoReal(id: number): number | null {
+    const atual = this.registrado(id);
+    return atual?.origem === 'api' && atual.associadoId ? atual.associadoId : null;
+  }
+
+  override convenios(id: number): Observable<ConvenioDoMembro[]> {
+    const idAssociado = this.associadoReal(id);
+    if (idAssociado === null) {
+      return super.convenios(id);
+    }
+    const lista = (url: string) =>
+      this.http.get<unknown>(apiUrl(url)).pipe(
+        map((raw) => {
+          if (!Array.isArray(raw)) {
+            throw new UnexpectedResponseError();
+          }
+          return raw.map(toConvenioDoMembro).filter((c): c is ConvenioDoMembro => c !== null);
+        }),
+      );
+    return forkJoin([lista(CONVENIOS_API.ativos(idAssociado)), lista(CONVENIOS_API.desligados(idAssociado))]).pipe(
+      map(([ativos, desligados]) => ordenarConvenios([...ativos, ...desligados])),
+    );
+  }
+
+  override conveniosDisponiveis(): Observable<Opcao[]> {
+    return this.http.get<unknown>(apiUrl(CONVENIOS_API.disponiveis)).pipe(
+      map((raw) =>
+        (Array.isArray(raw) ? raw : [])
+          .map((c) => toConvenioOpcao(c, this.locale))
+          .filter((o): o is Opcao => o !== null)
+          .sort((a, b) => a.label.localeCompare(b.label, 'pt-BR')),
+      ),
+    );
+  }
+
+  override adicionarConvenio(id: number, idConvenio: number): Observable<void> {
+    const idAssociado = this.associadoReal(id);
+    if (idAssociado === null) {
+      return super.adicionarConvenio(id, idConvenio);
+    }
+    return this.http.post(apiUrl(CONVENIOS_API.adicionar(idConvenio, idAssociado)), null).pipe(map(() => undefined));
+  }
+
+  override desligarConvenio(id: number, idVinculo: number): Observable<void> {
+    if (this.associadoReal(id) === null) {
+      return super.desligarConvenio(id, idVinculo);
+    }
+    return this.http.post(apiUrl(CONVENIOS_API.desligar(idVinculo)), null).pipe(map(() => undefined));
   }
 
   // --- Indicações (AssociadoController) -------------------------------------------

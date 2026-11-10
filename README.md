@@ -186,6 +186,13 @@ Ao clicar no nome de uma pessoa na lista, abre o detalhe. É **uma tela só** pa
 - **Campos novos na tela e na ficha:** título de eleitor e carteira (impressa/entregue).
 - **Testes:** `associado.adapter.spec.ts`.
 
+**Convênios do associado (dados reais):** tabela `convenios_associados` (`ConvenioAssociado`), pelas rotas de `convenios/` (ajustes no PR #5 do `back-novo`).
+
+- **Aba Convênios:** mostra os ativos (`GET convenios/associado/{idAssociado}`), com o total mensal dos fixos, e o histórico de desligados (`GET convenios/associado/removidos/{idAssociado}`).
+- **Adicionar:** escolhe um dos convênios de `GET convenios/fixos/nao/nativos/ativos` que ainda não esteja ativo e envia `POST convenios/convenio/{idConvenio}/associado/{idAssociado}`.
+- **Desligar:** `POST convenios/convenio/associado/{idConvenioAssociado}` marca como DESLIGADO e mantém o histórico. Convênios **nativos** (ex.: mensalidade) não têm o botão.
+- **Arquivos:** `detalhe/data/convenio.adapter.ts` e `detalhe/abas/aba-convenios.ts`, com testes em `convenio.adapter.spec.ts`.
+
 **Indicações (dados reais):** usam as rotas do PR #4 do `back-novo`.
 
 - **Aba Indicações do associado:** `GET associado/indicados/{idAssociado}/resumo` (`IndicacaoDTO`). Mostra o total e quantas estão ativas (mesmo critério do `contarIndicacoesAtivas`), com nome, CPF, adesão e status. O nome abre o cadastro do indicado.
@@ -217,7 +224,7 @@ Ao clicar no nome de uma pessoa na lista, abre o detalhe. É **uma tela só** pa
 **Rota do detalhe:** `GET /associado/pessoa/{idPessoa}` (PR #1 do `back-novo`), configurada em `DETALHE_API`, no arquivo `detalhe/data/pessoa-detalhe-integrada.ts`. Ela recebe o **id da Pessoa**, o mesmo da lista.
 
 - **Cadastro de associado:** vem do servidor, com o aviso "Integração parcial".
-- **Continuam de demonstração:** cadastro de funcionário, convênios, os demais documentos e desligar/reativar do associado.
+- **Continuam de demonstração:** cadastro de funcionário, os demais documentos e desligar/reativar do associado.
 - **404:** a tela mostra "Cadastro não encontrado".
 - **Formatos aceitos:** o adaptador lê as duas versões da entidade, com `Instant`/`LocalDate` ou com `Date`, foto em `imgPerfil` ou em `foto`, e `Conta` com `numero_conta`/`pix`/`operacao` ou com os nomes do DTO.
 

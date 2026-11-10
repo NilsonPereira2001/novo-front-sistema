@@ -33,7 +33,13 @@ export abstract class PessoaDetalheFonte {
    */
   abstract detalhe(id: number, resumo?: PessoaDTO | null): Observable<PessoaDetalhe>;
 
+  /** Convênios do associado: ativos e histórico (desligados). */
   abstract convenios(id: number): Observable<ConvenioDoMembro[]>;
+  /** Convênios que podem ser adicionados ao associado. */
+  abstract conveniosDisponiveis(): Observable<Opcao[]>;
+  abstract adicionarConvenio(id: number, idConvenio: number): Observable<void>;
+  /** Desliga o vínculo (id de ConvenioAssociado); o histórico é mantido. */
+  abstract desligarConvenio(id: number, idVinculo: number): Observable<void>;
   abstract indicacoes(id: number): Observable<Indicacao[]>;
   abstract dependentes(id: number): Observable<DependenteResumo[]>;
   /** Listas do formulário de inclusão de dependente. */
