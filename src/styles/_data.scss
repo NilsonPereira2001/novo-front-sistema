@@ -358,3 +358,14 @@
   justify-content: flex-end;
   margin-bottom: var(--space-4);
 }
+
+// Linha de totais acima de uma lista dentro de aba
+.lista-resumo {
+  margin-bottom: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+
+  strong {
+    color: var(--color-navy-900);
+  }
+}

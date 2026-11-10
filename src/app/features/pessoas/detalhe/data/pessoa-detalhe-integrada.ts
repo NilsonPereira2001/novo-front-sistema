@@ -12,12 +12,14 @@ import {
   DadosDesligamento,
   DependenteResumo,
   DocumentoGerado,
+  Indicacao,
   NovoDependente,
   OpcoesDependente,
   PessoaDetalhe,
   TipoDocumento,
 } from '../models/pessoa-detalhe.model';
 import { perfilDoTipo } from '../models/perfil-config';
+import { INDICACOES_API, toIndicacao } from './indicacao.adapter';
 import { ARQUIVOS_API, ordenarArquivos, toArquivoPessoa, toUploadBody } from './arquivo.adapter';
 import { CadastroLookupsService } from '../../cadastro-membro/data/cadastro-lookups.service';
 import { normalizeKey } from '../../../../shared/utils/text';
@@ -51,10 +53,10 @@ export const DETALHE_API = {
 };
 
 /**
- * Fonte usada pela tela. Da API: cadastro e ficha em PDF do associado,
+ * Fonte usada pela tela. Da API: cadastro, ficha em PDF e indicações do associado,
  * cadastro do dependente (com desligar/reativar), dependentes do titular e
  * inclusão de dependente, e arquivos de qualquer pessoa. Funcionário,
- * convênios, indicações, demais documentos e desligar/reativar do associado
+ * convênios, demais documentos e desligar/reativar do associado
  * seguem na demonstração até terem endpoints próprios.
  */
 @Injectable()
@@ -108,6 +110,24 @@ export class PessoaDetalheIntegrada extends PessoaDetalheDemo {
       throw new UnexpectedResponseError();
     }
     return this.salvar(detalhe);
+  }
+
+  // --- Indicações (AssociadoController) -------------------------------------------
+
+  /** Indicados por este associado (usa o id do Associado do cadastro carregado). */
+  override indicacoes(id: number): Observable<Indicacao[]> {
+    const atual = this.registrado(id);
+    if (atual?.origem !== 'api' || !atual.associadoId) {
+      return super.indicacoes(id);
+    }
+    return this.http.get<unknown>(apiUrl(INDICACOES_API.indicados(atual.associadoId))).pipe(
+      map((raw) => {
+        if (!Array.isArray(raw)) {
+          throw new UnexpectedResponseError();
+        }
+        return raw.map(toIndicacao).filter((i): i is Indicacao => i !== null);
+      }),
+    );
   }
 
   // --- Dependentes (DependenteController) ------------------------------------------

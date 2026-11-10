@@ -186,6 +186,12 @@ Ao clicar no nome de uma pessoa na lista, abre o detalhe. É **uma tela só** pa
 - **Campos novos na tela e na ficha:** título de eleitor e carteira (impressa/entregue).
 - **Testes:** `associado.adapter.spec.ts`.
 
+**Indicações (dados reais):** usam as rotas do PR #4 do `back-novo`.
+
+- **Aba Indicações do associado:** `GET associado/indicados/{idAssociado}/resumo` (`IndicacaoDTO`). Mostra o total e quantas estão ativas (mesmo critério do `contarIndicacoesAtivas`), com nome, CPF, adesão e status. O nome abre o cadastro do indicado.
+- **Campo "Indicado por" do cadastro:** `GET associado/indicadores?filtro=` traz só associados ATIVOS e usa o **id do Associado**, que é o que `AssociadoNovoDTO.associadoIndicador` espera. A busca anterior usava a lista de pessoas e enviava o id da Pessoa.
+- **Arquivos:** `detalhe/data/indicacao.adapter.ts`, com testes em `indicacao.adapter.spec.ts`.
+
 **Dependentes (dados reais):** usam o `DependenteController`, com os ajustes do PR #3 do `back-novo`.
 
 - **Aba Dependentes do titular:** lista em `GET dependente/titular/{idPessoaTitular}`, com parentesco, CPF, nascimento, agregado e status. Cada nome abre o detalhe do dependente.
@@ -211,7 +217,7 @@ Ao clicar no nome de uma pessoa na lista, abre o detalhe. É **uma tela só** pa
 **Rota do detalhe:** `GET /associado/pessoa/{idPessoa}` (PR #1 do `back-novo`), configurada em `DETALHE_API`, no arquivo `detalhe/data/pessoa-detalhe-integrada.ts`. Ela recebe o **id da Pessoa**, o mesmo da lista.
 
 - **Cadastro de associado:** vem do servidor, com o aviso "Integração parcial".
-- **Continuam de demonstração:** cadastro de funcionário, convênios, indicações, os demais documentos e desligar/reativar do associado.
+- **Continuam de demonstração:** cadastro de funcionário, convênios, os demais documentos e desligar/reativar do associado.
 - **404:** a tela mostra "Cadastro não encontrado".
 - **Formatos aceitos:** o adaptador lê as duas versões da entidade, com `Instant`/`LocalDate` ou com `Date`, foto em `imgPerfil` ou em `foto`, e `Conta` com `numero_conta`/`pix`/`operacao` ou com os nomes do DTO.
 

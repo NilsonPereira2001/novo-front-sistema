@@ -7,14 +7,13 @@ import { UnexpectedResponseError } from '../../../../core/http/load-error';
 import { Opcao, toOpcao } from '../../../../shared/data/opcao.model';
 import { toPage } from '../../../../shared/data/page.model';
 import { JsonRecord, isRecord } from '../../../../shared/utils/json-read';
-import { PessoaService } from '../../data/pessoas.service';
+import { INDICACOES_API, toIndicadorOpcao, toIndicadoresParams } from '../../detalhe/data/indicacao.adapter';
 import { TiposPessoaService } from '../../data/tipos-pessoa.service';
 import {
   BUSCA_TAMANHO,
   CADASTRO_API,
   LABELS,
   convenioDetalhe,
-  indicadorDetalhe,
   toEmpresasParams,
   toUnidadesBody,
 } from './cadastro-api';
@@ -29,7 +28,6 @@ import {
 @Injectable({ providedIn: 'root' })
 export class CadastroLookupsService {
   private readonly http = inject(HttpClient);
-  private readonly pessoas = inject(PessoaService);
   private readonly tiposPessoaService = inject(TiposPessoaService);
 
   private readonly cache = new Map<string, Observable<Opcao[]>>();
@@ -90,22 +88,17 @@ export class CadastroLookupsService {
   }
 
   /**
-   * Busca de membro indicador. Não há endpoint próprio confirmado, então
-   * reaproveita a pesquisa paginada de pessoas já integrada.
+   * Busca de indicador: só associados ATIVOS (GET associado/indicadores).
+   * O id da opção é o do ASSOCIADO, que é o que AssociadoNovoDTO.associadoIndicador espera.
    */
   buscarIndicadores(termo: string): Observable<Opcao[]> {
-    return this.pessoas
-      .listarFiltradasPaginada({ filtro: termo || undefined, page: 0, size: BUSCA_TAMANHO })
+    return this.http
+      .get<unknown>(apiUrl(INDICACOES_API.indicadores), { params: toIndicadoresParams(termo) })
       .pipe(
-        map((page) =>
-          page.content
-            .map((p): Opcao | null => {
-              const id = Number(p.id);
-              return Number.isSafeInteger(id) && id > 0 && p.nome
-                ? { id, label: p.nome, detalhe: indicadorDetalhe(p.cpf, p.tipo) }
-                : null;
-            })
-            .filter((o): o is Opcao => o !== null),
+        map((raw) =>
+          Array.isArray(raw)
+            ? raw.map(toIndicadorOpcao).filter((o): o is Opcao => o !== null)
+            : [],
         ),
       );
   }

@@ -193,7 +193,7 @@
                 [control]="a.associadoIndicador"
                 [buscar]="buscarIndicadores"
                 placeholder="Digite o nome ou CPF"
-                hint="Busca entre as pessoas já cadastradas."
+                [hint]="'Somente ' + termos.membros.toLowerCase() + ' ativos.'"
               />
               <div class="span-12">
                 <app-convenios-field [control]="a.convenios" [state]="convenios.state()" (retry)="convenios.retry()" />

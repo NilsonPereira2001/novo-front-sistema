@@ -112,6 +112,10 @@ export class AbaConvenios {
             <p class="state__text">Ninguém foi cadastrado por indicação deste {{ termos.membroMin }}.</p>
           </div>
         } @else {
+          <p class="lista-resumo">
+            <strong>{{ itens().length }}</strong> {{ itens().length === 1 ? 'indicação' : 'indicações' }} ·
+            <strong>{{ ativas() }}</strong> {{ ativas() === 1 ? 'ativa' : 'ativas' }}
+          </p>
           <div class="table-scroll">
             <table class="data-table">
               <caption class="sr-only">Pessoas indicadas</caption>
@@ -119,14 +123,14 @@ export class AbaConvenios {
                 <tr>
                   <th scope="col">Nome</th>
                   <th scope="col">CPF</th>
-                  <th scope="col">Cadastrado em</th>
+                  <th scope="col">Adesão</th>
                   <th scope="col">Status</th>
                 </tr>
               </thead>
               <tbody>
                 @for (i of itens(); track i.id) {
                   <tr>
-                    <td><a class="person-cell" [routerLink]="['/pessoas', i.id]">{{ i.nome }}</a></td>
+                    <td><a class="person-cell" [routerLink]="['/pessoas', i.id]" [state]="{ resumo: { id: i.id, nome: i.nome, cpf: i.cpf, tipo: termos.membro.toUpperCase(), status: i.status } }">{{ i.nome }}</a></td>
                     <td class="cell-mono">{{ i.cpf | cpf }}</td>
                     <td class="cell-mono">{{ (i.dataCadastro | date: 'dd/MM/yyyy') ?? '—' }}</td>
                     <td><span class="status" [attr.data-tone]="tom(i.status)"><span class="status__dot"></span>{{ i.status | displayValue }}</span></td>
@@ -157,6 +161,8 @@ export class AbaIndicacoes {
     this.tentar.update((n) => n + 1);
   }
   protected readonly estado = loadFrom(this.pessoaId, (id) => this.fonte.indicacoes(id), this.tentar);
+  /** Mesmo critério do backend (contarIndicacoesAtivas): status ATIVO. */
+  protected readonly ativas = computed(() => this.itens().filter((i) => tomDoStatus(i.status) === 'success').length);
   protected readonly itens = computed(() => { const e = this.estado(); return e.status === 'ready' ? e.data : []; });
   protected readonly erro = computed(() => { const e = this.estado(); return e.status === 'error' ? e.kind : null; });
 }
