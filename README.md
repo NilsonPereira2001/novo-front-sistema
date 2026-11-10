@@ -148,7 +148,7 @@ O botão fica bloqueado durante o envio para evitar cadastro duplicado.
 
 **Payload:**
 - Só são enviadas propriedades do DTO, e os opcionais vazios são omitidos.
-- `id` e `dataCadastro` nunca são enviados.
+- `id` nunca é enviado. `dataCadastro` é a **data de adesão** da etapa "Adesão e convênios" (começa com hoje, obrigatória), enviada como Instant com a hora atual; o backend grava em `pessoas.data_cadastro`, `primeiraAdesao`, `ultimaAdesao` e na adesão dos convênios. Na edição o campo não aparece e não é enviado.
 - Relacionamentos vão como `{ "id": n }`, e as datas como `YYYY-MM-DD`.
 - CPF, CEP e telefones vão só com dígitos.
 - `telefones` vai como `[{ telefone, principal }]`, sem `pessoa`, e `convenios` como `[{ id }]`.

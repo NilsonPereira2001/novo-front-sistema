@@ -217,6 +217,17 @@
           }
           @case ('adesao') {
             <div class="form-grid">
+              @if (!editando()) {
+                <app-text-field
+                  class="span-4"
+                  label="Data de adesão"
+                  type="date"
+                  [control]="a.dataAdesao"
+                  [required]="true"
+                  hint="Começa com a data de hoje. Vale como data de cadastro e de primeira adesão."
+                />
+                <div class="span-8"></div>
+              }
               <app-select-field class="span-6" label="Tipo de sócio" [control]="a.tipoSocio" [state]="tiposSocio.state()" (retry)="tiposSocio.retry()" />
               <app-busca-select
                 class="span-6"
@@ -351,6 +362,9 @@
                   <button type="button" class="link-button" (click)="irPara(5)">Editar</button>
                 </header>
                 <dl class="review__list">
+                  @if (!editando()) {
+                    <div><dt>Data de adesão</dt><dd>@if (a.dataAdesao.value) { {{ a.dataAdesao.value | date: 'dd/MM/yyyy' }} } @else { — }</dd></div>
+                  }
                   <div><dt>Tipo de sócio</dt><dd>{{ rotulo(tiposSocio, a.tipoSocio.value) }}</dd></div>
                   <div><dt>{{ termos.membro }} indicador</dt><dd>{{ a.associadoIndicador.value?.label ?? '—' }}</dd></div>
                   @if (!editando()) {

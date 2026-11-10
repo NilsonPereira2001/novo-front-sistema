@@ -7,7 +7,8 @@
 import { Opcao } from '../../../../shared/data/opcao.model';
 import { isRecord, readNumber, readRecord, readString } from '../../../../shared/utils/json-read';
 import { applyMask } from '../../../../shared/utils/masks';
-import { dataLocal } from '../../detalhe/data/associado.adapter';
+import { hojeIso } from '../../../../shared/utils/datas';
+import { dataLocal, instante } from '../../detalhe/data/associado.adapter';
 import { AssociadoNovoPayload } from '../models/associado-novo.dto';
 import { MembroFormValue } from './membro-form';
 import { toAssociadoNovoPayload } from './membro-payload';
@@ -99,6 +100,8 @@ export function toDadosEdicao(raw: unknown): DadosEdicao | null {
         dataIncorporacao: dataLocal(raw, ['dataIncorporacao']) ?? '',
       },
       adesao: {
+        // Só informativo na edição (o campo fica oculto e não é enviado).
+        dataAdesao: (instante(raw, ['dataCadastro']) ?? '').slice(0, 10) || hojeIso(),
         tipoSocio: idDe(raw['tipoSocio']),
         associadoIndicador: opcao(raw['associadoIndicador'], (r) => {
           const pessoa = readRecord(r, ['pessoa']);
@@ -120,6 +123,7 @@ export function toDadosEdicao(raw: unknown): DadosEdicao | null {
  * backend mantém a atual quando `foto` vem null; `""` remove.
  */
 export function toAssociadoEdicaoPayload(v: MembroFormValue, idAssociado: number): AssociadoEdicaoPayload {
-  const { convenios: _convenios, ...base } = toAssociadoNovoPayload(v, 'data-url');
+  // A data de adesão não é alterada pela edição.
+  const { convenios: _convenios, dataCadastro: _dataCadastro, ...base } = toAssociadoNovoPayload(v, 'data-url');
   return { ...base, id: idAssociado, foto: v.pessoais.foto ?? '' };
 }

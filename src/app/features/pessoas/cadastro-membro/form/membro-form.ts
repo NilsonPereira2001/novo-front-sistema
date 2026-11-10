@@ -9,13 +9,14 @@ import {
   notFutureDateValidator,
   telefoneValidator,
 } from '../../../../shared/validators/brazil.validators';
+import { hojeIso } from '../../../../shared/utils/datas';
 import { requiredTrimmed } from '../../../../shared/validators/text.validators';
 
 /**
  * Estado interno do formulário de cadastro (o que a tela edita).
  * O JSON enviado ao backend é montado à parte, em `membro-payload.ts`.
  *
- * Obrigatoriedade: CPF, nome, data de nascimento e sexo sempre; empresa
+ * Obrigatoriedade: CPF, nome, data de nascimento, sexo e data de adesão sempre; empresa
  * conveniada quando o vínculo é CONVENIADO.
  * Textos são gravados em MAIÚSCULAS (exceto e-mail e chave Pix).
  */
@@ -98,6 +99,8 @@ export function createMembroForm(fb: NonNullableFormBuilder) {
       ]),
     }),
     adesao: fb.group({
+      /** Vira dataCadastro da pessoa e primeira/última adesão do associado. Começa em hoje. */
+      dataAdesao: fb.control(hojeIso(), [Validators.required, isoDateValidator, minYearValidator(1900)]),
       tipoSocio: id(),
       associadoIndicador: fb.control<Opcao | null>(null),
       convenios: fb.control<number[]>([]),

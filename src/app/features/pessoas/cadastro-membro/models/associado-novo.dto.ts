@@ -4,7 +4,8 @@
  *
  * Regras de serialização adotadas:
  * - Somente propriedades que existem no DTO, com os mesmos nomes.
- * - `id` e `dataCadastro` NÃO são enviados: quem gera é o backend.
+ * - `id` NÃO é enviado. `dataCadastro` (Instant ISO) é a data de adesão escolhida na tela;
+ *   o backend usa para `pessoas.data_cadastro`, `primeiraAdesao` e `ultimaAdesao`.
  * - Relacionamentos vão como referência `{ id }` (⚠️ confirmar no backend).
  * - Datas `LocalDate` vão como `YYYY-MM-DD`.
  * - CPF, CEP e telefones vão só com dígitos (⚠️ confirmar no backend).
@@ -21,6 +22,8 @@ export interface TelefonePayload {
 }
 
 export interface AssociadoNovoPayload {
+  /** Data de adesão (Instant ISO). */
+  readonly dataCadastro?: string;
   // Dados pessoais
   readonly foto?: string;
   readonly cpf: string;

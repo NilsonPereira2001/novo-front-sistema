@@ -1,4 +1,5 @@
 import { onlyDigits } from '../../../../shared/utils/cpf';
+import { instanteDaData } from '../../../../shared/utils/datas';
 import { maiusculas } from '../../../../shared/utils/text';
 import { FOTO_FORMATO } from '../data/cadastro-api';
 import { AssociadoNovoPayload, Referencia, TelefonePayload } from '../models/associado-novo.dto';
@@ -7,7 +8,8 @@ import { MembroFormValue } from './membro-form';
 /**
  * Monta o JSON de `AssociadoNovoDTO` a partir do estado do formulário.
  *
- * - Não envia `id` nem `dataCadastro` (gerados pelo backend).
+ * - Não envia `id`. `dataCadastro` é a data de adesão digitada (com a hora atual):
+ *   o backend grava em `pessoas.data_cadastro`, `primeiraAdesao` e `ultimaAdesao`.
  * - Opcionais vazios são omitidos; `telefones` e `convenios` vão sempre como lista.
  * - Relacionamentos como `{ id }`; datas `YYYY-MM-DD`; CPF/CEP/telefone só dígitos.
  * - Textos em MAIÚSCULAS, exceto e-mail e chave Pix.
@@ -15,6 +17,7 @@ import { MembroFormValue } from './membro-form';
 export function toAssociadoNovoPayload(
   v: MembroFormValue,
   fotoFormato: typeof FOTO_FORMATO = FOTO_FORMATO,
+  agora: Date = new Date(),
 ): AssociadoNovoPayload {
   const { pessoais: p, endereco: e, bancarios: b, vinculo: vi, adesao: a, familia: f } = v;
 
@@ -58,6 +61,7 @@ export function toAssociadoNovoPayload(
     quadro: ref(vi.quadro),
     dataIncorporacao: text(vi.dataIncorporacao),
 
+    dataCadastro: instanteDaData(a.dataAdesao, agora),
     tipoSocio: ref(a.tipoSocio),
     associadoIndicador: ref(a.associadoIndicador?.id ?? null),
     convenios: [...new Set(a.convenios)].map((id) => ({ id })),

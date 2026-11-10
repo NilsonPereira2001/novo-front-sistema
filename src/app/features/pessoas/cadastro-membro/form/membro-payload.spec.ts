@@ -45,7 +45,7 @@ function formVazio(): MembroFormValue {
       quadro: null,
       dataIncorporacao: '',
     },
-    adesao: { tipoSocio: null, associadoIndicador: null, convenios: [] },
+    adesao: { dataAdesao: '', tipoSocio: null, associadoIndicador: null, convenios: [] },
     familia: { nomePai: '', nomeMae: '' },
   };
 }
@@ -63,10 +63,20 @@ describe('toAssociadoNovoPayload', () => {
     });
   });
 
-  it('nunca envia id nem dataCadastro', () => {
+  it('nunca envia id; sem data de adesão não envia dataCadastro', () => {
     const payload = toAssociadoNovoPayload(formVazio(), null) as unknown as Record<string, unknown>;
     expect('id' in payload).toBe(false);
     expect('dataCadastro' in payload).toBe(false);
+  });
+
+  it('data de adesão vai em dataCadastro como Instant, no dia escolhido com a hora atual', () => {
+    const v = formVazio();
+    v.adesao.dataAdesao = '2026-11-03';
+    const agora = new Date(2026, 10, 10, 16, 30, 15);
+    const iso = toAssociadoNovoPayload(v, null, agora).dataCadastro!;
+    const d = new Date(iso);
+    expect([d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes()]).toEqual([2026, 11, 3, 16, 30]);
+    expect(iso.endsWith('Z')).toBe(true);
   });
 
   it('envia relacionamentos como { id } e datas em YYYY-MM-DD', () => {

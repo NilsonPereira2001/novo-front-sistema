@@ -41,6 +41,7 @@ import {
   toCadastroErro,
 } from './data/cadastro-membro.service';
 import { DadosEdicao, toAssociadoEdicaoPayload } from './form/membro-edicao';
+import { hojeIso } from '../../../shared/utils/datas';
 import { MembroFormValue, createMembroForm, createTelefoneForm } from './form/membro-form';
 import { toAssociadoNovoPayload } from './form/membro-payload';
 
@@ -126,7 +127,7 @@ export class CadastroMembro {
     { key: 'telefones', titulo: 'Telefones', descricao: 'Contatos telefônicos' },
     { key: 'bancarios', titulo: 'Dados bancários', descricao: 'Conta, Pix e pagamento' },
     { key: 'vinculo', titulo: 'Dados funcionais', descricao: 'Vínculo e instituição' },
-    { key: 'adesao', titulo: 'Adesão e convênios', descricao: 'Tipo de sócio e convênios' },
+    { key: 'adesao', titulo: 'Adesão e convênios', descricao: 'Data de adesão, tipo de sócio e convênios' },
     { key: 'familia', titulo: 'Dados familiares', descricao: 'Filiação' },
     { key: 'revisao', titulo: 'Revisão', descricao: 'Confira antes de salvar' },
   ];
@@ -313,6 +314,7 @@ export class CadastroMembro {
 
   protected novoCadastro(): void {
     this.form.reset();
+    this.form.controls.adesao.controls.dataAdesao.setValue(hojeIso());
     this.form.controls.telefones.clear();
     this.envio.set({ status: 'idle' });
     this.irPara(0);

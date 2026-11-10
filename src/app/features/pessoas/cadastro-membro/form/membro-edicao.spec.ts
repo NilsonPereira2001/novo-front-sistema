@@ -71,6 +71,7 @@ describe('membro-edicao', () => {
   it('PUT leva o id do Associado, mantém a foto e não envia convênios', () => {
     const d = toDadosEdicao(dto())!;
     const payload = toAssociadoEdicaoPayload(d.valor, d.idAssociado) as unknown as Record<string, unknown>;
+    expect(d.valor.adesao.dataAdesao).toBe('2025-01-10');
     expect(payload['id']).toBe(501);
     expect(payload['foto']).toBe('data:image/png;base64,iVBORw0KGgo');
     expect('convenios' in payload).toBe(false);
