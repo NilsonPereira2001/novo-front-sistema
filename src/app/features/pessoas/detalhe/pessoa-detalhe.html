@@ -75,10 +75,12 @@
 
     @if (perfil(); as pf) {
       <div class="perfil__acoes">
-        <a class="btn btn--secondary btn--sm" [routerLink]="['/pessoas', d.id, 'editar']">
-          <app-icon name="pencil" />
-          Editar
-        </a>
+        @if (d.perfil === 'membro' && d.origem === 'api') {
+          <a class="btn btn--secondary btn--sm" [routerLink]="['/pessoas', d.id, 'editar']">
+            <app-icon name="pencil" />
+            Editar
+          </a>
+        }
 
         <div class="dropdown" #menuDocsRef>
           <button

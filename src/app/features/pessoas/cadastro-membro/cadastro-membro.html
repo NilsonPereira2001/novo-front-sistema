@@ -9,19 +9,50 @@
 
 <header class="page-header">
   <div class="page-header__text">
-    <a class="back-link" routerLink="/pessoas">
-      <app-icon name="arrow-left" />
-      Pessoas
-    </a>
-    <h1 class="page-title">Novo {{ termos.membroMin }}</h1>
-    <p class="page-subtitle">Preencha as etapas e revise os dados antes de salvar.</p>
+    @if (editando()) {
+      <a class="back-link" [routerLink]="['/pessoas', id()]">
+        <app-icon name="arrow-left" />
+        Voltar ao cadastro
+      </a>
+      <h1 class="page-title">Editar {{ termos.membroMin }}</h1>
+      <p class="page-subtitle">Altere o que for preciso e revise antes de salvar. CPF e convênios não são alterados aqui.</p>
+    } @else {
+      <a class="back-link" routerLink="/pessoas">
+        <app-icon name="arrow-left" />
+        Pessoas
+      </a>
+      <h1 class="page-title">Novo {{ termos.membroMin }}</h1>
+      <p class="page-subtitle">Preencha as etapas e revise os dados antes de salvar.</p>
+    }
   </div>
   <div class="page-header__actions">
     <button type="button" class="btn btn--secondary" (click)="cancelar()">Cancelar</button>
   </div>
 </header>
 
-@if (envio().status === 'sucesso') {
+@if (editando() && carga() !== 'pronto') {
+  <section class="card cadastro-carga" [attr.aria-busy]="carga() === 'carregando'">
+    @switch (carga()) {
+      @case ('nao-associado') {
+        <div class="state">
+          <span class="state__icon"><app-icon name="search" /></span>
+          <p class="state__title">Cadastro não encontrado</p>
+          <p class="state__text">Esta pessoa não tem cadastro de {{ termos.membroMin }} para editar.</p>
+          <a class="btn btn--secondary btn--sm" [routerLink]="['/pessoas', id()]">Voltar</a>
+        </div>
+      }
+      @case ('erro') {
+        <app-alert tone="danger" heading="Não foi possível carregar o cadastro">
+          Verifique a conexão e tente novamente.
+          <button type="button" class="link-button" (click)="carregarEdicao()">Tentar novamente</button>
+        </app-alert>
+      }
+      @default {
+        <p class="state__text" role="status"><span class="spinner" aria-hidden="true"></span> Carregando o cadastro…</p>
+      }
+    }
+  </section>
+} @else if (envio().status === 'sucesso') {
   <section class="card cadastro-sucesso" role="status">
     <span class="cadastro-sucesso__icon"><app-icon name="check-circle" /></span>
     <h2 class="cadastro-sucesso__title">Cadastro salvo com sucesso</h2>
@@ -89,7 +120,7 @@
             <div class="form-grid">
               <div class="span-12"><app-foto-field [control]="p.foto" /></div>
 
-              <app-text-field class="span-4" label="CPF" [control]="p.cpf" mask="cpf" placeholder="000.000.000-00" [required]="true" />
+              <app-text-field class="span-4" label="CPF" [control]="p.cpf" mask="cpf" placeholder="000.000.000-00" [required]="true" [blocked]="editando()" [hint]="editando() ? 'O CPF não é alterado na edição.' : null" />
               <app-text-field class="span-8" label="Nome completo" [control]="p.nome" autocomplete="name" [required]="true" />
 
               <app-text-field class="span-4" label="Nome de guerra" [control]="p.nomeGuerra" />
@@ -196,7 +227,11 @@
                 [hint]="'Somente ' + termos.membros.toLowerCase() + ' ativos.'"
               />
               <div class="span-12">
-                <app-convenios-field [control]="a.convenios" [state]="convenios.state()" (retry)="convenios.retry()" />
+                @if (editando()) {
+                  <p class="field__hint">Os convênios são gerenciados na aba Convênios do cadastro.</p>
+                } @else {
+                  <app-convenios-field [control]="a.convenios" [state]="convenios.state()" (retry)="convenios.retry()" />
+                }
               </div>
             </div>
           }
@@ -318,7 +353,9 @@
                 <dl class="review__list">
                   <div><dt>Tipo de sócio</dt><dd>{{ rotulo(tiposSocio, a.tipoSocio.value) }}</dd></div>
                   <div><dt>{{ termos.membro }} indicador</dt><dd>{{ a.associadoIndicador.value?.label ?? '—' }}</dd></div>
-                  <div><dt>Convênios</dt><dd>{{ conveniosSelecionados() }}</dd></div>
+                  @if (!editando()) {
+                    <div><dt>Convênios</dt><dd>{{ conveniosSelecionados() }}</dd></div>
+                  }
                 </dl>
               </section>
 
@@ -376,7 +413,7 @@
               Salvando…
             } @else {
               <app-icon name="check-circle" />
-              Salvar cadastro
+              {{ editando() ? 'Salvar alterações' : 'Salvar cadastro' }}
             }
           </button>
         } @else {

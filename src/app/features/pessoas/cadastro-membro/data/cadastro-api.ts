@@ -35,15 +35,20 @@ export const CADASTRO_API = {
    * duplicados." · 403 sem permissão · 500 texto com a exceção (nunca exibido).
    */
   criar: '/associado/salvar/novo' as string | null,
+  /** Id da Pessoa → Associado (para descobrir o id do Associado na edição). */
+  associadoPorPessoa: (idPessoa: number) => `/associado/pessoa/${idPessoa}`,
+  /** AssociadoNovoDTO preenchido para o formulário de edição (id do Associado). 404 se não existir. */
+  dadosEdicao: (idAssociado: number) => `/associado/dados/editar/${idAssociado}`,
+  /** PUT com AssociadoNovoDTO + id. 200 · 400 texto · 500. */
+  atualizar: '/associado/editar',
 } as const;
 
 /**
- * ⚠️ PENDENTE: formato esperado para `foto` (String no DTO).
- * - `null`: a foto é só pré-visualizada e NÃO é enviada (padrão até confirmar).
- * - `'data-url'`: envia `data:image/...;base64,...`.
- * - `'base64'`: envia só o conteúdo Base64, sem o prefixo `data:`.
+ * Formato de `foto` (String no DTO). O backend (PessoaService.salvarNovaPessoa e
+ * AssociadoService.atualizarAssociado) corta o que vem antes da vírgula e
+ * decodifica o Base64, então aceita a data URL inteira.
  */
-export const FOTO_FORMATO: 'data-url' | 'base64' | null = null;
+export const FOTO_FORMATO: 'data-url' | 'base64' | null = 'data-url';
 
 /** Tamanho máximo aceito para a foto antes de converter (proteção do navegador). */
 export const FOTO_TAMANHO_MAXIMO_BYTES = 2 * 1024 * 1024;

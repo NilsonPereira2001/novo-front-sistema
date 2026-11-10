@@ -3,16 +3,20 @@ import {
   Component,
   DestroyRef,
   computed,
+  effect,
   ElementRef,
   Signal,
   inject,
+  input,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { Observable, distinctUntilChanged, finalize, of } from 'rxjs';
+import { Observable, distinctUntilChanged, finalize, forkJoin, of } from 'rxjs';
 
 import { TERMOS } from '../../../core/config/terminologia';
 import { Alert } from '../../../shared/components/alert/alert';
@@ -36,7 +40,8 @@ import {
   CadastroMembroService,
   toCadastroErro,
 } from './data/cadastro-membro.service';
-import { createMembroForm } from './form/membro-form';
+import { DadosEdicao, toAssociadoEdicaoPayload } from './form/membro-edicao';
+import { MembroFormValue, createMembroForm, createTelefoneForm } from './form/membro-form';
 import { toAssociadoNovoPayload } from './form/membro-payload';
 
 type EtapaKey =
@@ -66,9 +71,14 @@ interface Lookup {
   readonly retry: () => void;
 }
 
+/** Estado do carregamento na edição. */
+type Carga = 'idle' | 'carregando' | 'pronto' | 'nao-associado' | 'erro';
+
 /**
  * Cadastro de membro (associado/afiliado) em etapas, com revisão antes do
- * envio. O estado do formulário fica em `membro-form.ts` e o JSON enviado
+ * envio. Também é a tela de edição (`/pessoas/:id/editar`): carrega o
+ * AssociadoNovoDTO, trava o CPF, deixa os convênios para a aba própria e
+ * salva com PUT associado/editar. O estado do formulário fica em `membro-form.ts` e o JSON enviado
  * é montado por `toAssociadoNovoPayload` (contrato AssociadoNovoDTO).
  */
 @Component({
@@ -93,6 +103,12 @@ interface Lookup {
   host: { '(window:beforeunload)': 'onBeforeUnload($event)' },
 })
 export class CadastroMembro {
+  /** `:id` da rota de edição (id da Pessoa). Ausente no cadastro novo. */
+  readonly id = input<string | undefined>();
+  protected readonly editando = computed(() => !!this.id());
+  protected readonly carga = signal<Carga>('idle');
+  private idAssociado: number | null = null;
+
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly lookups = inject(CadastroLookupsService);
   private readonly service = inject(CadastroMembroService);
@@ -169,6 +185,12 @@ export class CadastroMembro {
   protected readonly buscarEmpresas = (termo: string) => this.lookups.buscarEmpresas(termo);
 
   constructor() {
+    // Edição: carrega uma vez, quando o :id da rota chega.
+    effect(() => {
+      if (this.id() && untracked(this.carga) === 'idle') {
+        untracked(() => this.carregarEdicao());
+      }
+    });
     // Trocar o vínculo invalida instituição e unidade; trocar a instituição invalida a unidade.
     this.vinculo.tipoVinculo.valueChanges
       .pipe(distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
@@ -253,10 +275,13 @@ export class CadastroMembro {
       return;
     }
 
-    const payload = toAssociadoNovoPayload(this.form.getRawValue());
+    const valor = this.form.getRawValue();
+    const editar = this.editando() && this.idAssociado !== null;
+    const requisicao = editar
+      ? this.service.atualizar(toAssociadoEdicaoPayload(valor, this.idAssociado!))
+      : this.service.criar(toAssociadoNovoPayload(valor));
     this.envio.set({ status: 'enviando' });
-    this.service
-      .criar(payload)
+    requisicao
       .pipe(
         finalize(() => {
           if (this.envio().status === 'enviando') {
@@ -267,8 +292,16 @@ export class CadastroMembro {
       )
       .subscribe({
         next: () => {
-          this.envio.set({ status: 'sucesso' });
           this.form.markAsPristine();
+          if (editar) {
+            // Volta ao cadastro, que mostra o aviso e recarrega os dados do servidor.
+            this.envio.set({ status: 'idle' });
+            void this.router.navigate(['/pessoas', this.id()], {
+              state: { aviso: `Cadastro de ${valor.pessoais.nome.trim()} atualizado.` },
+            });
+            return;
+          }
+          this.envio.set({ status: 'sucesso' });
         },
         error: (error: unknown) => this.envio.set({ status: 'erro', erro: toCadastroErro(error) }),
       });
@@ -286,7 +319,56 @@ export class CadastroMembro {
   }
 
   protected cancelar(): void {
-    void this.router.navigate(['/pessoas']);
+    void this.router.navigate(this.editando() ? ['/pessoas', this.id()] : ['/pessoas']);
+  }
+
+  // --- Edição -------------------------------------------------------------------
+  /** Busca os dados (e a lista de vínculos, usada pelas regras MILITAR/CONVENIADO) e preenche. */
+  protected carregarEdicao(): void {
+    const idPessoa = Number(this.id());
+    if (!Number.isSafeInteger(idPessoa) || idPessoa <= 0) {
+      this.carga.set('nao-associado');
+      return;
+    }
+    this.carga.set('carregando');
+    forkJoin({ dados: this.service.carregarEdicao(idPessoa), vinculos: this.lookups.tiposVinculo() })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ dados }) => {
+          this.preencher(dados);
+          this.carga.set('pronto');
+        },
+        error: (e: unknown) =>
+          this.carga.set(e instanceof HttpErrorResponse && e.status === 404 ? 'nao-associado' : 'erro'),
+      });
+  }
+
+  /**
+   * Preenche na ordem que as regras exigem: vínculo → instituição → unidade e
+   * demais campos dependentes (cada troca limpa os campos que dependem dela).
+   */
+  private preencher(dados: DadosEdicao): void {
+    const v: MembroFormValue = dados.valor;
+    this.idAssociado = dados.idAssociado;
+    const c = this.form.controls;
+    c.pessoais.patchValue(v.pessoais);
+    c.endereco.patchValue(v.endereco);
+    c.bancarios.patchValue(v.bancarios);
+    c.familia.patchValue(v.familia);
+    c.adesao.patchValue(v.adesao);
+    c.telefones.clear();
+    v.telefones.forEach((t) => c.telefones.push(createTelefoneForm(this.fb, t)));
+
+    const vi = v.vinculo;
+    this.vinculo.tipoVinculo.setValue(vi.tipoVinculo);
+    this.vinculo.instituicao.setValue(vi.instituicao);
+    this.vinculo.unidade.setValue(vi.unidade);
+    this.vinculo.empresaConveniada.setValue(vi.empresaConveniada);
+    this.vinculo.matricula.setValue(vi.matricula);
+    this.vinculo.graduacao.setValue(vi.graduacao);
+    this.vinculo.quadro.setValue(vi.quadro);
+    this.vinculo.dataIncorporacao.setValue(vi.dataIncorporacao);
+    this.form.markAsPristine();
   }
 
   /** Usado pelo guard de saída: confirma antes de descartar dados preenchidos. */
@@ -294,7 +376,11 @@ export class CadastroMembro {
     if (!this.form.dirty || this.envio().status === 'sucesso') {
       return true;
     }
-    return window.confirm('Descartar o cadastro? Os dados preenchidos serão perdidos.');
+    return window.confirm(
+      this.editando()
+        ? 'Descartar as alterações? O que foi alterado não será salvo.'
+        : 'Descartar o cadastro? Os dados preenchidos serão perdidos.',
+    );
   }
 
   onBeforeUnload(event: BeforeUnloadEvent): void {

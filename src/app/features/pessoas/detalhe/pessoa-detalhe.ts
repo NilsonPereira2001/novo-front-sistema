@@ -153,9 +153,10 @@ export class PessoaDetalhePage {
       this.title.setTitle(pageTitle(nome ?? 'Pessoa'));
     });
     // Ao trocar de pessoa (ex.: clicar num dependente), limpa avisos e janelas.
+    // Aviso vindo da navegação (ex.: "Cadastro atualizado." ao voltar da edição).
     effect(() => {
       this.idNumero();
-      this.aviso.set(null);
+      this.aviso.set(avisoDaNavegacao());
       this.docAberto.set(null);
       this.menuDocs.set(false);
     });
@@ -266,4 +267,10 @@ function resumoDaNavegacao(id: number | null): PessoaDTO | null {
   }
   const resumo = state['resumo'] as unknown as PessoaDTO;
   return Number(resumo.id) === id ? resumo : null;
+}
+
+/** Mensagem enviada no `state` da navegação (ex.: depois de salvar a edição). */
+function avisoDaNavegacao(): string | null {
+  const state: unknown = history.state;
+  return isRecord(state) && typeof state['aviso'] === 'string' ? state['aviso'] : null;
 }

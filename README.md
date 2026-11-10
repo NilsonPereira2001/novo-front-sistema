@@ -110,7 +110,7 @@ Listagem integrada a `GET /pessoas/listar/filtradas/paginada` (`Page<PessoaDTO>`
 
 **Filtro por tipo:** as opções vêm de `GET /tipo/pessoas/listar` (`TipoPessoaController`), com `id` e `nome`. O seletor mostra o `nome` e envia o `id` em `idTipoPessoa`, sem nenhuma lista fixa no frontend. Pesquisa e tipo funcionam juntos, e limpar um não apaga o outro. O seletor tem estado de carregamento e mensagem de erro com "Tentar novamente".
 
-Ainda são telas em construção: aguardando deferimento, novo funcionário e edição de cadastro.
+Ainda são telas em construção: aguardando deferimento, novo funcionário e edição de dependente e de funcionário.
 
 ### Cadastro de membro (`/pessoas/novo/membro`)
 
@@ -156,12 +156,26 @@ O botão fica bloqueado durante o envio para evitar cadastro duplicado.
 
 **⚠️ Pendências do backend:**
 
-1. **Foto:** `FOTO_FORMATO` está `null`, então a foto é só pré-visualizada e **não vai no cadastro**. Defina `'data-url'` ou `'base64'` conforme o backend espera a `String foto`.
+1. **Foto:** enviada como data URL (`FOTO_FORMATO = 'data-url'`). O backend corta o que vem antes da vírgula e decodifica o Base64, tanto no cadastro quanto na edição.
 2. **`POST /unidade/listar`:** o corpo enviado é `{ "id": idInstituicao }`. Falta confirmar se é isso que o backend espera.
 3. **Campos de rótulo:** `Sexo` usa `sexo` e `FormaPagamento` usa `forma`. As demais entidades usam `nome`, `descricao`, `tipo` ou `sigla`. Se nenhum desses existir e a entidade tiver um único campo de texto, ele é usado. Os nomes de campo ficam em `LABELS`, no `cadastro-api.ts`.
 4. **Referências:** falta confirmar que o backend aceita `{ id }` nos relacionamentos e só dígitos em CPF, CEP e telefone.
 5. **Tipo de conta:** é texto livre, porque não há lista de valores confirmada.
 6. **Serviço de CEP:** não existe, então não há preenchimento automático do endereço.
+
+### Editar associado (`/pessoas/:id/editar`)
+
+O botão **Editar** do cadastro do associado abre o mesmo formulário do cadastro, já preenchido (PR #6 do `back-novo`).
+
+- **Carregamento:** o id da Pessoa vira o id do Associado (`GET associado/pessoa/{id}`), e o formulário é preenchido com `GET associado/dados/editar/{idAssociado}` (`AssociadoNovoDTO`).
+- **Ordem do preenchimento:** vínculo → instituição → unidade e demais campos, para as regras de MILITAR e CONVENIADO não apagarem o que veio do banco.
+- **CPF:** fica travado; o backend não altera CPF.
+- **Convênios:** ficam de fora; são geridos na aba Convênios.
+- **Salvar:** envia `PUT associado/editar` com o mesmo JSON do cadastro mais o `id` do Associado, e sem `convenios`. As regras de maiúsculas e de obrigatórios são as mesmas do cadastro. Ao salvar, volta ao cadastro com o aviso "Cadastro de … atualizado.".
+- **Foto:** vai a atual (ou a nova). Se for removida, vai `""`, que o backend entende como remover.
+- **Sair sem salvar:** pede confirmação.
+- **Arquivos:** `cadastro-membro/form/membro-edicao.ts`, com testes em `membro-edicao.spec.ts`.
+- **Dependentes e funcionários:** ainda não têm edição; o botão não aparece para eles.
 
 ### Detalhe da pessoa (`/pessoas/:id`) — ⚠️ dados fictícios
 

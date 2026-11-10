@@ -11,7 +11,7 @@ const confirmarDescarte: CanDeactivateFn<{ podeSair(): boolean }> = (component) 
 
 /**
  * Rotas do módulo Pessoas: listagem, cadastro de membro e detalhe.
- * Deferimento, cadastro de funcionário e edição ainda abrem "em construção".
+ * Deferimento e cadastro de funcionário ainda abrem "em construção".
  */
 const routes: Routes = [
   {
@@ -46,6 +46,14 @@ const routes: Routes = [
   },
   // As rotas com :id ficam por último para não capturar os caminhos fixos acima.
   {
+    // Edição do associado: o mesmo formulário do cadastro, preenchido (`id` = id da Pessoa).
+    path: ':id/editar',
+    title: pageTitle(`Editar ${TERMOS.membroMin}`),
+    canDeactivate: [confirmarDescarte],
+    loadComponent: () =>
+      import('./cadastro-membro/cadastro-membro').then((m) => m.CadastroMembro),
+  },
+  {
     path: ':id',
     /**
      * Cadastro do associado pela API (quando DETALHE_API estiver configurada);
@@ -58,16 +66,6 @@ const routes: Routes = [
         title: pageTitle('Pessoa'),
         loadComponent: () =>
           import('./detalhe/pessoa-detalhe').then((m) => m.PessoaDetalhePage),
-      },
-      {
-        path: 'editar',
-        title: pageTitle('Editar cadastro'),
-        data: {
-          titulo: 'Editar cadastro',
-          descricao:
-            'A edição vai reaproveitar o formulário de cadastro assim que o endpoint de atualização for informado.',
-        },
-        loadComponent: () => import('./em-construcao/em-construcao').then((m) => m.EmConstrucao),
       },
     ],
   },
