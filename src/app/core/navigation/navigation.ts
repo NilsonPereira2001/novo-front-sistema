@@ -63,6 +63,13 @@ export const NAVIGATION: readonly NavGroup[] = [
     label: 'Financeiro',
     items: [
       {
+        label: TERMOS.membros,
+        path: 'financeiro/associados',
+        icon: 'users',
+        description: `Débitos, crédito e extrato dos ${TERMOS.membrosMin}`,
+        available: true,
+      },
+      {
         label: 'Lançamentos',
         path: 'financeiro/lancamentos',
         icon: 'receipt',

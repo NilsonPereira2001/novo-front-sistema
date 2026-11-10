@@ -1,0 +1,289 @@
+<a class="back-link" routerLink="/financeiro/associados"><app-icon name="arrow-left" /> Financeiro · {{ termos.membros }}</a>
+
+@if (erro(); as kind) {
+  <section class="card">
+    @if (kind === 'not-found') {
+      <div class="state">
+        <span class="state__icon"><app-icon name="search" /></span>
+        <p class="state__title">{{ termos.membro }} não encontrado</p>
+        <a class="btn btn--secondary btn--sm" routerLink="/financeiro/associados">Voltar à lista</a>
+      </div>
+    } @else {
+      <app-load-error [kind]="kind" (retry)="tentarDeNovo()" />
+    }
+  </section>
+} @else if (dados(); as f) {
+  <div class="conteudo" [class.is-stale]="recarregando()" [attr.aria-busy]="recarregando()">
+    <!-- Cabeçalho -->
+    <section class="card cab" aria-labelledby="fin-nome">
+      <div class="cab__id">
+        <span class="cab__foto" aria-hidden="true">{{ initials(f.nome) }}</span>
+        <div class="cab__texto">
+          <div class="cab__tags">
+            <span class="status" [attr.data-tone]="tom(f.status)"><span class="status__dot"></span>{{ f.status | displayValue }}</span>
+            @if (f.tipoVinculo) { <span class="tag">{{ f.tipoVinculo }}</span> }
+          </div>
+          <h1 class="cab__nome" id="fin-nome">{{ f.nome }}</h1>
+          <dl class="cab__meta">
+            <div><dt>CPF</dt><dd class="cell-mono">{{ f.cpf | cpf }}</dd></div>
+            <div><dt>Forma de pagamento</dt><dd>{{ f.formaPagamento | displayValue }}</dd></div>
+            <div><dt>Telefone</dt><dd class="cell-mono">{{ f.telefone | telefone }}</dd></div>
+            <div><dt>Última adesão</dt><dd class="cell-mono">{{ (f.ultimaAdesao | date: 'dd/MM/yyyy') ?? '—' }}</dd></div>
+          </dl>
+        </div>
+      </div>
+      <div class="cab__acoes">
+        <a class="btn btn--secondary btn--sm" [routerLink]="['/pessoas', f.idPessoa]"><app-icon name="user" /> Cadastro</a>
+        <button type="button" class="btn btn--secondary btn--sm" (click)="pdfPeriodo.set(periodo)"><app-icon name="printer" /> Imprimir extrato</button>
+      </div>
+    </section>
+
+    @if (aviso(); as texto) {
+      <div class="aviso">
+        <app-alert tone="success">{{ texto }}</app-alert>
+        <button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button>
+      </div>
+    }
+    @if (acordoAtivo(); as ac) {
+      <app-alert tone="info" heading="Acordo ativo">
+        {{ ac.parcelasPagas }} de {{ ac.totalParcelas }} parcelas pagas · restam {{ ac.debitoRestante | currency: 'BRL' }}.
+      </app-alert>
+    }
+
+    <!-- Números -->
+    <section class="tiles" aria-label="Resumo financeiro">
+      <article class="tile card" [class.tile--alerta]="f.valorDebitos > 0">
+        <p class="tile__rotulo">Débitos pendentes</p>
+        <p class="tile__valor" [class.tile__valor--debito]="f.valorDebitos > 0">{{ f.valorDebitos | currency: 'BRL' }}</p>
+        <p class="tile__sub">{{ f.debitos.length }} {{ f.debitos.length === 1 ? 'débito' : 'débitos' }}</p>
+      </article>
+      <article class="tile card">
+        <p class="tile__rotulo">Crédito</p>
+        <p class="tile__valor">{{ f.credito | currency: 'BRL' }}</p>
+        <p class="tile__acoes">
+          <button type="button" class="link-button" (click)="creditoModo.set('adicionar')">Adicionar</button>
+          @if (f.credito > 0) {
+            · <button type="button" class="link-button link-button--perigo" (click)="creditoModo.set('zerar')">Zerar</button>
+          }
+        </p>
+      </article>
+      <article class="tile card">
+        <p class="tile__rotulo">Lançamento do mês</p>
+        <p class="tile__valor">{{ f.valorLancamentoAtual | currency: 'BRL' }}</p>
+        <p class="tile__sub">Vira débito ao fechar o mês</p>
+      </article>
+      <article class="tile card">
+        <p class="tile__rotulo">Convênios fixos / mês</p>
+        <p class="tile__valor">{{ f.valorMensalConvenios | currency: 'BRL' }}</p>
+        <p class="tile__sub">{{ f.convenios.length }} {{ f.convenios.length === 1 ? 'convênio ativo' : 'convênios ativos' }}</p>
+      </article>
+    </section>
+
+    <!-- Abas -->
+    <section class="card abas">
+      <div class="abas__lista" role="tablist" aria-label="Financeiro do {{ termos.membroMin }}">
+        @for (a of abas; track a.key) {
+          <button
+            type="button"
+            role="tab"
+            class="abas__aba"
+            [id]="'fin-aba-' + a.key"
+            [class.is-active]="abaAtiva() === a.key"
+            [attr.aria-selected]="abaAtiva() === a.key"
+            [attr.aria-controls]="'fin-painel'"
+            (click)="selecionarAba(a.key)"
+          >
+            <app-icon [name]="a.icon" />
+            {{ a.titulo }}
+            @if (a.key === 'debitos' && f.debitos.length) { <span class="contador">{{ f.debitos.length }}</span> }
+          </button>
+        }
+      </div>
+
+      <div class="abas__painel" role="tabpanel" id="fin-painel" [attr.aria-labelledby]="'fin-aba-' + abaAtiva()">
+        @switch (abaAtiva()) {
+          @case ('debitos') {
+            @if (f.debitos.length === 0) {
+              <div class="state">
+                <span class="state__icon state__icon--ok"><app-icon name="check-circle" /></span>
+                <p class="state__title">Nenhum débito pendente</p>
+                <p class="state__text">Este {{ termos.membroMin }} está em dia.</p>
+              </div>
+            } @else {
+              <div class="selecao" [class.is-on]="selecionados().size > 0">
+                @if (selecionados().size > 0) {
+                  <span><strong>{{ selecionados().size }}</strong> selecionado(s) · {{ totalSelecionado() | currency: 'BRL' }}</span>
+                  <span class="selecao__acoes">
+                    <button type="button" class="btn btn--primary btn--sm" (click)="pagar(debitosSelecionados())"><app-icon name="check-circle" /> Pagar selecionados</button>
+                    <button type="button" class="btn btn--danger-outline btn--sm" (click)="anistiar(debitosSelecionados())"><app-icon name="shield" /> Anistiar selecionados</button>
+                  </span>
+                } @else {
+                  <span>Marque os débitos para pagar ou anistiar vários de uma vez.</span>
+                }
+              </div>
+              <div class="table-scroll">
+                <table class="data-table">
+                  <caption class="sr-only">Débitos pendentes</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col" class="check">
+                        <input type="checkbox" [checked]="todosMarcados()" (change)="marcarTodos($event)" aria-label="Selecionar todos os débitos" />
+                      </th>
+                      <th scope="col">Descrição</th>
+                      <th scope="col">Origem</th>
+                      <th scope="col">Situação</th>
+                      <th scope="col" class="num">Valor</th>
+                      <th scope="col"><span class="sr-only">Ações</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (d of f.debitos; track d.id) {
+                      @let s = situacao(d.status);
+                      <tr [class.is-selected]="selecionados().has(d.id)">
+                        <td class="check">
+                          <input type="checkbox" [checked]="selecionados().has(d.id)" (change)="marcar(d.id, $event)" [attr.aria-label]="'Selecionar ' + d.descricao" />
+                        </td>
+                        <td>
+                          {{ d.descricao }}
+                          @if (d.idAcordo) { <span class="tag">Acordo</span> }
+                          @if (d.observacao) { <span class="sub">{{ d.observacao }}</span> }
+                        </td>
+                        <td class="cell-mono">{{ (d.dataOrigem | date: 'dd/MM/yyyy') ?? '—' }}</td>
+                        <td><span class="situacao" [attr.data-tom]="s.tom">{{ s.rotulo }}</span></td>
+                        <td class="num"><strong>{{ d.valor | currency: 'BRL' }}</strong></td>
+                        <td class="acoes">
+                          <button type="button" class="btn btn--primary btn--sm" (click)="pagar([d])" [attr.aria-label]="'Pagar ' + d.descricao">Pagar</button>
+                          <button type="button" class="btn btn--secondary btn--sm" (click)="anistiar([d])" [attr.aria-label]="'Anistiar ' + d.descricao">Anistiar</button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td></td>
+                      <th scope="row" colspan="3">Total pendente</th>
+                      <td class="num"><strong>{{ f.valorDebitos | currency: 'BRL' }}</strong></td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            }
+          }
+          @case ('atual') {
+            <p class="explica">Lançamentos do mês ainda aberto. Ao fechar o mês, o crédito é abatido e o que sobrar vira débito.</p>
+            @if (f.lancamentoAtual.length === 0) {
+              <p class="vazio">Nenhum lançamento no mês atual.</p>
+            } @else {
+              <div class="table-scroll">
+                <table class="data-table">
+                  <caption class="sr-only">Lançamento do mês</caption>
+                  <thead><tr><th scope="col">Descrição</th><th scope="col">Tipo</th><th scope="col">Gerado em</th><th scope="col" class="num">Valor</th></tr></thead>
+                  <tbody>
+                    @for (l of f.lancamentoAtual; track l.id) {
+                      <tr>
+                        <td>{{ l.descricao }} @if (l.observacao) { <span class="sub">{{ l.observacao }}</span> }</td>
+                        <td>{{ l.tipo | displayValue }}</td>
+                        <td class="cell-mono">{{ (l.dataOrigem | date: 'dd/MM/yyyy') ?? '—' }}</td>
+                        <td class="num">{{ l.valor | currency: 'BRL' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                  <tfoot><tr><th scope="row" colspan="3">Total do mês</th><td class="num"><strong>{{ f.valorLancamentoAtual | currency: 'BRL' }}</strong></td></tr></tfoot>
+                </table>
+              </div>
+            }
+          }
+          @case ('extrato') {
+            <app-fin-extrato [idAssociado]="f.idAssociado" [versao]="versaoExtrato()" (imprimir)="pdfPeriodo.set($event)" />
+          }
+          @case ('convenios') {
+            @if (f.convenios.length === 0) {
+              <p class="vazio">Nenhum convênio ativo.</p>
+            } @else {
+              <div class="table-scroll">
+                <table class="data-table">
+                  <caption class="sr-only">Convênios ativos</caption>
+                  <thead><tr><th scope="col">Convênio</th><th scope="col">Cobrança</th><th scope="col">Adesão</th><th scope="col" class="num">Valor</th></tr></thead>
+                  <tbody>
+                    @for (c of f.convenios; track c.id) {
+                      <tr>
+                        <td>{{ c.nome }}</td>
+                        <td>{{ c.fixo ? 'Mensal (fixo)' : 'Avulso' }}</td>
+                        <td class="cell-mono">{{ (c.dataAdesao | date: 'dd/MM/yyyy') ?? '—' }}</td>
+                        <td class="num">{{ c.valor === null ? '—' : (c.valor | currency: 'BRL') }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                  <tfoot><tr><th scope="row" colspan="3">Total mensal (fixos)</th><td class="num"><strong>{{ f.valorMensalConvenios | currency: 'BRL' }}</strong></td></tr></tfoot>
+                </table>
+              </div>
+              <p class="explica">Para incluir ou desligar convênios, use a aba Convênios do <a [routerLink]="['/pessoas', f.idPessoa]" [queryParams]="{ aba: 'convenios' }">cadastro</a>.</p>
+            }
+          }
+          @case ('acordos') {
+            @if (f.acordos.length === 0) {
+              <p class="vazio">Nenhum acordo de débito.</p>
+            } @else {
+              <div class="table-scroll">
+                <table class="data-table">
+                  <caption class="sr-only">Acordos de débito</caption>
+                  <thead>
+                    <tr><th scope="col">Data</th><th scope="col">Situação</th><th scope="col" class="num">Débito</th><th scope="col" class="num">Entrada</th><th scope="col">Parcelas</th><th scope="col" class="num">Restante</th></tr>
+                  </thead>
+                  <tbody>
+                    @for (a of f.acordos; track a.id) {
+                      <tr>
+                        <td class="cell-mono">{{ (a.dataOrigem | date: 'dd/MM/yyyy') ?? '—' }}</td>
+                        <td>{{ a.status | displayValue }}</td>
+                        <td class="num">{{ a.valorDebito | currency: 'BRL' }}</td>
+                        <td class="num">{{ a.valorEntrada | currency: 'BRL' }}</td>
+                        <td>{{ a.parcelasPagas }}/{{ a.totalParcelas }} de {{ a.valorParcela | currency: 'BRL' }}</td>
+                        <td class="num">{{ a.debitoRestante | currency: 'BRL' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          }
+        }
+      </div>
+    </section>
+  </div>
+
+  <app-pagar-dialog
+    [open]="pagarAberto()"
+    [idAssociado]="f.idAssociado"
+    [debitos]="alvo()"
+    [idFormaPadrao]="f.idFormaPagamento"
+    (concluido)="pagou($event)"
+    (closed)="pagarAberto.set(false)"
+  />
+  <app-anistiar-dialog [open]="anistiarAberto()" [idAssociado]="f.idAssociado" [debitos]="alvo()" (concluido)="anistiou()" (closed)="anistiarAberto.set(false)" />
+  <app-credito-dialog
+    [open]="creditoModo() !== null"
+    [modo]="creditoModo() ?? 'adicionar'"
+    [idAssociado]="f.idAssociado"
+    [creditoAtual]="f.credito"
+    (concluido)="creditoAlterado($event)"
+    (closed)="creditoModo.set(null)"
+  />
+  <app-extrato-pdf-dialog
+    [open]="pdfPeriodo() !== null"
+    [idAssociado]="f.idAssociado"
+    [inicio]="pdfPeriodo()?.inicio ?? periodo.inicio"
+    [fim]="pdfPeriodo()?.fim ?? periodo.fim"
+    (closed)="pdfPeriodo.set(null)"
+  />
+} @else {
+  <section class="card cab" aria-busy="true" aria-label="Carregando ficha financeira">
+    <div class="cab__id">
+      <span class="cab__foto skeleton-bloco"></span>
+      <div class="cab__texto">
+        <span class="skeleton" style="width: 6rem"></span>
+        <span class="skeleton skeleton--titulo" style="width: 18rem"></span>
+      </div>
+    </div>
+  </section>
+}

@@ -97,6 +97,21 @@ Em produção, o servidor web precisa encaminhar `/backend/*` ao Spring Boot rem
 - A expiração do JWT (`exp`) é respeitada: ao expirar, ou se a API responder 401, o usuário volta ao login com o aviso "sessão expirada".
 - Os guards só controlam a navegação. **Toda permissão precisa ser validada também no backend.**
 
+### Financeiro › Associados (`/financeiro/associados`)
+
+Código em `features/financeiro/associados/`. Usa o `FinanceiroAssociadoController`, novo no PR #8 do `back-novo`.
+
+- **Lista:** todos os associados com débitos pendentes e crédito. Pesquisa por nome ou CPF, filtros "Com débito", "Com crédito" e status, paginação no servidor. No topo ficam os totais de débitos pendentes e de créditos.
+- **Ficha (`/financeiro/associados/:idAssociado`):**
+  - **Débitos:** os pendentes (`EM ABERTO` e `NÃO DEBITADO`). Dá para **pagar** (forma de pagamento já vem com a do associado; observação opcional) e **anistiar** (motivo obrigatório, em maiúsculas), um por vez ou vários marcados. Depois do pagamento, a janela oferece o **recibo** em PDF de cada débito pago.
+  - **Lançamento do mês:** o que está `EM TRANSAÇÃO ATUAL` e vira débito ao fechar o mês.
+  - **Extrato:** filtro por período e situação, paginação, recibo dos pagos e **Imprimir extrato** (PDF do relatório `extrato_associado.jasper`).
+  - **Convênios ativos** (total mensal dos fixos) e **acordos** (somente leitura).
+  - **Crédito:** adicionar ou zerar. O crédito é abatido pelo fechamento do mês.
+- **Permissões:** pagar exige `FINANCEIRO_BAIXAR_DEBITO`; anistiar exige `FINANCEIRO_ANISTIAR_DEBITO` (403 mostra mensagem).
+- **Erros:** 400 e 404 mostram o texto do servidor.
+- **Testes:** `financeiro-api.spec.ts`.
+
 ### Painel (`/painel`)
 
 Indicadores dos associados, no menu logo abaixo de Início (e atalho na tela Início). Código em `features/painel/`. Endpoints do `DashboardController` (permissão `DASHBOARD_AFILIADO`), novos no PR #8 do `back-novo`:

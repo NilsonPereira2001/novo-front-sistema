@@ -1,0 +1,143 @@
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">Financeiro</p>
+    <h1 class="page-title">{{ termos.membros }}</h1>
+    <p class="page-subtitle">Débitos, crédito e extrato de cada {{ termos.membroMin }}. Abra a ficha para pagar, anistiar ou emitir recibos.</p>
+  </div>
+  <div class="page-header__actions">
+    <button type="button" class="btn btn--secondary" (click)="recarregar()"><app-icon name="refresh-cw" /> Atualizar</button>
+  </div>
+</header>
+
+<section class="tiles" aria-label="Totais">
+  @let t = totais();
+  @if (t.status === 'ready') {
+    <article class="tile card">
+      <p class="tile__rotulo">Débitos pendentes</p>
+      <p class="tile__valor tile__valor--debito">{{ t.data.valorDebitos | currency: 'BRL' }}</p>
+      <p class="tile__sub">{{ t.data.qtdDebitos }} débitos de {{ t.data.associadosComDebito }} {{ termos.membrosMin }}</p>
+    </article>
+    <article class="tile card">
+      <p class="tile__rotulo">Créditos a abater</p>
+      <p class="tile__valor">{{ t.data.valorCreditos | currency: 'BRL' }}</p>
+      <p class="tile__sub">{{ t.data.associadosComCredito }} {{ termos.membrosMin }} com crédito</p>
+    </article>
+  } @else if (t.status === 'error') {
+    <p class="tiles__erro">Não foi possível carregar os totais.</p>
+  } @else {
+    <div class="tile card"><span class="skeleton" style="width: 8rem"></span><span class="skeleton skeleton--titulo" style="width: 10rem"></span></div>
+    <div class="tile card"><span class="skeleton" style="width: 8rem"></span><span class="skeleton skeleton--titulo" style="width: 10rem"></span></div>
+  }
+</section>
+
+<section class="card table-card" aria-labelledby="titulo-fin">
+  <h2 id="titulo-fin" class="sr-only">{{ termos.membros }} e situação financeira</h2>
+  <div class="toolbar">
+    <app-search-field
+      label="Pesquisar"
+      placeholder="Pesquisar por nome ou CPF"
+      [value]="url.searchText()"
+      (valueChange)="url.search($event)"
+      (clear)="url.clearSearch()"
+    />
+    <div class="filtros">
+      <div class="segmented" role="group" aria-label="Situação financeira">
+        @for (s of situacoes; track s.key) {
+          <button type="button" class="segmented__item" [class.is-active]="situacao() === s.key" [attr.aria-pressed]="situacao() === s.key" (click)="setSituacao(s.key)">
+            {{ s.titulo }}
+          </button>
+        }
+      </div>
+      <label class="sr-only" for="fin-status">Status do {{ termos.membroMin }}</label>
+      <select id="fin-status" class="field__input filtro-status" (change)="onStatus($event)">
+        <option value="" [selected]="status() === ''">Todos os status</option>
+        <option value="ATIVO" [selected]="status() === 'ATIVO'">Ativos</option>
+        <option value="INATIVO" [selected]="status() === 'INATIVO'">Inativos</option>
+      </select>
+    </div>
+  </div>
+
+  @if (carregando() && pagina()) {
+    <div class="loading-bar" role="progressbar" aria-label="Carregando"></div>
+  }
+
+  @if (erro(); as kind) {
+    <app-load-error [kind]="kind" (retry)="recarregar()" />
+  } @else if (!carregando() && pagina()?.empty) {
+    <div class="state">
+      <span class="state__icon"><app-icon name="inbox" /></span>
+      <p class="state__title">Nenhum {{ termos.membroMin }} encontrado</p>
+      @if (temFiltros()) {
+        <p class="state__text">Nenhum resultado para os filtros escolhidos.</p>
+        <button type="button" class="btn btn--secondary" (click)="limpar()">Limpar filtros</button>
+      }
+    </div>
+  } @else {
+    <div class="table-scroll">
+      <table class="data-table" [class.is-stale]="carregando() && !!pagina()" [attr.aria-busy]="carregando()">
+        <thead>
+          <tr>
+            <th scope="col">Nome</th>
+            <th scope="col">CPF</th>
+            <th scope="col">Status</th>
+            <th scope="col">Forma de pagamento</th>
+            <th scope="col" class="num">Débitos pendentes</th>
+            <th scope="col" class="num">Crédito</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (pagina(); as pg) {
+            @for (a of pg.content; track a.idAssociado) {
+              <tr>
+                <td>
+                  <a class="person-cell" [routerLink]="['/financeiro/associados', a.idAssociado]">
+                    <span class="avatar-sm" aria-hidden="true">{{ initials(a.nome) }}</span>{{ a.nome }}
+                  </a>
+                </td>
+                <td class="cell-mono">{{ a.cpf | cpf }}</td>
+                <td><span class="status" [attr.data-tone]="tom(a.status)"><span class="status__dot"></span>{{ a.status | displayValue }}</span></td>
+                <td>{{ a.formaPagamento | displayValue }}</td>
+                <td class="num">
+                  @if (a.qtdDebitos > 0) {
+                    <span class="valor-debito">{{ a.valorDebitos | currency: 'BRL' }}</span>
+                    <span class="qtd">{{ a.qtdDebitos }} {{ a.qtdDebitos === 1 ? 'débito' : 'débitos' }}</span>
+                  } @else {
+                    <span class="em-dia"><app-icon name="check-circle" /> Em dia</span>
+                  }
+                </td>
+                <td class="num">
+                  @if (a.credito > 0) { {{ a.credito | currency: 'BRL' }} } @else { — }
+                </td>
+              </tr>
+            }
+          } @else {
+            @for (r of skeleton; track r) {
+              <tr aria-hidden="true">
+                <td><span class="skeleton" style="width: 12rem"></span></td>
+                <td><span class="skeleton" style="width: 7rem"></span></td>
+                <td><span class="skeleton" style="width: 4rem"></span></td>
+                <td><span class="skeleton" style="width: 6rem"></span></td>
+                <td><span class="skeleton" style="width: 5rem"></span></td>
+                <td><span class="skeleton" style="width: 4rem"></span></td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (pagina(); as pg) {
+      <app-pagination
+        [page]="pg.number"
+        [size]="pg.size"
+        [total]="pg.totalElements"
+        [totalPages]="pg.totalPages"
+        [first]="pg.first"
+        [last]="pg.last"
+        [sizeOptions]="url.sizeOptions"
+        [itemLabel]="termos.membrosMin"
+        (pageChange)="url.setPage($event)"
+        (sizeChange)="url.setSize($event)"
+      />
+    }
+  }
+</section>

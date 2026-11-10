@@ -4,6 +4,7 @@ import { authGuard } from './core/auth/guards/auth.guard';
 import { guestGuard } from './core/auth/guards/guest.guard';
 import { pageTitle } from './core/config/app-title';
 import { NAV_ITEMS } from './core/navigation/navigation';
+import { TERMOS } from './core/config/terminologia';
 
 /**
  * Rotas provisórias dos módulos ainda não construídos: todas abrem a página
@@ -59,6 +60,17 @@ export const routes: Routes = [
         path: 'painel',
         title: pageTitle('Painel'),
         loadComponent: () => import('./features/painel/painel').then((m) => m.Painel),
+      },
+      {
+        path: 'financeiro/associados',
+        title: pageTitle(`Financeiro · ${TERMOS.membros}`),
+        loadComponent: () =>
+          import('./features/financeiro/associados/lista/fin-associados-lista').then((m) => m.FinAssociadosLista),
+      },
+      {
+        path: 'financeiro/associados/:id',
+        title: pageTitle('Financeiro'),
+        loadComponent: () => import('./features/financeiro/associados/ficha/ficha').then((m) => m.FinFicha),
       },
       {
         path: 'pessoas',
