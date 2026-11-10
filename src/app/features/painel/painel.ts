@@ -7,7 +7,7 @@ import { Icon } from '../../shared/components/icon/icon';
 import { LoadError } from '../../shared/components/load-error/load-error';
 import { loadFrom } from '../../shared/data/load-state';
 import { initials } from '../../shared/utils/text';
-import { Barras } from './components/barras';
+import { Barras } from '../../shared/components/charts/barras';
 import { EvolucaoGrafico } from './components/evolucao-grafico';
 import { PainelAssociados, idadeNoAno } from './painel-api';
 import { PainelService } from './painel.service';

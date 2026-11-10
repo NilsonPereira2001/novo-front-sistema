@@ -7,6 +7,13 @@
 // =============================================================================
 
 :root {
+  // Séries dos gráficos (ordem fixa; validadas para daltonismo: azul, laranja, verde-água, amarelo).
+  // Verde-água e amarelo têm contraste < 3:1 no fundo branco: use sempre com legenda e tabela.
+  --viz-serie-1: #1d5fd1;
+  --viz-serie-2: #eb6834;
+  --viz-serie-3: #1baf7a;
+  --viz-serie-4: #eda100;
+
   // --- Marca: azul-marinho e azul institucional ------------------------------
   --color-navy-950: #050d1c;
   --color-navy-900: #0a1730;

@@ -62,6 +62,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/painel/painel').then((m) => m.Painel),
       },
       {
+        path: 'financeiro/painel',
+        title: pageTitle('Painel financeiro'),
+        loadComponent: () =>
+          import('./features/financeiro/dashboard/painel-financeiro').then((m) => m.PainelFinanceiroPage),
+      },
+      {
         path: 'financeiro/associados',
         title: pageTitle(`Financeiro · ${TERMOS.membros}`),
         loadComponent: () =>

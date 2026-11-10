@@ -97,6 +97,26 @@ Em produção, o servidor web precisa encaminhar `/backend/*` ao Spring Boot rem
 - A expiração do JWT (`exp`) é respeitada: ao expirar, ou se a API responder 401, o usuário volta ao login com o aviso "sessão expirada".
 - Os guards só controlam a navegação. **Toda permissão precisa ser validada também no backend.**
 
+### Painel financeiro (`/financeiro/painel`)
+
+Código em `features/financeiro/dashboard/`. Endpoint `GET financeiro/dashboard?lancamentos=6|12|24` (`FinanceiroDashboardController`, PR #8).
+
+- **Previsto para o próximo lançamento:** é o número principal. Soma os convênios ativos de associados ativos, as parcelas de acordos ativos e os planos de saúde (valor da faixa etária pela idade de hoje), com a mesma regra do `criarNovoLancamento`. Se houver um lançamento mensal aberto, mostra também o valor dele.
+- **Indicadores:**
+  - Total em débito (`EM ABERTO` + `NÃO DEBITADO`), com link para a lista filtrada.
+  - Associados com débito e percentual dos ativos.
+  - Recebido no mês.
+- **Comparativo dos lançamentos:** colunas empilhadas por lançamento mensal, separadas em pago, em aberto, anistiado/renegociado e mês em andamento. Tem dica por coluna (mouse e teclado), legenda e "Ver tabela" com o % pago.
+- **Listas:**
+  - **Débitos por convênio:** planos de saúde aparecem como "PLANO DE SAÚDE · nome" e as parcelas de acordo têm linha própria.
+  - **Idade dos débitos:** até 30, 60, 90, 180 dias e mais de 180.
+  - **Planos de saúde:** vidas, previsto no mês e débito.
+  - **Recebido no mês por forma de pagamento.**
+  - **Previsto por convênio.**
+  - **Os 10 maiores débitos:** cada nome abre a ficha financeira.
+- **Gráficos:** as barras e as cores das séries (`--viz-serie-1..4`, validadas para daltonismo) ficam em `shared/components/charts/`.
+- **Testes:** `dashboard-api.spec.ts`.
+
 ### Financeiro › Associados (`/financeiro/associados`)
 
 Código em `features/financeiro/associados/`. Usa o `FinanceiroAssociadoController`, novo no PR #8 do `back-novo`.

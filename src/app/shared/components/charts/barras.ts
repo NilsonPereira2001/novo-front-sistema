@@ -1,7 +1,9 @@
-import { DecimalPipe } from '@angular/common';
+import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
-import { Quantidade, agruparResto } from '../painel-api';
+import { Quantidade, agruparResto } from './quantidade';
+
+export type { Quantidade } from './quantidade';
 
 /**
  * Barras horizontais ranqueadas (uma série só: uma cor, sem legenda — o
@@ -9,19 +11,19 @@ import { Quantidade, agruparResto } from '../painel-api';
  */
 @Component({
   selector: 'app-barras',
-  imports: [DecimalPipe],
+  imports: [CurrencyPipe, DecimalPipe],
   template: `
     @if (linhas().length === 0) {
       <p class="vazio">{{ vazio() }}</p>
     } @else {
       <ul class="barras" role="list" [attr.aria-label]="titulo()">
         @for (l of linhas(); track l.rotulo) {
-          <li class="barra" tabindex="0" [attr.aria-label]="l.rotulo + ': ' + l.total + ' (' + (l.pct | number: '1.0-1') + '%)'">
+          <li class="barra" tabindex="0" [attr.aria-label]="l.rotulo + ': ' + (moeda() ? (l.total | currency: 'BRL') : (l.total | number)) + ' (' + (l.pct | number: '1.0-1') + '%)'">
             <span class="barra__rotulo" [class.barra__rotulo--vazio]="l.semNome" [title]="l.rotulo">{{ l.rotulo }}</span>
-            <span class="barra__trilho">
+            <span class="barra__trilho" [style.margin-right]="folga()">
               <span class="barra__marca" [style.width.%]="l.largura"></span>
-              <span class="barra__valor" [style.left]="'calc(' + l.largura + '% + 6px)'">{{ l.total | number }}</span>
-              <span class="barra__dica" aria-hidden="true">{{ l.total | number }} · {{ l.pct | number: '1.0-1' }}% do total</span>
+              <span class="barra__valor" [style.left]="'calc(' + l.largura + '% + 6px)'">{{ moeda() ? (l.total | currency: 'BRL') : (l.total | number) }}</span>
+              <span class="barra__dica" aria-hidden="true">{{ moeda() ? (l.total | currency: 'BRL') : (l.total | number) }} · {{ l.pct | number: '1.0-1' }}% do total</span>
             </span>
           </li>
         }
@@ -58,7 +60,7 @@ import { Quantidade, agruparResto } from '../painel-api';
       .barra__rotulo { white-space: normal; }
     }
     .barra__rotulo--vazio { color: var(--color-text-muted); font-style: italic; }
-    .barra__trilho { position: relative; display: block; height: 1rem; margin-right: 3.5rem; min-width: 0; }
+    .barra__trilho { position: relative; display: block; height: 1rem; min-width: 0; }
     .barra__marca {
       display: block;
       height: 100%;
@@ -79,7 +81,7 @@ import { Quantidade, agruparResto } from '../painel-api';
     }
     .barra__dica {
       position: absolute;
-      right: -3.5rem;
+      right: 0;
       bottom: calc(100% + 4px);
       padding: 2px var(--space-2);
       border-radius: var(--radius-sm);
@@ -102,6 +104,10 @@ export class Barras {
   readonly semNome = input('Não informado');
   readonly vazio = input('Nenhum registro.');
   readonly limite = input(8);
+  /** Valores em reais (R$). */
+  readonly moeda = input(false);
+  /** Espaço reservado para o valor na ponta (maior para moeda). */
+  protected readonly folga = computed(() => (this.moeda() ? '6.5rem' : '3.5rem'));
 
   protected readonly linhas = computed(() => {
     const itens = agruparResto(this.itens(), this.limite(), 'Outras');

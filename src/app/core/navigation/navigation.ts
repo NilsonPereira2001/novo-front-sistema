@@ -63,6 +63,13 @@ export const NAVIGATION: readonly NavGroup[] = [
     label: 'Financeiro',
     items: [
       {
+        label: 'Painel financeiro',
+        path: 'financeiro/painel',
+        icon: 'bar-chart',
+        description: 'Previsão, débitos e comparativo dos lançamentos',
+        available: true,
+      },
+      {
         label: TERMOS.membros,
         path: 'financeiro/associados',
         icon: 'users',

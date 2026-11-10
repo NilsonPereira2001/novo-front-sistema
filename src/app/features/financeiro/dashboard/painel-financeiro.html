@@ -1,0 +1,188 @@
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">Financeiro</p>
+    <h1 class="page-title">Painel financeiro</h1>
+    <p class="page-subtitle">Previsão do próximo lançamento, débitos em aberto, comparativo dos lançamentos e planos de saúde.</p>
+  </div>
+</header>
+
+<div class="filtros">
+  <div class="segmented" role="group" aria-label="Lançamentos exibidos">
+    @for (p of periodos; track p) {
+      <button type="button" class="segmented__item" [class.is-active]="meses() === p" [attr.aria-pressed]="meses() === p" (click)="meses.set(p)">
+        {{ p }} meses
+      </button>
+    }
+  </div>
+  <button type="button" class="btn btn--secondary btn--sm" (click)="recarregar()"><app-icon name="refresh-cw" /> Atualizar</button>
+</div>
+
+@if (erro(); as kind) {
+  <section class="card"><app-load-error [kind]="kind" (retry)="recarregar()" /></section>
+} @else if (dados(); as d) {
+  <div class="conteudo" [class.is-stale]="recarregando()" [attr.aria-busy]="recarregando()">
+    <!-- Previsão (número principal) + indicadores -->
+    <div class="topo">
+      <section class="card previsao" aria-labelledby="t-previsao">
+        <p class="previsao__rotulo" id="t-previsao">Previsto para o próximo lançamento</p>
+        <p class="previsao__valor">{{ d.previsao.total | currency: 'BRL' }}</p>
+        <dl class="previsao__partes">
+          <div><dt>Convênios</dt><dd>{{ d.previsao.convenios | currency: 'BRL' }}</dd><dd class="sub">{{ d.previsao.associadosComConvenio }} {{ termos.membrosMin }}</dd></div>
+          <div><dt>Parcelas de acordo</dt><dd>{{ d.previsao.acordos | currency: 'BRL' }}</dd><dd class="sub">{{ d.previsao.qtdAcordos }} acordos ativos</dd></div>
+          <div><dt>Planos de saúde</dt><dd>{{ d.previsao.planos | currency: 'BRL' }}</dd><dd class="sub">{{ d.previsao.vidasPlano }} vidas</dd></div>
+        </dl>
+        @if (d.previsao.lancamentoAberto; as ab) {
+          <p class="previsao__nota">
+            <app-icon name="info" />
+            Lançamento nº {{ ab.nsa }} aberto desde {{ (ab.dataGeracao | date: 'dd/MM/yyyy') ?? '—' }}:
+            <strong>{{ ab.valor | currency: 'BRL' }}</strong> em {{ ab.qtd }} lançamentos.
+          </p>
+        } @else {
+          <p class="previsao__nota"><app-icon name="info" /> Estimativa pelos cadastros ativos; não inclui pendências relançadas.</p>
+        }
+      </section>
+
+      <section class="tiles" aria-label="Indicadores">
+        <a class="tile card tile--link" routerLink="/financeiro/associados" [queryParams]="{ situacao: 'debito' }">
+          <p class="tile__rotulo">Em débito</p>
+          <p class="tile__valor tile__valor--debito">{{ d.debitos.total | currency: 'BRL' }}</p>
+          <p class="tile__sub">{{ d.debitos.qtdLancamentos }} lançamentos pendentes</p>
+        </a>
+        <article class="tile card">
+          <p class="tile__rotulo">{{ termos.membros }} com débito</p>
+          <p class="tile__valor">{{ d.debitos.qtdAssociados }}</p>
+          <p class="tile__sub">
+            {{ d.debitos.associadosAtivosComDebito }} de {{ d.debitos.associadosAtivos }} ativos
+            ({{ pct(d.debitos.associadosAtivosComDebito, d.debitos.associadosAtivos) | number: '1.0-1' }}%)
+          </p>
+        </article>
+        <article class="tile card">
+          <p class="tile__rotulo">Recebido em {{ hoje | date: 'MMMM' }}</p>
+          <p class="tile__valor">{{ d.recebimentosMes.total | currency: 'BRL' }}</p>
+          <p class="tile__sub">{{ d.recebimentosMes.qtd }} pagamentos registrados</p>
+        </article>
+      </section>
+    </div>
+
+    <section class="card bloco" aria-labelledby="t-comparativo">
+      <header class="bloco__cab">
+        <div>
+          <h2 class="bloco__titulo" id="t-comparativo">Comparativo dos lançamentos</h2>
+          <p class="bloco__sub">Valor gerado em cada lançamento mensal, separado pela situação atual.</p>
+        </div>
+      </header>
+      <app-comparativo-lancamentos [dados]="d.lancamentos" />
+    </section>
+
+    <div class="grade-2">
+      <section class="card bloco" aria-labelledby="t-origem">
+        <header class="bloco__cab">
+          <div>
+            <h2 class="bloco__titulo" id="t-origem">Débitos por convênio</h2>
+            <p class="bloco__sub">Inclui planos de saúde e parcelas de acordo.</p>
+          </div>
+        </header>
+        <app-barras [itens]="paraBarras(d.debitosPorCategoria)" titulo="Débitos por convênio" vazio="Nenhum débito pendente." [moeda]="true" [limite]="10" />
+      </section>
+
+      <section class="card bloco" aria-labelledby="t-idade">
+        <header class="bloco__cab">
+          <div>
+            <h2 class="bloco__titulo" id="t-idade">Idade dos débitos</h2>
+            <p class="bloco__sub">Desde a data de origem.</p>
+          </div>
+        </header>
+        <app-barras [itens]="paraBarras(d.debitosPorIdade)" titulo="Idade dos débitos" vazio="Nenhum débito pendente." [moeda]="true" />
+      </section>
+
+      <section class="card bloco" aria-labelledby="t-planos">
+        <header class="bloco__cab">
+          <div>
+            <h2 class="bloco__titulo" id="t-planos">Planos de saúde</h2>
+            <p class="bloco__sub">Vidas ativas, previsto no mês e débito em aberto.</p>
+          </div>
+        </header>
+        @if (d.planos.length === 0) {
+          <p class="vazio">Nenhum plano de saúde ativo.</p>
+        } @else {
+          <div class="table-scroll">
+            <table class="data-table tabela">
+              <caption class="sr-only">Planos de saúde</caption>
+              <thead>
+                <tr><th scope="col">Plano</th><th scope="col" class="num">Vidas</th><th scope="col" class="num">Previsto/mês</th><th scope="col" class="num">Em débito</th></tr>
+              </thead>
+              <tbody>
+                @for (p of d.planos; track p.nome) {
+                  <tr>
+                    <th scope="row">{{ p.nome }}</th>
+                    <td class="num">
+                      {{ p.titulares + p.dependentes }}
+                      <span class="sub">{{ p.titulares }} tit. · {{ p.dependentes }} dep.</span>
+                    </td>
+                    <td class="num">{{ p.previstoMensal | currency: 'BRL' }}</td>
+                    <td class="num" [class.debito]="p.debitoEmAberto > 0">{{ p.debitoEmAberto | currency: 'BRL' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+
+      <section class="card bloco" aria-labelledby="t-formas">
+        <header class="bloco__cab">
+          <div>
+            <h2 class="bloco__titulo" id="t-formas">Recebido em {{ hoje | date: 'MMMM' }} por forma</h2>
+            <p class="bloco__sub">Pagamentos registrados no mês atual.</p>
+          </div>
+        </header>
+        <app-barras [itens]="paraBarras(d.recebimentosMes.porForma)" titulo="Recebido por forma de pagamento" semNome="Não informada" vazio="Nenhum pagamento registrado neste mês." [moeda]="true" />
+      </section>
+
+      <section class="card bloco" aria-labelledby="t-previsto">
+        <header class="bloco__cab">
+          <div>
+            <h2 class="bloco__titulo" id="t-previsto">Previsto por convênio</h2>
+            <p class="bloco__sub">Próximo lançamento, convênios ativos de {{ termos.membrosMin }} ativos.</p>
+          </div>
+        </header>
+        <app-barras [itens]="paraBarras(d.previstoPorConvenio)" titulo="Previsto por convênio" vazio="Nenhum convênio ativo." [moeda]="true" [limite]="10" />
+      </section>
+
+      <section class="card bloco" aria-labelledby="t-devedores">
+        <header class="bloco__cab">
+          <div>
+            <h2 class="bloco__titulo" id="t-devedores">Maiores débitos</h2>
+            <p class="bloco__sub">Os 10 {{ termos.membrosMin }} com maior valor pendente.</p>
+          </div>
+          <a class="link-button" routerLink="/financeiro/associados" [queryParams]="{ situacao: 'debito' }">Ver todos</a>
+        </header>
+        @if (d.maioresDevedores.length === 0) {
+          <p class="vazio">Nenhum débito pendente.</p>
+        } @else {
+          <ol class="devedores">
+            @for (v of d.maioresDevedores; track v.idAssociado; let i = $index) {
+              <li>
+                <span class="devedores__pos">{{ i + 1 }}</span>
+                <span class="devedores__nome">
+                  <a [routerLink]="['/financeiro/associados', v.idAssociado]">{{ v.nome }}</a>
+                  <span class="sub">{{ v.cpf | cpf }} · {{ v.qtd }} {{ v.qtd === 1 ? 'débito' : 'débitos' }}</span>
+                </span>
+                <span class="devedores__valor">{{ v.valor | currency: 'BRL' }}</span>
+              </li>
+            }
+          </ol>
+        }
+      </section>
+    </div>
+  </div>
+} @else {
+  <div class="topo" aria-busy="true" aria-label="Carregando painel financeiro">
+    <div class="card previsao"><span class="skeleton" style="width: 14rem"></span><span class="skeleton skeleton--hero"></span></div>
+    <div class="tiles">
+      @for (i of [0, 1, 2]; track i) {
+        <div class="tile card"><span class="skeleton" style="width: 6rem"></span><span class="skeleton skeleton--titulo" style="width: 8rem"></span></div>
+      }
+    </div>
+  </div>
+}
