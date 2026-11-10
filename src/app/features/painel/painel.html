@@ -90,7 +90,14 @@
         <app-barras [itens]="d.porVinculo" titulo="Ativos por tipo de vínculo" semNome="Sem vínculo informado" vazio="Nenhum ativo." />
       </section>
 
-      <section class="card bloco aniv" aria-labelledby="t-aniv">
+      <section class="card bloco" aria-labelledby="t-tipo-socio">
+        <header class="bloco__cab">
+          <h2 class="bloco__titulo" id="t-tipo-socio">Ativos por tipo de sócio</h2>
+        </header>
+        <app-barras [itens]="d.porTipoSocio" titulo="Ativos por tipo de sócio" semNome="Sem tipo informado" vazio="Nenhum ativo." />
+      </section>
+
+      <section class="card bloco aniv bloco--largo" aria-labelledby="t-aniv">
         <header class="bloco__cab">
           <div>
             <h2 class="bloco__titulo" id="t-aniv">Aniversariantes</h2>

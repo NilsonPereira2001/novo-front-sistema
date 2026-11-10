@@ -5,12 +5,14 @@ describe('painel-api', () => {
     const p = toPainel({
       totais: { total: 10, ativos: 6, inativos: 1, desligados: 2, aguardandoAdesao: 1, aguardandoDesligamento: 0 },
       porVinculo: [{ nome: 'CIVIL', total: 2 }, { nome: 'MILITAR', total: 4 }, { nome: 'X', total: 0 }],
+      porTipoSocio: [{ nome: 'CONTRIBUINTE', total: 1 }, { nome: 'EFETIVO', total: 5 }],
       militaresPorUnidade: [{ nome: null, total: 1 }, { nome: '1º BPM', total: 3 }],
       porInstituicao: [],
       evolucao: [{ ano: 2026, mes: 11, adesoes: 3, desligamentos: 1 }, { ano: 2026, mes: 10, adesoes: 2, desligamentos: 0 }],
     });
     expect(p.totais.ativos).toBe(6);
     expect(p.porVinculo.map((q) => q.nome)).toEqual(['MILITAR', 'CIVIL']);
+    expect(p.porTipoSocio.map((q) => q.nome)).toEqual(['EFETIVO', 'CONTRIBUINTE']);
     expect(p.militaresPorUnidade).toEqual([{ nome: '1º BPM', total: 3 }, { nome: null, total: 1 }]);
     expect(p.evolucao.map((m) => m.mes)).toEqual([10, 11]);
   });

@@ -121,6 +121,8 @@
   gap: var(--space-5);
 }
 
+.bloco--largo { grid-column: 1 / -1; }
+
 .vazio {
   margin: 0;
   padding: var(--space-6) 0;

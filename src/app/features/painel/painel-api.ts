@@ -5,7 +5,7 @@
  *   GET dashboard/associados/aniversariantes?mes=1..12 → List<AniversarianteDTO>
  *
  * Totais: cada associado entra em uma situação só (a soma dá o total).
- * Distribuições (vínculo, unidade, instituição) contam apenas ativos.
+ * Distribuições (vínculo, tipo de sócio, unidade, instituição) contam apenas ativos.
  */
 
 import { UnexpectedResponseError } from '../../core/http/load-error';
@@ -43,6 +43,7 @@ export interface MesEvolucao {
 export interface PainelAssociados {
   readonly totais: Totais;
   readonly porVinculo: readonly Quantidade[];
+  readonly porTipoSocio: readonly Quantidade[];
   readonly militaresPorUnidade: readonly Quantidade[];
   readonly porInstituicao: readonly Quantidade[];
   readonly evolucao: readonly MesEvolucao[];
@@ -76,6 +77,7 @@ export function toPainel(raw: unknown): PainelAssociados {
       aguardandoDesligamento: n(totais, 'aguardandoDesligamento'),
     },
     porVinculo: quantidades(raw['porVinculo']),
+    porTipoSocio: quantidades(raw['porTipoSocio']),
     militaresPorUnidade: quantidades(raw['militaresPorUnidade']),
     porInstituicao: quantidades(raw['porInstituicao']),
     evolucao: (Array.isArray(raw['evolucao']) ? raw['evolucao'] : [])
