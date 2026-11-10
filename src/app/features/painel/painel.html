@@ -1,0 +1,153 @@
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">{{ termos.membros }}</p>
+    <h1 class="page-title">Painel</h1>
+    <p class="page-subtitle">Situação do quadro, distribuição dos ativos, evolução das adesões e aniversariantes.</p>
+  </div>
+</header>
+
+<!-- Filtro único, acima de tudo que ele afeta (período da evolução) -->
+<div class="filtros">
+  <div class="segmented" role="group" aria-label="Período da evolução">
+    @for (p of periodos; track p) {
+      <button type="button" class="segmented__item" [class.is-active]="meses() === p" [attr.aria-pressed]="meses() === p" (click)="meses.set(p)">
+        {{ p }} meses
+      </button>
+    }
+  </div>
+  <button type="button" class="btn btn--secondary btn--sm" (click)="recarregarResumo(); recarregarAniv()">
+    <app-icon name="refresh-cw" /> Atualizar
+  </button>
+</div>
+
+@if (erroResumo(); as kind) {
+  <section class="card"><app-load-error [kind]="kind" (retry)="recarregarResumo()" /></section>
+} @else if (dados(); as d) {
+  <div class="conteudo" [class.is-stale]="recarregando()" [attr.aria-busy]="recarregando()">
+    <!-- Situação: cada associado conta em uma situação só -->
+    <section class="tiles" aria-label="Situação dos {{ termos.membrosMin }}">
+      <article class="tile card">
+        <p class="tile__rotulo"><span class="tile__icone tile__icone--ok"><app-icon name="user-check" /></span>Ativos</p>
+        <p class="tile__valor">{{ d.totais.ativos | number }}</p>
+        <p class="tile__sub">{{ pct(d.totais.ativos, d.totais.total) | number: '1.0-1' }}% do total</p>
+      </article>
+      <article class="tile card">
+        <p class="tile__rotulo"><span class="tile__icone"><app-icon name="eye-off" /></span>Inativos</p>
+        <p class="tile__valor">{{ d.totais.inativos | number }}</p>
+        <p class="tile__sub">Ex.: adesões indeferidas</p>
+      </article>
+      <article class="tile card">
+        <p class="tile__rotulo"><span class="tile__icone tile__icone--alerta"><app-icon name="power" /></span>Desligados</p>
+        <p class="tile__valor">{{ d.totais.desligados | number }}</p>
+        <p class="tile__sub">{{ pct(d.totais.desligados, d.totais.total) | number: '1.0-1' }}% do total</p>
+      </article>
+      <a class="tile tile--link card" routerLink="/pessoas/aguardando-deferimento">
+        <p class="tile__rotulo"><span class="tile__icone tile__icone--aviso"><app-icon name="clock" /></span>Aguardando deferimento</p>
+        <p class="tile__valor">{{ d.totais.aguardandoAdesao + d.totais.aguardandoDesligamento | number }}</p>
+        <p class="tile__sub">{{ d.totais.aguardandoAdesao | number }} adesão · {{ d.totais.aguardandoDesligamento | number }} desligamento</p>
+      </a>
+    </section>
+    <p class="nota">Total cadastrado: <strong>{{ d.totais.total | number }}</strong> {{ termos.membrosMin }}.</p>
+
+    <section class="card bloco" aria-labelledby="t-evolucao">
+      <header class="bloco__cab">
+        <div>
+          <h2 class="bloco__titulo" id="t-evolucao">Evolução de adesões</h2>
+          <p class="bloco__sub">
+            Últimos {{ meses() }} meses: <strong>{{ totaisPeriodo().adesoes | number }}</strong> adesões e
+            <strong>{{ totaisPeriodo().desligamentos | number }}</strong> desligamentos efetivados.
+          </p>
+        </div>
+      </header>
+      <app-evolucao-grafico [dados]="d.evolucao" />
+    </section>
+
+    <div class="grade-2">
+      <section class="card bloco" aria-labelledby="t-unidade">
+        <header class="bloco__cab">
+          <div>
+            <h2 class="bloco__titulo" id="t-unidade">Militares ativos por unidade</h2>
+            <p class="bloco__sub">Só vínculo MILITAR.</p>
+          </div>
+        </header>
+        <app-barras [itens]="d.militaresPorUnidade" titulo="Militares ativos por unidade" semNome="Sem unidade informada" vazio="Nenhum militar ativo." [limite]="10" />
+      </section>
+
+      <section class="card bloco" aria-labelledby="t-instituicao">
+        <header class="bloco__cab">
+          <div>
+            <h2 class="bloco__titulo" id="t-instituicao">Ativos por instituição</h2>
+            <p class="bloco__sub">Todos os vínculos.</p>
+          </div>
+        </header>
+        <app-barras [itens]="d.porInstituicao" titulo="Ativos por instituição" semNome="Sem instituição informada" vazio="Nenhum ativo." [limite]="10" />
+      </section>
+
+      <section class="card bloco" aria-labelledby="t-vinculo">
+        <header class="bloco__cab">
+          <h2 class="bloco__titulo" id="t-vinculo">Ativos por tipo de vínculo</h2>
+        </header>
+        <app-barras [itens]="d.porVinculo" titulo="Ativos por tipo de vínculo" semNome="Sem vínculo informado" vazio="Nenhum ativo." />
+      </section>
+
+      <section class="card bloco aniv" aria-labelledby="t-aniv">
+        <header class="bloco__cab">
+          <div>
+            <h2 class="bloco__titulo" id="t-aniv">Aniversariantes</h2>
+            <p class="bloco__sub">
+              {{ termos.membros }} ativos ·
+              @if (aniv().status === 'ready') {
+                {{ anivLista().length }} em {{ nomeMesAniv().toLowerCase() }}@if (anivHoje()) {, <strong>{{ anivHoje() }} hoje</strong>}
+              } @else { … }
+            </p>
+          </div>
+          <div class="mes-nav">
+            <button type="button" class="icon-btn" (click)="mudarMes(-1)" aria-label="Mês anterior"><app-icon name="chevron-left" /></button>
+            <span class="mes-nav__nome" aria-live="polite">{{ nomeMesAniv() }}</span>
+            <button type="button" class="icon-btn" (click)="mudarMes(1)" aria-label="Próximo mês"><app-icon name="chevron-right" /></button>
+          </div>
+        </header>
+        @switch (aniv().status) {
+          @case ('error') {
+            <app-load-error [kind]="erroAniv()!" (retry)="recarregarAniv()" />
+          }
+          @case ('ready') {
+            @if (anivLista().length === 0) {
+              <p class="vazio">Nenhum aniversariante em {{ nomeMesAniv().toLowerCase() }}.</p>
+            } @else {
+              <ul class="aniv__lista">
+                @for (a of anivLista(); track a.idPessoa) {
+                  <li class="aniv__item" [class.is-hoje]="ehHoje(a.dia)">
+                    <span class="aniv__dia" [attr.aria-label]="'Dia ' + a.dia">{{ a.dia }}</span>
+                    <span class="aniv__texto">
+                      <a [routerLink]="['/pessoas', a.idPessoa]">{{ a.nome }}</a>
+                      <span class="aniv__info">
+                        {{ idade(a.dataNascimento) }} anos
+                        @if (a.tipoVinculo) { · {{ a.tipoVinculo }} }
+                        @if (a.lotacao) { · {{ a.lotacao }} }
+                      </span>
+                    </span>
+                    @if (ehHoje(a.dia)) {
+                      <span class="tag tag--primary">Hoje</span>
+                    }
+                  </li>
+                }
+              </ul>
+            }
+          }
+          @default {
+            <div class="lista-carregando" aria-busy="true" aria-label="Carregando aniversariantes">
+              <span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span>
+            </div>
+          }
+        }
+      </section>
+    </div>
+  </div>
+} @else {
+  <div class="tiles" aria-busy="true" aria-label="Carregando painel">
+    @for (i of [0, 1, 2, 3]; track i) {
+      <div class="tile card"><span class="skeleton" style="width: 6rem"></span><span class="skeleton skeleton--titulo" style="width: 4rem"></span></div>
+    }
+  </div>
+}

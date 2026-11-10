@@ -97,6 +97,18 @@ Em produção, o servidor web precisa encaminhar `/backend/*` ao Spring Boot rem
 - A expiração do JWT (`exp`) é respeitada: ao expirar, ou se a API responder 401, o usuário volta ao login com o aviso "sessão expirada".
 - Os guards só controlam a navegação. **Toda permissão precisa ser validada também no backend.**
 
+### Painel (`/painel`)
+
+Indicadores dos associados, no menu logo abaixo de Início (e atalho na tela Início). Código em `features/painel/`. Endpoints do `DashboardController` (permissão `DASHBOARD_AFILIADO`), novos no PR #8 do `back-novo`:
+
+- **`GET dashboard/associados/resumo?meses=6|12|24`:**
+  - **Situação:** cada associado conta em uma situação só, e a soma dá o total. Aguardando deferimento é a restrição `AGUARDANDO ...`; desligado é status ou restrição `DESLIGADO`; ativo é status `ATIVO`; o resto conta como inativo (ex.: `ADESÃO INDEFERIDO`).
+  - **Distribuições (só ativos):** por tipo de vínculo, **militares por unidade** e por instituição. As 9 maiores aparecem; o resto vira "Outras".
+  - **Evolução mensal:** primeiras adesões (sem pendentes ou indeferidas) e desligamentos efetivados. Gráfico de linhas com um eixo só, dica no mouse e nas setas do teclado, e botão "Ver tabela" com o saldo.
+- **`GET dashboard/associados/aniversariantes?mes=1..12`:** associados ativos do mês, com idade que completam, vínculo e unidade (militar) ou instituição. Os de hoje ficam destacados; dá para navegar entre os meses.
+- **Cores:** azul da marca e laranja, validadas para daltonismo. O texto nunca usa a cor da série.
+- **Testes:** `painel-api.spec.ts`.
+
 ### Pessoas
 
 Listagem integrada a `GET /pessoas/listar/filtradas/paginada` (`Page<PessoaDTO>`):

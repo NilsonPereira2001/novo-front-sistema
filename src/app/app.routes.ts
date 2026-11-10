@@ -56,6 +56,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/home/home').then((m) => m.Home),
       },
       {
+        path: 'painel',
+        title: pageTitle('Painel'),
+        loadComponent: () => import('./features/painel/painel').then((m) => m.Painel),
+      },
+      {
         path: 'pessoas',
         loadChildren: () => import('./features/pessoas/pessoas.routes'),
       },

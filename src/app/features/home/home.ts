@@ -11,6 +11,7 @@ import { Icon } from '../../shared/components/icon/icon';
 /** Atalhos em destaque no topo da tela Início. */
 const QUICK_ACCESS_PATHS = [
   'pessoas',
+  'painel',
   'financeiro/lancamentos',
   'juridico/processos',
   'documentos',

@@ -42,6 +42,13 @@ export const NAVIGATION: readonly NavGroup[] = [
         available: true,
       },
       {
+        label: 'Painel',
+        path: 'painel',
+        icon: 'bar-chart',
+        description: `Indicadores dos ${TERMOS.membrosMin}`,
+        available: true,
+      },
+      {
         label: 'Pessoas',
         path: 'pessoas',
         icon: 'users',
