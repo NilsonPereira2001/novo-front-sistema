@@ -103,7 +103,8 @@ Indicadores dos associados, no menu logo abaixo de Início (e atalho na tela In�
 
 - **`GET dashboard/associados/resumo?meses=6|12|24`:**
   - **Situação:** cada associado conta em uma situação só, e a soma dá o total. Aguardando deferimento é a restrição `AGUARDANDO ...`; desligado é status ou restrição `DESLIGADO`; ativo é status `ATIVO`; o resto conta como inativo (ex.: `ADESÃO INDEFERIDO`).
-  - **Distribuições (só ativos):** por tipo de vínculo, por tipo de sócio, **militares por unidade** e por instituição. As 9 maiores aparecem; o resto vira "Outras".
+  - **Situação por vínculo:** tabela com ativos, inativos, desligados e aguardando para cada tipo de vínculo, com linha de total.
+  - **Distribuições (só ativos):** por tipo de sócio, e **militares por unidade** e **por instituição** (só vínculo MILITAR). As 9 maiores aparecem; o resto vira "Outras".
   - **Evolução mensal:** primeiras adesões (sem pendentes ou indeferidas) e desligamentos efetivados. Gráfico de linhas com um eixo só, dica no mouse e nas setas do teclado, e botão "Ver tabela" com o saldo.
 - **`GET dashboard/associados/aniversariantes?mes=1..12`:** associados ativos do mês, com idade que completam, vínculo e unidade (militar) ou instituição. Os de hoje ficam destacados; dá para navegar entre os meses.
 - **Cores:** azul da marca e laranja, validadas para daltonismo. O texto nunca usa a cor da série.

@@ -49,6 +49,59 @@
     </section>
     <p class="nota">Total cadastrado: <strong>{{ d.totais.total | number }}</strong> {{ termos.membrosMin }}.</p>
 
+    <section class="card bloco" aria-labelledby="t-situacao-vinculo">
+      <header class="bloco__cab">
+        <div>
+          <h2 class="bloco__titulo" id="t-situacao-vinculo">Situação por vínculo</h2>
+          <p class="bloco__sub">Os mesmos totais acima, separados por tipo de vínculo.</p>
+        </div>
+      </header>
+      @if (d.situacaoPorVinculo.length === 0) {
+        <p class="vazio">Nenhum {{ termos.membroMin }} cadastrado.</p>
+      } @else {
+        <div class="table-scroll">
+          <table class="data-table situacao">
+            <caption class="sr-only">Quantidade de {{ termos.membrosMin }} por vínculo e situação</caption>
+            <thead>
+              <tr>
+                <th scope="col">Vínculo</th>
+                <th scope="col" class="num">Ativos</th>
+                <th scope="col" class="num">Inativos</th>
+                <th scope="col" class="num">Desligados</th>
+                <th scope="col" class="num">Aguardando</th>
+                <th scope="col" class="num">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (v of d.situacaoPorVinculo; track v.nome) {
+                <tr>
+                  <th scope="row" [class.sem-nome]="!v.nome">{{ v.nome ?? 'Sem vínculo informado' }}</th>
+                  <td class="num">
+                    {{ v.totais.ativos | number }}
+                    <span class="situacao__pct">{{ pct(v.totais.ativos, v.totais.total) | number: '1.0-0' }}%</span>
+                  </td>
+                  <td class="num">{{ v.totais.inativos | number }}</td>
+                  <td class="num">{{ v.totais.desligados | number }}</td>
+                  <td class="num">{{ v.totais.aguardandoAdesao + v.totais.aguardandoDesligamento | number }}</td>
+                  <td class="num"><strong>{{ v.totais.total | number }}</strong></td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row">Total</th>
+                <td class="num">{{ d.totais.ativos | number }}</td>
+                <td class="num">{{ d.totais.inativos | number }}</td>
+                <td class="num">{{ d.totais.desligados | number }}</td>
+                <td class="num">{{ d.totais.aguardandoAdesao + d.totais.aguardandoDesligamento | number }}</td>
+                <td class="num"><strong>{{ d.totais.total | number }}</strong></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      }
+    </section>
+
     <section class="card bloco" aria-labelledby="t-evolucao">
       <header class="bloco__cab">
         <div>
@@ -76,18 +129,11 @@
       <section class="card bloco" aria-labelledby="t-instituicao">
         <header class="bloco__cab">
           <div>
-            <h2 class="bloco__titulo" id="t-instituicao">Ativos por instituição</h2>
-            <p class="bloco__sub">Todos os vínculos.</p>
+            <h2 class="bloco__titulo" id="t-instituicao">Militares ativos por instituição</h2>
+            <p class="bloco__sub">Só vínculo MILITAR.</p>
           </div>
         </header>
-        <app-barras [itens]="d.porInstituicao" titulo="Ativos por instituição" semNome="Sem instituição informada" vazio="Nenhum ativo." [limite]="10" />
-      </section>
-
-      <section class="card bloco" aria-labelledby="t-vinculo">
-        <header class="bloco__cab">
-          <h2 class="bloco__titulo" id="t-vinculo">Ativos por tipo de vínculo</h2>
-        </header>
-        <app-barras [itens]="d.porVinculo" titulo="Ativos por tipo de vínculo" semNome="Sem vínculo informado" vazio="Nenhum ativo." />
+        <app-barras [itens]="d.militaresPorInstituicao" titulo="Militares ativos por instituição" semNome="Sem instituição informada" vazio="Nenhum militar ativo." [limite]="10" />
       </section>
 
       <section class="card bloco" aria-labelledby="t-tipo-socio">
@@ -97,7 +143,7 @@
         <app-barras [itens]="d.porTipoSocio" titulo="Ativos por tipo de sócio" semNome="Sem tipo informado" vazio="Nenhum ativo." />
       </section>
 
-      <section class="card bloco aniv bloco--largo" aria-labelledby="t-aniv">
+      <section class="card bloco aniv" aria-labelledby="t-aniv">
         <header class="bloco__cab">
           <div>
             <h2 class="bloco__titulo" id="t-aniv">Aniversariantes</h2>

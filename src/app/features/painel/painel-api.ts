@@ -5,7 +5,7 @@
  *   GET dashboard/associados/aniversariantes?mes=1..12 → List<AniversarianteDTO>
  *
  * Totais: cada associado entra em uma situação só (a soma dá o total).
- * Distribuições (vínculo, tipo de sócio, unidade, instituição) contam apenas ativos.
+ * Distribuições (vínculo, tipo de sócio, unidade e instituição dos militares) contam apenas ativos.
  */
 
 import { UnexpectedResponseError } from '../../core/http/load-error';
@@ -40,12 +40,20 @@ export interface MesEvolucao {
   readonly desligamentos: number;
 }
 
+/** Mesmos totais da situação, separados por tipo de vínculo (`nome` null = sem vínculo). */
+export interface SituacaoVinculo {
+  readonly nome: string | null;
+  readonly totais: Totais;
+}
+
 export interface PainelAssociados {
   readonly totais: Totais;
+  readonly situacaoPorVinculo: readonly SituacaoVinculo[];
   readonly porVinculo: readonly Quantidade[];
   readonly porTipoSocio: readonly Quantidade[];
   readonly militaresPorUnidade: readonly Quantidade[];
-  readonly porInstituicao: readonly Quantidade[];
+  /** Só vínculo MILITAR. */
+  readonly militaresPorInstituicao: readonly Quantidade[];
   readonly evolucao: readonly MesEvolucao[];
 }
 
@@ -68,23 +76,32 @@ export function toPainel(raw: unknown): PainelAssociados {
     throw new UnexpectedResponseError();
   }
   return {
-    totais: {
-      total: n(totais, 'total'),
-      ativos: n(totais, 'ativos'),
-      inativos: n(totais, 'inativos'),
-      desligados: n(totais, 'desligados'),
-      aguardandoAdesao: n(totais, 'aguardandoAdesao'),
-      aguardandoDesligamento: n(totais, 'aguardandoDesligamento'),
-    },
+    totais: toTotais(totais),
+    situacaoPorVinculo: (Array.isArray(raw['situacaoPorVinculo']) ? raw['situacaoPorVinculo'] : [])
+      .filter(isRecord)
+      .map((v) => ({ nome: readString(v, ['nome']), totais: toTotais(readRecord(v, ['totais']) ?? {}) }))
+      .filter((v) => v.totais.total > 0)
+      .sort((a, b) => b.totais.total - a.totais.total || (a.nome ?? '').localeCompare(b.nome ?? '', 'pt-BR')),
     porVinculo: quantidades(raw['porVinculo']),
     porTipoSocio: quantidades(raw['porTipoSocio']),
     militaresPorUnidade: quantidades(raw['militaresPorUnidade']),
-    porInstituicao: quantidades(raw['porInstituicao']),
+    militaresPorInstituicao: quantidades(raw['militaresPorInstituicao']),
     evolucao: (Array.isArray(raw['evolucao']) ? raw['evolucao'] : [])
       .filter(isRecord)
       .map((m) => ({ ano: n(m, 'ano'), mes: n(m, 'mes'), adesoes: n(m, 'adesoes'), desligamentos: n(m, 'desligamentos') }))
       .filter((m) => m.ano > 0 && m.mes >= 1 && m.mes <= 12)
       .sort((a, b) => a.ano - b.ano || a.mes - b.mes),
+  };
+}
+
+function toTotais(t: Record<string, unknown>): Totais {
+  return {
+    total: n(t, 'total'),
+    ativos: n(t, 'ativos'),
+    inativos: n(t, 'inativos'),
+    desligados: n(t, 'desligados'),
+    aguardandoAdesao: n(t, 'aguardandoAdesao'),
+    aguardandoDesligamento: n(t, 'aguardandoDesligamento'),
   };
 }
 

@@ -7,7 +7,12 @@ describe('painel-api', () => {
       porVinculo: [{ nome: 'CIVIL', total: 2 }, { nome: 'MILITAR', total: 4 }, { nome: 'X', total: 0 }],
       porTipoSocio: [{ nome: 'CONTRIBUINTE', total: 1 }, { nome: 'EFETIVO', total: 5 }],
       militaresPorUnidade: [{ nome: null, total: 1 }, { nome: '1º BPM', total: 3 }],
-      porInstituicao: [],
+      militaresPorInstituicao: [],
+      situacaoPorVinculo: [
+        { nome: 'CIVIL', totais: { total: 3, ativos: 1, desligados: 2 } },
+        { nome: 'MILITAR', totais: { total: 6, ativos: 5, aguardandoAdesao: 1 } },
+        { nome: null, totais: { total: 0 } },
+      ],
       evolucao: [{ ano: 2026, mes: 11, adesoes: 3, desligamentos: 1 }, { ano: 2026, mes: 10, adesoes: 2, desligamentos: 0 }],
     });
     expect(p.totais.ativos).toBe(6);
@@ -15,6 +20,7 @@ describe('painel-api', () => {
     expect(p.porTipoSocio.map((q) => q.nome)).toEqual(['EFETIVO', 'CONTRIBUINTE']);
     expect(p.militaresPorUnidade).toEqual([{ nome: '1º BPM', total: 3 }, { nome: null, total: 1 }]);
     expect(p.evolucao.map((m) => m.mes)).toEqual([10, 11]);
+    expect(p.situacaoPorVinculo.map((v) => [v.nome, v.totais.ativos, v.totais.inativos])).toEqual([['MILITAR', 5, 0], ['CIVIL', 1, 0]]);
   });
 
   it('resposta sem totais é formato inesperado', () => {
