@@ -115,6 +115,10 @@ Código em `features/juridico/processos/`. Endpoints do `ProcessoJuridicoControl
   - Status, data de distribuição, responsável (advogados), área, classe, assunto, foro, vara, juiz, valor da ação e observação.
   - Partes com tipo, busca de pessoa cadastrada (nome/CPF) ou preenchimento manual. O backend sincroniza as partes: atualiza, cria e remove.
   - Textos em maiúsculas.
+- **Transferir responsável:** `POST juridico/processos/transferir-responsavel`, com a permissão `PROCESSO_EDITAR`.
+  - Na lista, transfere todos os processos de um advogado para outro. "De" já vem preenchido com o filtro de responsável, e a tela mostra quantos processos serão transferidos.
+  - No detalhe, transfere só aquele processo.
+  - Substitui o antigo `GET juridico/processos/transferencia/{a}/{b}`.
 - **Permissões:** `PROCESSO_NOVO_JURIDICO` para criar e `PROCESSO_EDITAR` para editar.
 - **Testes:** `processos-api.spec.ts`.
 

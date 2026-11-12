@@ -7,6 +7,7 @@
  *   POST juridico/processos                            (PROCESSO_NOVO_JURIDICO)
  *   PUT  juridico/processos/{id}                       (PROCESSO_EDITAR)
  *   POST juridico/processos/{id}/atualizar-tribunal
+ *   POST juridico/processos/transferir-responsavel   { idOrigem, idDestino, ids? } → { transferidos }  (PROCESSO_EDITAR)
  *   POST juridico/editar/movimentacao/{id}?interpretacao=   (JuridicoController)
  *   GET  juridico/areas/atuacao · juridico/listar/tipos/parte/processo · juridico/listar/advogados
  */
@@ -26,6 +27,7 @@ export const PROC_API = {
   criar: '/juridico/processos',
   editar: (id: number) => `/juridico/processos/${id}`,
   atualizar: (id: number) => `/juridico/processos/${id}/atualizar-tribunal`,
+  transferir: '/juridico/processos/transferir-responsavel',
   interpretacao: (idMov: number) => `/juridico/editar/movimentacao/${idMov}`,
   areas: '/juridico/areas/atuacao',
   tiposParte: '/juridico/listar/tipos/parte/processo',

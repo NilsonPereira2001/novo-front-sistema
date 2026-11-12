@@ -25,3 +25,5 @@
   &[data-tom='warning'] { background: var(--color-warning-soft); color: var(--color-warning); }
 }
 @media (max-width: 30rem) { .filtro { width: 100%; } .chips { padding: var(--space-3) var(--space-4) 0; } }
+
+.aviso { display: flex; align-items: center; gap: var(--space-3); app-alert { flex: 1; } }

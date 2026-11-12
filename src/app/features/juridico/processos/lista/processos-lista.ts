@@ -13,6 +13,8 @@ import { DisplayValuePipe } from '../../../../shared/pipes/display-value.pipe';
 import { normalizeKey } from '../../../../shared/utils/text';
 import { FiltroProcessos, PROC_PAGE_SIZE, ProcessoItem, STATUS_PROCESSO, formatarCnj, statusProcesso } from '../data/processos-api';
 import { ProcessosService } from '../data/processos.service';
+import { TransferirDialog } from '../components/transferir-dialog';
+import { Alert } from '../../../../shared/components/alert/alert';
 
 /**
  * Jurídico › Processos: lista com busca (número, descrição, assunto, parte),
@@ -20,7 +22,7 @@ import { ProcessosService } from '../data/processos.service';
  */
 @Component({
   selector: 'app-processos-lista',
-  imports: [DatePipe, RouterLink, Icon, LoadError, Pagination, SearchField, DisplayValuePipe],
+  imports: [DatePipe, RouterLink, Alert, Icon, LoadError, Pagination, SearchField, DisplayValuePipe, TransferirDialog],
   templateUrl: './processos-lista.html',
   styleUrl: './processos-lista.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -72,6 +74,18 @@ export class ProcessosLista {
   });
 
   protected readonly advogados = loadFrom(signal(0), () => this.service.advogados(), signal(0));
+  protected readonly listaAdvogados = computed(() => {
+    const a = this.advogados();
+    return a.status === 'ready' ? a.data : [];
+  });
+  protected readonly transferirAberto = signal(false);
+  protected readonly aviso = signal<string | null>(null);
+
+  protected transferiu(r: { qtd: number; destino: string }): void {
+    this.transferirAberto.set(false);
+    this.aviso.set(r.qtd === 1 ? `1 processo transferido para ${r.destino}.` : `${r.qtd} processos transferidos para ${r.destino}.`);
+    this.recarregar();
+  }
 
   protected setStatus(s: string): void {
     this.url.setFilters({ status: s || null });

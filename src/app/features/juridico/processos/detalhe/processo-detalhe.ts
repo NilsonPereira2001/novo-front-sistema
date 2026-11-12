@@ -18,13 +18,14 @@ import { hojeIso } from '../../../../shared/utils/datas';
 import { isRecord } from '../../../../shared/utils/json-read';
 import { Movimentacao, ProcessoDetalhe, formatarCnj, proximasAudiencias, statusProcesso } from '../data/processos-api';
 import { ProcessosService, mensagemDeErro } from '../data/processos.service';
+import { TransferirDialog } from '../components/transferir-dialog';
 
 const MOVS_INICIAIS = 15;
 
 /** Detalhe do processo. Rota: /juridico/processos/:id */
 @Component({
   selector: 'app-processo-detalhe',
-  imports: [CurrencyPipe, DatePipe, RouterLink, Alert, Dialog, Icon, LoadError, CpfPipe, DisplayValuePipe, TelefonePipe],
+  imports: [CurrencyPipe, DatePipe, RouterLink, Alert, Dialog, Icon, LoadError, CpfPipe, DisplayValuePipe, TelefonePipe, TransferirDialog],
   templateUrl: './processo-detalhe.html',
   styleUrl: './processo-detalhe.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -64,6 +65,21 @@ export class ProcessoDetalhePage {
   // --- Atualizar do tribunal ----------------------------------------------------
   protected readonly atualizando = signal(false);
   protected readonly erroAtualizar = signal<string | null>(null);
+
+  // --- Transferir responsável ---------------------------------------------------
+  protected readonly transferirAberto = signal(false);
+  protected readonly advogados = loadFrom(signal(0), () => this.service.advogados(), signal(0));
+  protected readonly listaAdvogados = computed(() => {
+    const a = this.advogados();
+    return a.status === 'ready' ? a.data : [];
+  });
+  protected readonly idsDoProcesso = computed(() => (this.processo() ? [this.processo()!.id] : []));
+
+  protected transferiu(r: { destino: string }): void {
+    this.transferirAberto.set(false);
+    this.aviso.set(`Processo transferido para ${r.destino}.`);
+    this.tentar.update((n) => n + 1);
+  }
 
   // --- Interpretação do advogado -------------------------------------------------
   protected readonly movEditando = signal<Movimentacao | null>(null);

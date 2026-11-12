@@ -5,9 +5,14 @@
     <p class="page-subtitle">Acompanhamento dos processos: partes, movimentações, audiências e responsável.</p>
   </div>
   <div class="page-header__actions">
+    <button type="button" class="btn btn--secondary" (click)="transferirAberto.set(true)"><app-icon name="refresh-cw" /> Transferir responsável</button>
     <a class="btn btn--primary" routerLink="/juridico/processos/novo"><app-icon name="plus" /> Novo processo</a>
   </div>
 </header>
+
+@if (aviso(); as texto) {
+  <div class="aviso"><app-alert tone="success">{{ texto }}</app-alert><button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
+}
 
 <section class="card table-card" aria-labelledby="titulo-processos">
   <h2 id="titulo-processos" class="sr-only">Lista de processos</h2>
@@ -34,11 +39,8 @@
     <label class="sr-only" for="proc-resp">Responsável</label>
     <select id="proc-resp" class="field__input filtro" (change)="onResponsavel($event)">
       <option value="" [selected]="responsavel() === null">Todos os responsáveis</option>
-      @let advs = advogados();
-      @if (advs.status === 'ready') {
-        @for (a of advs.data; track a.id) {
-          <option [value]="a.id" [selected]="responsavel() === a.id">{{ a.nome }}</option>
-        }
+      @for (a of listaAdvogados(); track a.id) {
+        <option [value]="a.id" [selected]="responsavel() === a.id">{{ a.nome }}</option>
       }
     </select>
   </div>
@@ -126,3 +128,11 @@
     }
   }
 </section>
+
+<app-transferir-dialog
+  [open]="transferirAberto()"
+  [advogados]="listaAdvogados()"
+  [idOrigemInicial]="responsavel()"
+  (transferido)="transferiu($event)"
+  (closed)="transferirAberto.set(false)"
+/>

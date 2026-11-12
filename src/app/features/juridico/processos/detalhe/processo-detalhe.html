@@ -32,6 +32,7 @@
       <button type="button" class="btn btn--secondary btn--sm" (click)="atualizar()" [disabled]="atualizando()">
         @if (atualizando()) { <span class="spinner" aria-hidden="true"></span> Consultando… } @else { <app-icon name="refresh-cw" /> Atualizar do tribunal }
       </button>
+      <button type="button" class="btn btn--secondary btn--sm" (click)="transferirAberto.set(true)"><app-icon name="user" /> Transferir</button>
       <a class="btn btn--primary btn--sm" [routerLink]="['/juridico/processos', p.id, 'editar']"><app-icon name="pencil" /> Editar</a>
     </div>
   </section>
@@ -144,6 +145,15 @@
       </section>
     </div>
   </div>
+
+  <app-transferir-dialog
+    [open]="transferirAberto()"
+    [advogados]="listaAdvogados()"
+    [idOrigemInicial]="p.responsavel?.id ?? null"
+    [idsProcessos]="idsDoProcesso()"
+    (transferido)="transferiu($event)"
+    (closed)="transferirAberto.set(false)"
+  />
 
   <app-dialog titulo="Interpretação do advogado" [open]="movEditando() !== null" (closed)="fecharInterp()" size="wide">
     @if (movEditando(); as m) {

@@ -66,6 +66,18 @@ export class ProcessosService {
     );
   }
 
+  /** Com `ids`, só esses processos; sem `ids`, todos os de `idOrigem`. Devolve quantos mudaram. */
+  transferir(idOrigem: number | null, idDestino: number, ids?: readonly number[]): Observable<number> {
+    return this.http
+      .post<unknown>(apiUrl(PROC_API.transferir), { idOrigem, idDestino, ids: ids ?? null })
+      .pipe(map((r) => (isRecord(r) && typeof r['transferidos'] === 'number' ? r['transferidos'] : 0)));
+  }
+
+  /** Quantos processos o advogado tem (para confirmar a transferência). */
+  contarDoResponsavel(idResponsavel: number): Observable<number> {
+    return this.listar({ idResponsavel, page: 0, size: 1 }).pipe(map((p) => p.totalElements));
+  }
+
   salvarInterpretacao(idMovimentacao: number, texto: string): Observable<void> {
     return this.http
       .post(apiUrl(PROC_API.interpretacao(idMovimentacao)), null, { params: new HttpParams().set('interpretacao', texto) })
