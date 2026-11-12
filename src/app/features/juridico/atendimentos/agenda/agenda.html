@@ -11,7 +11,7 @@
 </header>
 
 @if (aviso(); as texto) {
-  <div class="aviso"><app-alert tone="success">{{ texto }}</app-alert><button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
+  <div class="aviso"><app-alert [tone]="avisoTom()">{{ texto }}</app-alert><button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
 }
 
 <section class="card semana" aria-label="Semana">
@@ -98,6 +98,9 @@
             </p>
             <p class="item__meta">{{ a.tipo | displayValue }} · {{ a.area | displayValue }}@if (a.modalidade) { · {{ a.modalidade }} }</p>
             @if (a.assunto) { <p class="item__assunto">{{ a.assunto }}</p> }
+            @if (a.qtdAnexos) {
+              <p class="item__colab"><app-icon name="paperclip" /> {{ a.qtdAnexos }} {{ a.qtdAnexos === 1 ? 'anexo' : 'anexos' }}</p>
+            }
             @if (a.colaboradores.length) {
               <p class="item__colab"><app-icon name="users" /> {{ a.colaboradores.map(nomeDe).join(', ') }}</p>
             }
@@ -108,6 +111,10 @@
               <a class="btn btn--primary btn--sm" [routerLink]="['/juridico/atendimentos', a.id, 'realizar']">Realizar</a>
               <button type="button" class="btn btn--secondary btn--sm" (click)="abrirReagendar(a)">Reagendar</button>
               <button type="button" class="btn btn--secondary btn--sm" (click)="abrirNaoAtendido(a)">Não compareceu</button>
+              <button type="button" class="btn btn--secondary btn--sm" (click)="verRegistro(a)" [disabled]="carregandoRegistro() === a.id" [attr.aria-label]="'Anexos de ' + (a.pessoas[0]?.nome ?? 'atendimento')">
+                @if (carregandoRegistro() === a.id) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="paperclip" /> }
+                Anexos
+              </button>
             } @else if (s === 'atendido') {
               <button type="button" class="btn btn--secondary btn--sm" (click)="verRegistro(a)" [disabled]="carregandoRegistro() === a.id">
                 @if (carregandoRegistro() === a.id) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="file-text" /> }
@@ -156,7 +163,7 @@
   </div>
 </app-dialog>
 
-<app-dialog titulo="Registro do atendimento" [open]="registro() !== null" (closed)="registro.set(null)" size="wide">
+<app-dialog [titulo]="tituloRegistro()" [open]="registro() !== null" (closed)="registro.set(null)" size="wide">
   @if (registro(); as r) {
     <div class="dlg registro">
       <p class="registro__cab">
@@ -164,9 +171,19 @@
       </p>
       <p><strong>Pessoas:</strong> {{ r.atendimento.pessoas.map(nomePessoa).join(', ') }}</p>
       @if (r.atendimento.assunto) { <p><strong>Assunto:</strong> {{ r.atendimento.assunto }}</p> }
-      <h3>Fatos relatados</h3><p class="texto">{{ r.fatosCliente | displayValue }}</p>
-      <h3>Análise jurídica</h3><p class="texto">{{ r.analiseJuridica | displayValue }}</p>
-      <h3>Orientação</h3><p class="texto">{{ r.orientacao | displayValue }}</p>
+      @if (r.atendimento.status === 'ATENDIDO') {
+        <h3>Fatos relatados</h3><p class="texto">{{ r.fatosCliente | displayValue }}</p>
+        <h3>Análise jurídica</h3><p class="texto">{{ r.analiseJuridica | displayValue }}</p>
+        <h3>Orientação</h3><p class="texto">{{ r.orientacao | displayValue }}</p>
+      }
+      <h3>Anexos</h3>
+      <app-anexos-atendimento
+        [idAtendimento]="r.atendimento.id"
+        [anexos]="r.anexos"
+        [pessoas]="pessoasDoAnexo(r)"
+        [enviarNaHora]="true"
+        (alterado)="anexosAlterados()"
+      />
     </div>
   }
   <div dialog-actions><button type="button" class="btn btn--primary btn--sm" (click)="registro.set(null)">Fechar</button></div>

@@ -3,15 +3,18 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 
 import { apiUrl } from '../../../../core/http/api-url';
+import { UnexpectedResponseError } from '../../../../core/http/load-error';
 import { Opcao, toOpcao } from '../../../../shared/data/opcao.model';
 import { isRecord } from '../../../../shared/utils/json-read';
 import {
   ATEND_API,
+  Anexo,
   Atendimento,
   AtendimentoDetalhe,
   Colaborador,
   ContagemDia,
   RegistroPayload,
+  toAnexo,
   toColaborador,
   toDetalhe,
   toDias,
@@ -53,6 +56,28 @@ export class AtendimentosService {
 
   naoAtendido(id: number, motivo: string): Observable<AtendimentoDetalhe> {
     return this.http.post<unknown>(apiUrl(ATEND_API.naoAtendido(id)), { motivo }).pipe(map(toDetalhe));
+  }
+
+  /** Um arquivo por requisição (limite do multipart no backend). */
+  anexar(id: number, arquivo: File, idPessoa: number | null): Observable<Anexo> {
+    const body = new FormData();
+    body.append('arquivo', arquivo, arquivo.name);
+    if (idPessoa) body.append('idPessoa', String(idPessoa));
+    return this.http.post<unknown>(apiUrl(ATEND_API.anexos(id)), body).pipe(
+      map((raw) => {
+        const a = isRecord(raw) ? toAnexo(raw) : null;
+        if (!a) throw new UnexpectedResponseError();
+        return a;
+      }),
+    );
+  }
+
+  baixarAnexo(id: number, idArquivo: number): Observable<Blob> {
+    return this.http.get(apiUrl(ATEND_API.anexo(id, idArquivo)), { responseType: 'blob' });
+  }
+
+  removerAnexo(id: number, idArquivo: number): Observable<void> {
+    return this.http.delete(apiUrl(ATEND_API.anexo(id, idArquivo))).pipe(map(() => undefined));
   }
 
   colaboradores(): Observable<Colaborador[]> {

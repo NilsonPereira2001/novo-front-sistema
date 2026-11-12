@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormArray, NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
 import { Router, RouterLink } from '@angular/router';
+import { Observable, catchError, concat, map, of, startWith, toArray } from 'rxjs';
 
 import { pageTitle } from '../../../../core/config/app-title';
 import { Alert } from '../../../../shared/components/alert/alert';
@@ -16,7 +17,8 @@ import { applyMask } from '../../../../shared/utils/masks';
 import { PessoaDTO } from '../../../pessoas/models/pessoa.dto';
 import { mensagemDeErro } from '../../processos/data/processos.service';
 import { BuscaPessoa } from '../../processos/form/busca-pessoa';
-import { MODALIDADES, isoLocal } from '../data/atendimentos-api';
+import { AnexoPendente, AnexosAtendimento, PessoaDoAnexo } from '../components/anexos-atendimento';
+import { Anexo, MODALIDADES, isoLocal } from '../data/atendimentos-api';
 import { AtendimentosService } from '../data/atendimentos.service';
 import { ModoAtendimento, PessoaForm, criarAtendimentoForm, criarPessoa, toAtendimentoPayload } from './atendimento-form.model';
 
@@ -35,7 +37,7 @@ const TITULOS: Readonly<Record<ModoAtendimento, string>> = {
  */
 @Component({
   selector: 'app-atendimento-form',
-  imports: [ReactiveFormsModule, RouterLink, Alert, FieldError, SelectField, TextField, Icon, BuscaPessoa],
+  imports: [ReactiveFormsModule, RouterLink, Alert, FieldError, SelectField, TextField, Icon, BuscaPessoa, AnexosAtendimento],
   templateUrl: './atendimento-form.html',
   styleUrl: './atendimento-form.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -74,6 +76,22 @@ export class AtendimentoFormPage {
   protected readonly areas = loadFrom(signal(0), () => this.service.areas(), this.tentar);
   protected readonly colaboradores = loadFrom(signal(0), () => this.service.colaboradores(), this.tentar);
   private readonly selecionados = signal<readonly number[]>([]);
+
+  // Anexos: os já enviados (modo realizar) e os escolhidos, enviados depois de salvar.
+  protected readonly anexosExistentes = signal<readonly Anexo[]>([]);
+  protected readonly pendentes = signal<readonly AnexoPendente[]>([]);
+  private readonly valorPessoas = toSignal(this.pessoas.valueChanges.pipe(startWith(this.pessoas.getRawValue())), { initialValue: [] });
+  protected readonly pessoasDoAnexo = computed<PessoaDoAnexo[]>(() => {
+    const vistos = new Set<number>();
+    const out: PessoaDoAnexo[] = [];
+    for (const p of this.valorPessoas()) {
+      if (p.idPessoa && !vistos.has(p.idPessoa)) {
+        vistos.add(p.idPessoa);
+        out.push({ idPessoa: p.idPessoa, nome: p.nome || 'PESSOA ' + p.idPessoa });
+      }
+    }
+    return out;
+  });
 
   constructor() {
     effect(() => this.title.setTitle(pageTitle(this.titulo())));
@@ -117,6 +135,7 @@ export class AtendimentoFormPage {
             return;
           }
           this.agendadoPara.set(a.dataHoraAgendamento ?? a.dataHora);
+          this.anexosExistentes.set(d.anexos);
           this.pessoas.clear();
           for (const p of a.pessoas) {
             this.pessoas.push(
@@ -143,6 +162,16 @@ export class AtendimentoFormPage {
         },
         error: (e: unknown) => this.carga.set((e as { status?: number })?.status === 404 ? 'nao-encontrado' : 'erro'),
       });
+  }
+
+  /** Depois de remover um anexo já enviado (modo realizar). */
+  protected recarregarAnexos(): void {
+    const id = this.idNumero();
+    if (!id) return;
+    this.service
+      .detalhe(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({ next: (d) => this.anexosExistentes.set(d.anexos), error: () => undefined });
   }
 
   protected recarregar(): void {
@@ -191,6 +220,22 @@ export class AtendimentoFormPage {
     this.form.controls.colaboradores.setValue([...novo]);
   }
 
+  /** Envia os anexos escolhidos, um por vez; devolve os nomes dos que falharam. */
+  private enviarPendentes(id: number): Observable<string[]> {
+    const envios = this.pendentes().map((p) =>
+      this.service.anexar(id, p.arquivo, p.idPessoa).pipe(
+        map(() => null),
+        catchError(() => of(p.arquivo.name)),
+      ),
+    );
+    if (!envios.length) return of([]);
+    return concat(...envios).pipe(
+      toArray(),
+      map((l) => l.filter((n): n is string => n !== null)),
+      takeUntilDestroyed(this.destroyRef),
+    );
+  }
+
   protected salvar(): void {
     if (this.enviando()) return;
     this.form.controls.dataHora.updateValueAndValidity();
@@ -209,11 +254,19 @@ export class AtendimentoFormPage {
     this.enviando.set(true);
     this.erro.set(null);
     req.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => {
-        this.enviando.set(false);
+      next: (d) => {
         const dia = payload.dataHora.slice(0, 10);
-        const aviso = modo === 'agendar' ? 'Atendimento agendado.' : 'Atendimento registrado.';
-        void this.router.navigate(['/juridico/atendimentos'], { queryParams: { data: dia === isoLocal(new Date()).slice(0, 10) ? null : dia }, state: { aviso } });
+        const feito = modo === 'agendar' ? 'Atendimento agendado' : 'Atendimento registrado';
+        this.enviarPendentes(d.atendimento.id).subscribe((falhas) => {
+          this.enviando.set(false);
+          const aviso = falhas.length
+            ? `${feito}, mas ${falhas.length === 1 ? 'um anexo não foi enviado' : falhas.length + ' anexos não foram enviados'} (${falhas.join(', ')}). Abra o atendimento e tente de novo.`
+            : `${feito}${this.pendentes().length ? ' com ' + this.pendentes().length + (this.pendentes().length === 1 ? ' anexo' : ' anexos') : ''}.`;
+          void this.router.navigate(['/juridico/atendimentos'], {
+            queryParams: { data: dia === isoLocal(new Date()).slice(0, 10) ? null : dia },
+            state: { aviso, avisoTom: falhas.length ? 'warning' : 'success' },
+          });
+        });
       },
       error: (e: unknown) => {
         this.enviando.set(false);

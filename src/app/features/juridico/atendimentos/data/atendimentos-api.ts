@@ -3,13 +3,16 @@
  *
  *   GET  juridico/atendimentos?de=&ate=&idColaborador=        → Item[] (até 62 dias)
  *   GET  juridico/atendimentos/dias?de=&ate=&idColaborador=   → contagem por dia
- *   GET  juridico/atendimentos/{id}                           → { atendimento, idTipo, idArea, fatosCliente, analiseJuridica, orientacao }
+ *   GET  juridico/atendimentos/{id}                           → { atendimento, idTipo, idArea, fatosCliente, analiseJuridica, orientacao, anexos }
  *   GET  juridico/atendimentos/colaboradores
  *   POST juridico/atendimentos                     registrar realizado (ATENDIMENTO_NOVO_JURIDICO)
  *   POST juridico/atendimentos/agendar             (ATENDIMENTO_AGENDAR_JURIDICO)
  *   POST juridico/atendimentos/{id}/realizar       (ATENDIMENTO_NOVO_JURIDICO)
  *   POST juridico/atendimentos/{id}/reagendar      { dataHora }   (ATENDIMENTO_AGENDAR_JURIDICO)
  *   POST juridico/atendimentos/{id}/nao-atendido   { motivo }     (ATENDIMENTO_AGENDAR_JURIDICO)
+ *   POST   juridico/atendimentos/{id}/anexos           multipart: arquivo (+ idPessoa) → Anexo
+ *   GET    juridico/atendimentos/{id}/anexos/{idArq}   conteúdo
+ *   DELETE juridico/atendimentos/{id}/anexos/{idArq}
  *   GET  juridico/tipos/atendimento · juridico/areas/atuacao
  *
  * Datas e horas são LocalDateTime (sem fuso): "2026-11-12T14:30:00".
@@ -33,6 +36,8 @@ export const ATEND_API = {
   realizar: (id: number) => `/juridico/atendimentos/${id}/realizar`,
   reagendar: (id: number) => `/juridico/atendimentos/${id}/reagendar`,
   naoAtendido: (id: number) => `/juridico/atendimentos/${id}/nao-atendido`,
+  anexos: (id: number) => `/juridico/atendimentos/${id}/anexos`,
+  anexo: (id: number, idArquivo: number) => `/juridico/atendimentos/${id}/anexos/${idArquivo}`,
   tipos: '/juridico/tipos/atendimento',
   areas: '/juridico/areas/atuacao',
 } as const;
@@ -66,6 +71,29 @@ export interface Atendimento {
   readonly motivoNaoAtendimento: string | null;
   readonly pessoas: readonly PessoaAtendida[];
   readonly colaboradores: readonly Colaborador[];
+  readonly qtdAnexos: number;
+}
+
+/** Anexo do atendimento. `idPessoa` null = anexo geral. */
+export interface Anexo {
+  readonly id: number;
+  readonly nome: string;
+  readonly tamanho: number | null;
+  readonly dataImportacao: string | null;
+  readonly idPessoa: number | null;
+  readonly nomePessoa: string | null;
+}
+
+/** Limites dos anexos (iguais aos do backend). */
+export const ANEXO_TAMANHO_MAXIMO = 10 * 1024 * 1024;
+export const ANEXO_TIPOS_ACEITOS = '.pdf,.png,.jpg,.jpeg,.doc,.docx';
+
+/** Mensagem de erro do arquivo escolhido, ou null se ele pode ser enviado. */
+export function problemaDoAnexo(f: { name: string; size: number }): string | null {
+  if (!/\.(pdf|png|jpe?g|docx?)$/i.test(f.name)) return 'Formato não aceito. Envie PDF, PNG, JPG, DOC ou DOCX.';
+  if (f.size > ANEXO_TAMANHO_MAXIMO) return 'O arquivo passa de 10 MB.';
+  if (f.size === 0) return 'O arquivo está vazio.';
+  return null;
 }
 
 export interface AtendimentoDetalhe {
@@ -75,6 +103,7 @@ export interface AtendimentoDetalhe {
   readonly fatosCliente: string | null;
   readonly analiseJuridica: string | null;
   readonly orientacao: string | null;
+  readonly anexos: readonly Anexo[];
 }
 
 export interface ContagemDia {
@@ -184,6 +213,21 @@ export function toAtendimento(r: JsonRecord): Atendimento | null {
       telefone: readString(p, ['telefone']),
     })),
     colaboradores: registros(r['colaboradores']).map(toColaborador).filter((c): c is Colaborador => c !== null),
+    qtdAnexos: readNumber(r, ['qtdAnexos']) ?? 0,
+  };
+}
+
+export function toAnexo(r: JsonRecord): Anexo | null {
+  const id = readNumber(r, ['id']);
+  const nome = readString(r, ['nome']);
+  if (id === null || !nome) return null;
+  return {
+    id,
+    nome,
+    tamanho: readNumber(r, ['tamanho']),
+    dataImportacao: dataHoraLocal(r['dataImportacao']),
+    idPessoa: readNumber(r, ['idPessoa']),
+    nomePessoa: readString(r, ['nomePessoa']),
   };
 }
 
@@ -214,6 +258,7 @@ export function toDetalhe(body: unknown): AtendimentoDetalhe {
     fatosCliente: readString(body, ['fatosCliente']),
     analiseJuridica: readString(body, ['analiseJuridica']),
     orientacao: readString(body, ['orientacao']),
+    anexos: registros(body['anexos']).map(toAnexo).filter((x): x is Anexo => x !== null),
   };
 }
 

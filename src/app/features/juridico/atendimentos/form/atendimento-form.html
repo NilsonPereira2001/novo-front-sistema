@@ -132,6 +132,18 @@
         </section>
       }
 
+      <section class="card secao" aria-labelledby="s-anexos">
+        <h2 class="secao__titulo" id="s-anexos">Anexos</h2>
+        <p class="nota">Anexos ligados a uma pessoa cadastrada aparecem também nos arquivos dela.</p>
+        <app-anexos-atendimento
+          [idAtendimento]="idNumero()"
+          [anexos]="anexosExistentes()"
+          [pessoas]="pessoasDoAnexo()"
+          [(pendentes)]="pendentes"
+          (alterado)="recarregarAnexos()"
+        />
+      </section>
+
       @if (erro()) {
         <app-alert tone="danger" heading="Não foi possível salvar">{{ erro() }}</app-alert>
       }
@@ -139,7 +151,7 @@
       <div class="acoes">
         <a class="btn btn--secondary" routerLink="/juridico/atendimentos">Cancelar</a>
         <button type="submit" class="btn btn--primary" [disabled]="enviando()">
-          @if (enviando()) { <span class="spinner" aria-hidden="true"></span> Salvando… } @else { <app-icon name="check-circle" /> {{ modoAtual() === 'agendar' ? 'Agendar' : 'Registrar atendimento' }} }
+          @if (enviando()) { <span class="spinner" aria-hidden="true"></span> {{ pendentes().length ? 'Salvando e enviando anexos…' : 'Salvando…' }} } @else { <app-icon name="check-circle" /> {{ modoAtual() === 'agendar' ? 'Agendar' : 'Registrar atendimento' }} }
         </button>
       </div>
     </form>

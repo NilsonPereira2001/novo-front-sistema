@@ -1,4 +1,4 @@
-import { paraLocalDateTime, semanaDe, situacaoDe, somarDias, toDetalhe, toDias, toLista, toPeriodoParams } from './atendimentos-api';
+import { problemaDoAnexo, paraLocalDateTime, semanaDe, situacaoDe, somarDias, toDetalhe, toDias, toLista, toPeriodoParams } from './atendimentos-api';
 
 describe('atendimentos-api', () => {
   it('lista: lê LocalDateTime em texto ou array e ordena pela hora', () => {
@@ -31,5 +31,23 @@ describe('atendimentos-api', () => {
     expect([d.atendimento.id, d.idTipo, d.fatosCliente, d.orientacao]).toEqual([5, 2, 'X', null]);
     expect(toDias([{ data: [2026, 11, 12], agendados: 2, atendidos: 1, naoAtendidos: 0 }])['2026-11-12'].agendados).toBe(2);
     expect(toPeriodoParams('2026-11-09', '2026-11-15', null).toString()).toBe('de=2026-11-09&ate=2026-11-15');
+  });
+
+  it('anexos: lê a lista do detalhe (sem conteúdo) e valida formato/tamanho', () => {
+    const d = toDetalhe({
+      atendimento: { id: 9, status: 'ATENDIDO', dataHora: '2026-11-12T10:00:00', qtdAnexos: 2 },
+      anexos: [
+        { id: 1, nome: 'laudo.pdf', tamanho: 2048, dataImportacao: '2026-11-12T10:05:00', idPessoa: 3, nomePessoa: 'ANA' },
+        { id: 2, nome: 'rg.jpg', tamanho: null, idPessoa: null },
+        { nome: 'sem id' },
+      ],
+    });
+    expect(d.atendimento.qtdAnexos).toBe(2);
+    expect(d.anexos.map((a) => [a.id, a.idPessoa, a.nomePessoa])).toEqual([[1, 3, 'ANA'], [2, null, null]]);
+    expect(problemaDoAnexo({ name: 'a.PDF', size: 10 })).toBeNull();
+    expect(problemaDoAnexo({ name: 'a.docx', size: 10 })).toBeNull();
+    expect(problemaDoAnexo({ name: 'a.xlsx', size: 10 })?.startsWith('Formato')).toBe(true);
+    expect(problemaDoAnexo({ name: 'a.pdf', size: 11 * 1024 * 1024 })?.includes('10 MB')).toBe(true);
+    expect(problemaDoAnexo({ name: 'a.pdf', size: 0 })?.includes('vazio')).toBe(true);
   });
 });

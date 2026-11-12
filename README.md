@@ -138,8 +138,15 @@ Código em `features/juridico/atendimentos/`. Endpoints do `AtendimentoJuridicoC
   - Realizar (`POST /{id}/realizar`): só para atendimentos ainda AGENDADOS.
   - Tipo, área e ao menos uma pessoa são obrigatórios. A pessoa pode vir do cadastro (busca por nome/CPF) ou ser digitada (nome, CPF, telefone).
   - O departamento (JURÍDICO) e o usuário logado são gravados pelo backend.
+- **Anexos** (tabela `arquivos_pessoas`, ligada ao atendimento por `atendimento_id`):
+  - Geral (do atendimento) ou de uma pessoa atendida cadastrada (`pessoa_atendimento_id` + `pessoa_id`); o da pessoa aparece também na aba Arquivos dela.
+  - `POST juridico/atendimentos/{id}/anexos` (multipart: `arquivo`, `idPessoa` opcional), um arquivo por requisição; `GET`/`DELETE juridico/atendimentos/{id}/anexos/{idArquivo}`. A lista vem em `GET {id}` → `anexos`; a agenda mostra `qtdAnexos`.
+  - PDF, PNG, JPG, DOC ou DOCX, até 10 MB cada (conferido no front e no back).
+  - No formulário, os arquivos escolhidos são enviados depois de salvar; se algum falhar, o atendimento fica salvo e o aviso diz qual faltou.
+  - Na agenda: "Ver registro" (atendido) e "Anexos" (agendado) abrem, enviam e removem anexos na hora.
+  - Ao realizar um agendado, os anexos ligados às pessoas continuam ligados a elas.
 - **Permissões:** `ATENDIMENTO_LISTAR_JURIDICO`, `ATENDIMENTO_NOVO_JURIDICO` (registrar/realizar) e `ATENDIMENTO_AGENDAR_JURIDICO` (agendar, reagendar, não compareceu).
-- **Testes:** `atendimentos-api.spec.ts` e `atendimento-form.model.spec.ts`.
+- **Testes:** `atendimentos-api.spec.ts` (inclui anexos) e `atendimento-form.model.spec.ts`.
 
 ### Painel financeiro (`/financeiro/painel`)
 

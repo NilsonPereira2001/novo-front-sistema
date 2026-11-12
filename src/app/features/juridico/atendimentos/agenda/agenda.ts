@@ -26,6 +26,7 @@ import {
   somarDias,
 } from '../data/atendimentos-api';
 import { AtendimentosService } from '../data/atendimentos.service';
+import { AnexosAtendimento, PessoaDoAnexo } from '../components/anexos-atendimento';
 
 const DIAS_SEMANA = ['seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom'];
 
@@ -35,7 +36,7 @@ const DIAS_SEMANA = ['seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom'];
  */
 @Component({
   selector: 'app-agenda-atendimentos',
-  imports: [DatePipe, RouterLink, Alert, Dialog, Icon, LoadError, DisplayValuePipe, TelefonePipe],
+  imports: [DatePipe, RouterLink, Alert, Dialog, Icon, LoadError, DisplayValuePipe, TelefonePipe, AnexosAtendimento],
   templateUrl: './agenda.html',
   styleUrl: './agenda.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -91,6 +92,7 @@ export class AgendaAtendimentos {
   });
 
   protected readonly aviso = signal<string | null>(null);
+  protected readonly avisoTom = signal<'success' | 'warning'>('success');
   // diálogos
   protected readonly reagendarDe = signal<Atendimento | null>(null);
   protected readonly novaData = signal('');
@@ -100,12 +102,18 @@ export class AgendaAtendimentos {
   protected readonly erroAcao = signal<string | null>(null);
   protected readonly registro = signal<AtendimentoDetalhe | null>(null);
   protected readonly carregandoRegistro = signal<number | null>(null);
+  protected readonly tituloRegistro = computed(() =>
+    this.registro()?.atendimento.status === 'ATENDIDO' ? 'Registro do atendimento' : 'Anexos do atendimento',
+  );
 
   constructor() {
     effect(() => {
       this.dia();
       const st: unknown = history.state;
-      if (isRecord(st) && typeof st['aviso'] === 'string') this.aviso.set(st['aviso']);
+      if (isRecord(st) && typeof st['aviso'] === 'string') {
+        this.aviso.set(st['aviso']);
+        this.avisoTom.set(st['avisoTom'] === 'warning' ? 'warning' : 'success');
+      }
     });
   }
 
@@ -164,6 +172,7 @@ export class AgendaAtendimentos {
     }
     this.executar(this.service.reagendar(a.id, paraLocalDateTime(v)), 'reagendar', () => {
       this.reagendarDe.set(null);
+      this.avisoTom.set('success');
       this.aviso.set(`Atendimento reagendado para ${v.slice(8, 10)}/${v.slice(5, 7)} às ${v.slice(11, 16)}.`);
     });
   }
@@ -177,8 +186,29 @@ export class AgendaAtendimentos {
     }
     this.executar(this.service.naoAtendido(a.id, maiusculas(this.motivo().trim())), 'registrar o não comparecimento', () => {
       this.naoAtendidoDe.set(null);
+      this.avisoTom.set('success');
       this.aviso.set('Atendimento marcado como não comparecido.');
     });
+  }
+
+  /** Pessoas cadastradas do atendimento aberto, para ligar o anexo a uma delas. */
+  protected pessoasDoAnexo(d: AtendimentoDetalhe): PessoaDoAnexo[] {
+    const out: PessoaDoAnexo[] = [];
+    for (const p of d.atendimento.pessoas) {
+      if (p.idPessoa && !out.some((x) => x.idPessoa === p.idPessoa)) out.push({ idPessoa: p.idPessoa, nome: p.nome });
+    }
+    return out;
+  }
+
+  /** Recarrega o atendimento aberto depois de enviar/remover anexo (e a contagem na lista). */
+  protected anexosAlterados(): void {
+    const r = this.registro();
+    if (!r) return;
+    this.service
+      .detalhe(r.atendimento.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({ next: (d) => this.registro.set(d), error: () => undefined });
+    this.tentar.update((n) => n + 1);
   }
 
   protected verRegistro(a: Atendimento): void {
