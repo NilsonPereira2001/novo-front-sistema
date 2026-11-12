@@ -97,6 +97,27 @@ Em produção, o servidor web precisa encaminhar `/backend/*` ao Spring Boot rem
 - A expiração do JWT (`exp`) é respeitada: ao expirar, ou se a API responder 401, o usuário volta ao login com o aviso "sessão expirada".
 - Os guards só controlam a navegação. **Toda permissão precisa ser validada também no backend.**
 
+### Jurídico › Processos (`/juridico/processos`)
+
+Código em `features/juridico/processos/`. Endpoints do `ProcessoJuridicoController` (PR #8), com respostas leves. As rotas antigas do `JuridicoController` continuam funcionando.
+
+- **Lista:**
+  - Chips por status com contagem.
+  - Busca por número (com ou sem pontuação), descrição, assunto ou parte (nome/CPF).
+  - Filtro por advogado responsável.
+  - Marca "Parado" quando um processo em andamento está há mais de 180 dias sem movimentação.
+- **Detalhe (`/juridico/processos/:id`):**
+  - Dados do processo, partes (com link para o cadastro quando a parte é uma pessoa do sistema), audiências (a próxima fica em destaque) e linha do tempo das movimentações.
+  - **Interpretação do advogado** em cada movimentação (`juridico/editar/movimentacao/{id}`).
+  - **Atualizar do tribunal:** usa o serviço de consulta já existente e informa quantas movimentações e audiências novas entraram, ou avisa se o serviço não respondeu.
+- **Novo/editar (`/novo`, `/:id/editar`):**
+  - Número CNJ com máscara e conferência do dígito verificador (módulo 97); o número não muda na edição.
+  - Status, data de distribuição, responsável (advogados), área, classe, assunto, foro, vara, juiz, valor da ação e observação.
+  - Partes com tipo, busca de pessoa cadastrada (nome/CPF) ou preenchimento manual. O backend sincroniza as partes: atualiza, cria e remove.
+  - Textos em maiúsculas.
+- **Permissões:** `PROCESSO_NOVO_JURIDICO` para criar e `PROCESSO_EDITAR` para editar.
+- **Testes:** `processos-api.spec.ts`.
+
 ### Painel financeiro (`/financeiro/painel`)
 
 Código em `features/financeiro/dashboard/`. Endpoint `GET financeiro/dashboard?lancamentos=6|12|24` (`FinanceiroDashboardController`, PR #8).

@@ -62,6 +62,26 @@ export const routes: Routes = [
         loadComponent: () => import('./features/painel/painel').then((m) => m.Painel),
       },
       {
+        path: 'juridico/processos',
+        title: pageTitle('Processos'),
+        loadComponent: () => import('./features/juridico/processos/lista/processos-lista').then((m) => m.ProcessosLista),
+      },
+      {
+        path: 'juridico/processos/novo',
+        title: pageTitle('Novo processo'),
+        loadComponent: () => import('./features/juridico/processos/form/processo-form').then((m) => m.ProcessoFormPage),
+      },
+      {
+        path: 'juridico/processos/:id/editar',
+        title: pageTitle('Editar processo'),
+        loadComponent: () => import('./features/juridico/processos/form/processo-form').then((m) => m.ProcessoFormPage),
+      },
+      {
+        path: 'juridico/processos/:id',
+        title: pageTitle('Processo'),
+        loadComponent: () => import('./features/juridico/processos/detalhe/processo-detalhe').then((m) => m.ProcessoDetalhePage),
+      },
+      {
         path: 'financeiro/painel',
         title: pageTitle('Painel financeiro'),
         loadComponent: () =>

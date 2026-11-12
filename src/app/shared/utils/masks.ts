@@ -1,6 +1,6 @@
 import { onlyDigits } from './cpf';
 
-export type MaskKind = 'cpf' | 'cep' | 'telefone';
+export type MaskKind = 'cpf' | 'cep' | 'telefone' | 'cnj';
 
 /**
  * Formata enquanto o usuário digita. O valor enviado ao backend é
@@ -15,6 +15,14 @@ export function applyMask(kind: MaskKind, value: string): string {
       .replace(/^(\d{3})(\d)/, '$1.$2')
       .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
       .replace(/\.(\d{3})(\d{1,2})$/, '.$1-$2');
+  }
+
+  if (kind === 'cnj') {
+    // Número único do processo (CNJ): NNNNNNN-DD.AAAA.J.TR.OOOO
+    const v = d.slice(0, 20);
+    const partes = [v.slice(0, 7), v.slice(7, 9), v.slice(9, 13), v.slice(13, 14), v.slice(14, 16), v.slice(16, 20)];
+    const seps = ['', '-', '.', '.', '.', '.'];
+    return partes.reduce((acc, parte, i) => (parte ? acc + (i > 0 ? seps[i] : '') + parte : acc), '');
   }
 
   if (kind === 'cep') {

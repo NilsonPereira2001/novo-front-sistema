@@ -1,0 +1,128 @@
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">Jurídico</p>
+    <h1 class="page-title">Processos</h1>
+    <p class="page-subtitle">Acompanhamento dos processos: partes, movimentações, audiências e responsável.</p>
+  </div>
+  <div class="page-header__actions">
+    <a class="btn btn--primary" routerLink="/juridico/processos/novo"><app-icon name="plus" /> Novo processo</a>
+  </div>
+</header>
+
+<section class="card table-card" aria-labelledby="titulo-processos">
+  <h2 id="titulo-processos" class="sr-only">Lista de processos</h2>
+
+  <div class="chips" role="group" aria-label="Filtrar por status">
+    <button type="button" class="chip" [class.is-active]="status() === ''" [attr.aria-pressed]="status() === ''" (click)="setStatus('')">
+      Todos <span class="chip__qtd">{{ chips().total }}</span>
+    </button>
+    @for (c of chips().itens; track c.key) {
+      <button type="button" class="chip" [class.is-active]="status() === c.key" [attr.aria-pressed]="status() === c.key" (click)="setStatus(c.key)">
+        {{ c.rotulo }} <span class="chip__qtd">{{ c.qtd }}</span>
+      </button>
+    }
+  </div>
+
+  <div class="toolbar">
+    <app-search-field
+      label="Pesquisar processos"
+      placeholder="Número, descrição, assunto ou parte (nome/CPF)"
+      [value]="url.searchText()"
+      (valueChange)="url.search($event)"
+      (clear)="url.clearSearch()"
+    />
+    <label class="sr-only" for="proc-resp">Responsável</label>
+    <select id="proc-resp" class="field__input filtro" (change)="onResponsavel($event)">
+      <option value="" [selected]="responsavel() === null">Todos os responsáveis</option>
+      @let advs = advogados();
+      @if (advs.status === 'ready') {
+        @for (a of advs.data; track a.id) {
+          <option [value]="a.id" [selected]="responsavel() === a.id">{{ a.nome }}</option>
+        }
+      }
+    </select>
+  </div>
+
+  @if (carregando() && pagina()) {
+    <div class="loading-bar" role="progressbar" aria-label="Carregando"></div>
+  }
+
+  @if (erro(); as kind) {
+    <app-load-error [kind]="kind" (retry)="recarregar()" />
+  } @else if (!carregando() && pagina()?.empty) {
+    <div class="state">
+      <span class="state__icon"><app-icon name="scale" /></span>
+      @if (temFiltros()) {
+        <p class="state__title">Nenhum processo encontrado</p>
+        <p class="state__text">Nenhum resultado para os filtros escolhidos.</p>
+        <button type="button" class="btn btn--secondary" (click)="limpar()">Limpar filtros</button>
+      } @else {
+        <p class="state__title">Nenhum processo cadastrado</p>
+        <a class="btn btn--primary" routerLink="/juridico/processos/novo"><app-icon name="plus" /> Cadastrar o primeiro</a>
+      }
+    </div>
+  } @else {
+    <div class="table-scroll">
+      <table class="data-table" [class.is-stale]="carregando() && !!pagina()" [attr.aria-busy]="carregando()">
+        <thead>
+          <tr>
+            <th scope="col">Processo</th>
+            <th scope="col">Partes</th>
+            <th scope="col">Responsável</th>
+            <th scope="col">Última movimentação</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (pagina(); as pg) {
+            @for (p of pg.content; track p.id) {
+              @let s = st(p.status);
+              <tr>
+                <td class="proc">
+                  <a class="proc__numero" [routerLink]="['/juridico/processos', p.id]">{{ cnj(p.numero) }}</a>
+                  <span class="proc__desc">{{ p.descricao | displayValue }}</span>
+                  @if (p.area || p.classe) { <span class="sub">{{ p.area }}@if (p.area && p.classe) { · }{{ p.classe }}</span> }
+                </td>
+                <td class="partes">
+                  @for (parte of p.partes.slice(0, 2); track $index) { <span>{{ parte }}</span> }
+                  @if (p.partes.length > 2) { <span class="sub">+ {{ p.partes.length - 2 }}</span> }
+                  @if (p.partes.length === 0) { — }
+                </td>
+                <td>{{ p.responsavel | displayValue }}</td>
+                <td class="cell-mono">
+                  {{ (p.dataUltimaMovimentacao | date: 'dd/MM/yyyy') ?? '—' }}
+                  @if (parado(p)) { <span class="tag tag--alerta" title="Sem movimentação há mais de 180 dias">Parado</span> }
+                </td>
+                <td><span class="situacao" [attr.data-tom]="s.tom">{{ s.rotulo }}</span></td>
+              </tr>
+            }
+          } @else {
+            @for (r of skeleton; track r) {
+              <tr aria-hidden="true">
+                <td><span class="skeleton" style="width: 14rem"></span></td>
+                <td><span class="skeleton" style="width: 10rem"></span></td>
+                <td><span class="skeleton" style="width: 7rem"></span></td>
+                <td><span class="skeleton" style="width: 5rem"></span></td>
+                <td><span class="skeleton" style="width: 6rem"></span></td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (pagina(); as pg) {
+      <app-pagination
+        [page]="pg.number"
+        [size]="pg.size"
+        [total]="pg.totalElements"
+        [totalPages]="pg.totalPages"
+        [first]="pg.first"
+        [last]="pg.last"
+        [sizeOptions]="url.sizeOptions"
+        itemLabel="processos"
+        (pageChange)="url.setPage($event)"
+        (sizeChange)="url.setSize($event)"
+      />
+    }
+  }
+</section>

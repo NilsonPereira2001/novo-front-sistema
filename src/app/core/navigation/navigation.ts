@@ -107,7 +107,7 @@ export const NAVIGATION: readonly NavGroup[] = [
         path: 'juridico/processos',
         icon: 'scale',
         description: 'Acompanhamento dos processos jurídicos',
-        available: false,
+        available: true,
       },
       {
         label: 'Atendimentos',

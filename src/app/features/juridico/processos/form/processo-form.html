@@ -1,0 +1,116 @@
+<a class="back-link" [routerLink]="editando() && idNumero() ? ['/juridico/processos', idNumero()] : ['/juridico/processos']">
+  <app-icon name="arrow-left" /> {{ editando() ? 'Voltar ao processo' : 'Processos' }}
+</a>
+
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">Jurídico</p>
+    <h1 class="page-title">{{ editando() ? 'Editar processo' : 'Novo processo' }}</h1>
+    <p class="page-subtitle">Campos com <span class="field__req">*</span> são obrigatórios. Os textos são gravados em maiúsculas.</p>
+  </div>
+</header>
+
+@switch (carga()) {
+  @case ('carregando') {
+    <section class="card secao" aria-busy="true"><span class="skeleton" style="width: 12rem"></span><span class="skeleton" style="width: 100%"></span></section>
+  }
+  @case ('nao-encontrado') {
+    <section class="card"><div class="state"><p class="state__title">Processo não encontrado</p><a class="btn btn--secondary btn--sm" routerLink="/juridico/processos">Voltar</a></div></section>
+  }
+  @case ('erro') {
+    <section class="card"><div class="state"><p class="state__title">Não foi possível carregar o processo.</p><button type="button" class="btn btn--secondary btn--sm" (click)="recarregar()">Tentar de novo</button></div></section>
+  }
+  @default {
+    <form class="form" [formGroup]="form" (ngSubmit)="salvar()" novalidate>
+      <section class="card secao" aria-labelledby="s-ident">
+        <h2 class="secao__titulo" id="s-ident">Identificação</h2>
+        <div class="form-grid">
+          <app-text-field
+            class="span-6"
+            label="Número do processo (CNJ)"
+            [control]="form.controls.numeroProcesso"
+            mask="cnj"
+            placeholder="0000000-00.0000.0.00.0000"
+            [required]="true"
+            [blocked]="editando()"
+            [hint]="editando() ? 'O número não pode ser alterado.' : 'O dígito verificador é conferido automaticamente.'"
+          />
+          <div class="field span-3">
+            <label class="field__label" for="proc-status">Status <span class="field__req" aria-hidden="true">*</span></label>
+            <select id="proc-status" class="field__input" [formControl]="form.controls.status">
+              @for (s of statusOpcoes; track s) { <option [value]="s">{{ st(s).rotulo }}</option> }
+              @if (statusExtra(); as extra) { <option [value]="extra">{{ st(extra).rotulo }} (do tribunal)</option> }
+            </select>
+          </div>
+          <app-text-field class="span-3" label="Data de distribuição" type="date" [control]="form.controls.dataCadastro" />
+          <app-select-field class="span-6" label="Advogado(a) responsável" [control]="form.controls.idResponsavel" [state]="advogados()" placeholder="Sem responsável" (retry)="tentarLookups()" />
+          <app-select-field class="span-6" label="Área" [control]="form.controls.area" [state]="areas()" placeholder="Selecione a área" (retry)="tentarLookups()" />
+        </div>
+      </section>
+
+      <section class="card secao" aria-labelledby="s-dados">
+        <h2 class="secao__titulo" id="s-dados">Dados do processo</h2>
+        <div class="form-grid">
+          <app-text-field class="span-12" label="Descrição" [control]="form.controls.descricao" [required]="true" placeholder="Ex.: AÇÃO DE COBRANÇA CONTRA FULANO" [maxlength]="255" />
+          <app-text-field class="span-6" label="Classe" [control]="form.controls.classe" placeholder="Ex.: PROCEDIMENTO COMUM CÍVEL" />
+          <app-text-field class="span-6" label="Assunto" [control]="form.controls.assunto" />
+          <app-text-field class="span-4" label="Foro / comarca" [control]="form.controls.foro" />
+          <app-text-field class="span-4" label="Vara" [control]="form.controls.vara" />
+          <app-text-field class="span-4" label="Juiz(a)" [control]="form.controls.juiz" />
+          <app-text-field class="span-4" label="Valor da ação (R$)" [control]="form.controls.valorAcao" placeholder="0,00" [maiusculas]="false" />
+          <div class="field span-12">
+            <label class="field__label" for="proc-obs">Observação</label>
+            <textarea id="proc-obs" class="field__input area" rows="3" [formControl]="form.controls.observacao" maxlength="2000"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <section class="card secao" aria-labelledby="s-partes">
+        <div class="secao__cab">
+          <h2 class="secao__titulo" id="s-partes">Partes</h2>
+          <button type="button" class="btn btn--secondary btn--sm" (click)="adicionarParte()"><app-icon name="user-plus" /> Adicionar parte</button>
+        </div>
+        @if (partes.length === 0) {
+          <p class="vazio">Nenhuma parte adicionada. Inclua autor, réu, terceiros ou advogados da parte contrária.</p>
+        }
+        @for (g of partes.controls; track g; let i = $index) {
+          <fieldset class="parte" [formGroup]="g">
+            <legend class="parte__legenda">
+              Parte {{ i + 1 }}
+              @if (g.controls.idPessoa.value) { <span class="tag tag--primary">Pessoa cadastrada</span> }
+            </legend>
+            <button type="button" class="icon-btn parte__remover" (click)="removerParte(i)" [attr.aria-label]="'Remover parte ' + (i + 1)"><app-icon name="trash" /></button>
+            <div class="form-grid">
+              <app-select-field class="span-4" label="Tipo" [control]="g.controls.idTipoParte" [state]="tiposParte()" [required]="true" (retry)="tentarLookups()" />
+              <div class="span-8">
+                @if (g.controls.idPessoa.value) {
+                  <p class="vinculo">
+                    Vinculada ao cadastro de pessoas.
+                    <button type="button" class="link-button" (click)="desvincular(i)">Desvincular</button>
+                  </p>
+                } @else {
+                  <app-busca-pessoa [id]="'busca-parte-' + i" (escolhida)="vincularPessoa(i, $event)" />
+                }
+              </div>
+              <app-text-field class="span-6" label="Nome" [control]="g.controls.nome" [required]="true" />
+              <app-text-field class="span-3" label="CPF" [control]="g.controls.cpf" mask="cpf" placeholder="000.000.000-00" />
+              <app-text-field class="span-3" label="Telefone" [control]="g.controls.telefone" mask="telefone" placeholder="(00) 00000-0000" />
+              <app-text-field class="span-6" label="E-mail" type="email" [control]="g.controls.email" [maiusculas]="false" />
+            </div>
+          </fieldset>
+        }
+      </section>
+
+      @if (erro()) {
+        <app-alert tone="danger" heading="Não foi possível salvar">{{ erro() }}</app-alert>
+      }
+
+      <div class="acoes">
+        <a class="btn btn--secondary" [routerLink]="editando() && idNumero() ? ['/juridico/processos', idNumero()] : ['/juridico/processos']">Cancelar</a>
+        <button type="submit" class="btn btn--primary" [disabled]="enviando()">
+          @if (enviando()) { <span class="spinner" aria-hidden="true"></span> Salvando… } @else { <app-icon name="check-circle" /> {{ editando() ? 'Salvar alterações' : 'Cadastrar processo' }} }
+        </button>
+      </div>
+    </form>
+  }
+}

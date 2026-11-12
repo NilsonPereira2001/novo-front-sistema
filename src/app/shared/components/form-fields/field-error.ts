@@ -10,6 +10,9 @@ const MENSAGENS: Readonly<Record<string, string>> = {
   data: 'Data inválida.',
   dataFutura: 'A data não pode estar no futuro.',
   dataMinima: 'Informe uma data a partir de 1900.',
+  cnjIncompleto: 'O número do processo (CNJ) tem 20 dígitos: NNNNNNN-DD.AAAA.J.TR.OOOO.',
+  cnjDigito: 'O dígito verificador não confere. Confira o número do processo.',
+  valor: 'Valor inválido. Use o formato 1.234,56.',
 };
 
 /** Mensagem de erro de um campo, exibida depois que o usuário o tocou. */

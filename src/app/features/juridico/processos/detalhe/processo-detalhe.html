@@ -1,0 +1,172 @@
+<a class="back-link" routerLink="/juridico/processos"><app-icon name="arrow-left" /> Processos</a>
+
+@if (erro(); as kind) {
+  <section class="card">
+    @if (kind === 'not-found') {
+      <div class="state">
+        <span class="state__icon"><app-icon name="search" /></span>
+        <p class="state__title">Processo não encontrado</p>
+        <a class="btn btn--secondary btn--sm" routerLink="/juridico/processos">Voltar à lista</a>
+      </div>
+    } @else {
+      <app-load-error [kind]="kind" (retry)="tentarDeNovo()" />
+    }
+  </section>
+} @else if (processo(); as p) {
+  @let s = st(p.status);
+  <section class="card cab" aria-labelledby="proc-numero">
+    <div class="cab__texto">
+      <div class="cab__tags">
+        <span class="situacao" [attr.data-tom]="s.tom">{{ s.rotulo }}</span>
+        @if (p.area) { <span class="tag">{{ p.area }}</span> }
+      </div>
+      <h1 class="cab__numero" id="proc-numero">{{ cnj(p.numero) }}</h1>
+      <p class="cab__desc">{{ p.descricao | displayValue }}</p>
+      <dl class="cab__meta">
+        <div><dt>Responsável</dt><dd>{{ p.responsavel?.nome | displayValue }}@if (p.responsavel?.oab) { <span class="sub">OAB {{ p.responsavel?.oab }}</span> }</dd></div>
+        <div><dt>Última movimentação</dt><dd class="cell-mono">{{ (p.dataUltimaMovimentacao | date: 'dd/MM/yyyy') ?? '—' }}</dd></div>
+        <div><dt>Consultado no tribunal</dt><dd class="cell-mono">{{ (p.dataVerificacao | date: 'dd/MM/yyyy') ?? 'Nunca' }}</dd></div>
+      </dl>
+    </div>
+    <div class="cab__acoes">
+      <button type="button" class="btn btn--secondary btn--sm" (click)="atualizar()" [disabled]="atualizando()">
+        @if (atualizando()) { <span class="spinner" aria-hidden="true"></span> Consultando… } @else { <app-icon name="refresh-cw" /> Atualizar do tribunal }
+      </button>
+      <a class="btn btn--primary btn--sm" [routerLink]="['/juridico/processos', p.id, 'editar']"><app-icon name="pencil" /> Editar</a>
+    </div>
+  </section>
+
+  @if (aviso(); as texto) {
+    <div class="aviso"><app-alert tone="success">{{ texto }}</app-alert><button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
+  }
+  @if (erroAtualizar()) {
+    <app-alert tone="warning" heading="Consulta ao tribunal">{{ erroAtualizar() }}</app-alert>
+  }
+  @if (proximas().length) {
+    <app-alert tone="info" heading="Próxima audiência">
+      {{ proximas()[0].data | date: 'dd/MM/yyyy' }} · {{ proximas()[0].tipo | displayValue }}@if (proximas()[0].situacao) { ({{ proximas()[0].situacao }}) }@if (proximas().length > 1) { · e mais {{ proximas().length - 1 }} agendada(s) }
+    </app-alert>
+  }
+
+  <div class="grade">
+    <div class="coluna">
+      <section class="card bloco" aria-labelledby="t-dados">
+        <h2 class="bloco__titulo" id="t-dados">Dados do processo</h2>
+        <dl class="dados">
+          <div><dt>Classe</dt><dd>{{ p.classe | displayValue }}</dd></div>
+          <div><dt>Assunto</dt><dd>{{ p.assunto | displayValue }}</dd></div>
+          <div><dt>Foro / comarca</dt><dd>{{ p.foro | displayValue }}</dd></div>
+          <div><dt>Vara</dt><dd>{{ p.vara | displayValue }}</dd></div>
+          <div><dt>Juiz(a)</dt><dd>{{ p.juiz | displayValue }}</dd></div>
+          <div><dt>Valor da ação</dt><dd>{{ p.valorAcao === null ? '—' : (p.valorAcao | currency: 'BRL') }}</dd></div>
+          <div><dt>Distribuição</dt><dd class="cell-mono">{{ (p.dataCadastro | date: 'dd/MM/yyyy') ?? '—' }}</dd></div>
+          <div><dt>Cadastrado no sistema</dt><dd class="cell-mono">{{ (p.dataRegistro | date: 'dd/MM/yyyy') ?? '—' }}</dd></div>
+          @if (p.observacao) { <div class="dados__largo"><dt>Observação</dt><dd>{{ p.observacao }}</dd></div> }
+        </dl>
+      </section>
+
+      <section class="card bloco" aria-labelledby="t-mov">
+        <div class="bloco__cab">
+          <h2 class="bloco__titulo" id="t-mov">Movimentações <span class="contador">{{ p.movimentacoes.length }}</span></h2>
+        </div>
+        @if (p.movimentacoes.length === 0) {
+          <p class="vazio">Nenhuma movimentação registrada. Use "Atualizar do tribunal" para buscar.</p>
+        } @else {
+          <ol class="linha-tempo">
+            @for (m of movsVisiveis(); track m.id) {
+              <li class="mov">
+                <span class="mov__ponto" aria-hidden="true"></span>
+                <p class="mov__data cell-mono">{{ (m.data | date: 'dd/MM/yyyy') ?? 'Sem data' }}</p>
+                <p class="mov__titulo">{{ m.titulo | displayValue }}</p>
+                @if (m.descricao && m.descricao !== m.titulo) { <p class="mov__desc">{{ m.descricao }}</p> }
+                @if (m.traducao) {
+                  <div class="mov__interp">
+                    <p class="mov__interp-rotulo"><app-icon name="message-square" /> Interpretação do advogado</p>
+                    <p>{{ m.traducao }}</p>
+                  </div>
+                }
+                <button type="button" class="link-button mov__acao" (click)="editarInterp(m)">
+                  {{ m.traducao ? 'Editar interpretação' : 'Adicionar interpretação' }}
+                </button>
+              </li>
+            }
+          </ol>
+          @if (p.movimentacoes.length > movsVisiveis().length) {
+            <button type="button" class="btn btn--secondary btn--sm mais" (click)="limiteMovs.set(limiteMovs() + 20)">
+              Mostrar mais ({{ p.movimentacoes.length - movsVisiveis().length }} restantes)
+            </button>
+          }
+        }
+      </section>
+    </div>
+
+    <div class="coluna">
+      <section class="card bloco" aria-labelledby="t-partes">
+        <h2 class="bloco__titulo" id="t-partes">Partes <span class="contador">{{ p.partes.length }}</span></h2>
+        @if (p.partes.length === 0) {
+          <p class="vazio">Nenhuma parte cadastrada.</p>
+        } @else {
+          <ul class="partes">
+            @for (pt of p.partes; track pt.id) {
+              <li>
+                <span class="tag">{{ pt.tipoParte | displayValue }}</span>
+                @if (pt.idPessoa) {
+                  <a class="partes__nome" [routerLink]="['/pessoas', pt.idPessoa]">{{ pt.nome }}</a>
+                } @else {
+                  <span class="partes__nome">{{ pt.nome }}</span>
+                }
+                <span class="sub">
+                  @if (pt.cpf) { {{ pt.cpf | cpf }} }
+                  @if (pt.telefone) { · {{ pt.telefone | telefone }} }
+                  @if (pt.email) { · {{ pt.email }} }
+                </span>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+
+      <section class="card bloco" aria-labelledby="t-aud">
+        <h2 class="bloco__titulo" id="t-aud">Audiências <span class="contador">{{ p.audiencias.length }}</span></h2>
+        @if (p.audiencias.length === 0) {
+          <p class="vazio">Nenhuma audiência registrada.</p>
+        } @else {
+          <ul class="audiencias">
+            @for (a of p.audiencias; track a.id) {
+              <li [class.is-futura]="a.data !== null && a.data >= hoje">
+                <span class="audiencias__data cell-mono">{{ (a.data | date: 'dd/MM/yyyy') ?? '—' }}</span>
+                <span>{{ a.tipo | displayValue }}@if (a.situacao) { <span class="sub">{{ a.situacao }}</span> }</span>
+                @if (a.data !== null && a.data >= hoje) { <span class="tag tag--primary">Agendada</span> }
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    </div>
+  </div>
+
+  <app-dialog titulo="Interpretação do advogado" [open]="movEditando() !== null" (closed)="fecharInterp()" size="wide">
+    @if (movEditando(); as m) {
+      <div class="interp">
+        <p class="interp__mov"><strong>{{ (m.data | date: 'dd/MM/yyyy') ?? '' }} · {{ m.titulo }}</strong></p>
+        @if (m.descricao) { <p class="interp__desc">{{ m.descricao }}</p> }
+        <div class="field">
+          <label class="field__label" for="interp-texto">Explicação em linguagem simples</label>
+          <textarea id="interp-texto" class="field__input interp__area" rows="5" maxlength="4000" [value]="textoInterp()" (input)="digitarInterp($event)"></textarea>
+          <p class="field__hint">Deixe vazio para remover a interpretação.</p>
+        </div>
+        @if (erroInterp()) { <app-alert tone="danger" heading="Não foi possível salvar">{{ erroInterp() }}</app-alert> }
+      </div>
+    }
+    <div dialog-actions>
+      <button type="button" class="btn btn--secondary btn--sm" (click)="fecharInterp()" [disabled]="salvandoInterp()">Cancelar</button>
+      <button type="button" class="btn btn--primary btn--sm" (click)="salvarInterp()" [disabled]="salvandoInterp()">
+        @if (salvandoInterp()) { <span class="spinner" aria-hidden="true"></span> Salvando… } @else { Salvar }
+      </button>
+    </div>
+  </app-dialog>
+} @else if (carregando()) {
+  <section class="card cab" aria-busy="true" aria-label="Carregando processo">
+    <div class="cab__texto"><span class="skeleton" style="width: 6rem"></span><span class="skeleton skeleton--titulo" style="width: 22rem"></span></div>
+  </section>
+}
