@@ -122,6 +122,25 @@ Código em `features/juridico/processos/`. Endpoints do `ProcessoJuridicoControl
 - **Permissões:** `PROCESSO_NOVO_JURIDICO` para criar e `PROCESSO_EDITAR` para editar.
 - **Testes:** `processos-api.spec.ts`.
 
+### Jurídico › Atendimentos (`/juridico/atendimentos`)
+
+Código em `features/juridico/atendimentos/`. Endpoints do `AtendimentoJuridicoController` (PR #8).
+
+- **Agenda (`/juridico/atendimentos?data=AAAA-MM-DD&colaborador=ID`):**
+  - Faixa da semana (segunda a domingo) com a quantidade de atendimentos por dia (`GET juridico/atendimentos/dias`), semana anterior/próxima, botão "Hoje" e seletor de data.
+  - Lista do dia (`GET juridico/atendimentos?de=&ate=&idColaborador=`), pela data efetiva: a do atendimento realizado ou, se ainda não houve, a agendada.
+  - Situação: Agendado, Atrasado (agendado com horário já passado), Atendido e Não compareceu.
+  - Ações no agendado: **Realizar** (abre o formulário já preenchido), **Reagendar** (`POST /{id}/reagendar`, data futura) e **Não compareceu** (`POST /{id}/nao-atendido`, motivo obrigatório).
+  - No atendido: **Ver registro** (`GET /{id}`) com fatos, análise jurídica e orientação.
+- **Formulário (`/juridico/atendimentos/novo?modo=agendar`, `/juridico/atendimentos/:id/realizar`):**
+  - "Já realizado" (`POST juridico/atendimentos`): a data não pode estar mais de 5 minutos no futuro.
+  - "Agendar" (`POST juridico/atendimentos/agendar`): a data precisa ser futura; não pede o relato. Os colaboradores marcados são notificados.
+  - Realizar (`POST /{id}/realizar`): só para atendimentos ainda AGENDADOS.
+  - Tipo, área e ao menos uma pessoa são obrigatórios. A pessoa pode vir do cadastro (busca por nome/CPF) ou ser digitada (nome, CPF, telefone).
+  - O departamento (JURÍDICO) e o usuário logado são gravados pelo backend.
+- **Permissões:** `ATENDIMENTO_LISTAR_JURIDICO`, `ATENDIMENTO_NOVO_JURIDICO` (registrar/realizar) e `ATENDIMENTO_AGENDAR_JURIDICO` (agendar, reagendar, não compareceu).
+- **Testes:** `atendimentos-api.spec.ts` e `atendimento-form.model.spec.ts`.
+
 ### Painel financeiro (`/financeiro/painel`)
 
 Código em `features/financeiro/dashboard/`. Endpoint `GET financeiro/dashboard?lancamentos=6|12|24` (`FinanceiroDashboardController`, PR #8).

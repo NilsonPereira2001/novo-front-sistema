@@ -1,0 +1,147 @@
+<a class="back-link" routerLink="/juridico/atendimentos"><app-icon name="arrow-left" /> Atendimentos</a>
+
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">Jurídico</p>
+    <h1 class="page-title">{{ titulo() }}</h1>
+    <p class="page-subtitle">Campos com <span class="field__req">*</span> são obrigatórios. Os textos são gravados em maiúsculas.</p>
+  </div>
+  @if (modoAtual() !== 'realizar') {
+    <nav class="modos" aria-label="Tipo de lançamento">
+      <a class="modos__item" routerLink="." [queryParams]="{ modo: null }" queryParamsHandling="merge" [class.is-ativo]="modoAtual() === 'registrar'" [attr.aria-current]="modoAtual() === 'registrar' ? 'page' : null">Já realizado</a>
+      <a class="modos__item" routerLink="." [queryParams]="{ modo: 'agendar' }" queryParamsHandling="merge" [class.is-ativo]="modoAtual() === 'agendar'" [attr.aria-current]="modoAtual() === 'agendar' ? 'page' : null">Agendar</a>
+    </nav>
+  }
+</header>
+
+@switch (carga()) {
+  @case ('carregando') {
+    <section class="card secao" aria-busy="true"><span class="skeleton" style="width: 12rem"></span><span class="skeleton" style="width: 100%"></span></section>
+  }
+  @case ('nao-encontrado') {
+    <section class="card"><div class="state"><p class="state__title">Atendimento não encontrado</p><a class="btn btn--secondary btn--sm" routerLink="/juridico/atendimentos">Voltar</a></div></section>
+  }
+  @case ('encerrado') {
+    <section class="card"><div class="state"><p class="state__title">Este atendimento não está mais agendado</p><p class="state__text">Ele já foi realizado ou marcado como não comparecido.</p><a class="btn btn--secondary btn--sm" routerLink="/juridico/atendimentos">Voltar</a></div></section>
+  }
+  @case ('erro') {
+    <section class="card"><div class="state"><p class="state__title">Não foi possível carregar o atendimento.</p><button type="button" class="btn btn--secondary btn--sm" (click)="recarregar()">Tentar de novo</button></div></section>
+  }
+  @default {
+    <form class="form" [formGroup]="form" (ngSubmit)="salvar()" novalidate>
+      <section class="card secao" aria-labelledby="s-quando">
+        <h2 class="secao__titulo" id="s-quando">{{ modoAtual() === 'agendar' ? 'Agendamento' : 'Atendimento' }}</h2>
+        @if (agendadoPara(); as ag) {
+          <p class="nota">Agendado para {{ ag.slice(8, 10) }}/{{ ag.slice(5, 7) }}/{{ ag.slice(0, 4) }} às {{ ag.slice(11, 16) }}.</p>
+        }
+        <div class="form-grid">
+          @let dh = form.controls.dataHora;
+          <div class="field span-4" [class.field--invalid]="dh.invalid && dh.touched">
+            <label class="field__label" for="at-data">{{ modoAtual() === 'agendar' ? 'Data e hora agendadas' : 'Data e hora do atendimento' }} <span class="field__req" aria-hidden="true">*</span></label>
+            <input id="at-data" class="field__input" type="datetime-local" [formControl]="dh" aria-describedby="at-data-erro" [attr.aria-invalid]="dh.invalid && dh.touched" />
+            <app-field-error [control]="dh" errorId="at-data-erro" />
+          </div>
+          <div class="field span-4">
+            <label class="field__label" for="at-modalidade">Modalidade</label>
+            <select id="at-modalidade" class="field__input" [formControl]="form.controls.modalidade">
+              @for (m of modalidades; track m) { <option [value]="m">{{ m }}</option> }
+            </select>
+          </div>
+          <div class="span-4"></div>
+          <app-select-field class="span-6" label="Tipo de atendimento" [control]="form.controls.idTipo" [state]="tipos()" [required]="true" placeholder="Selecione o tipo" (retry)="tentarLookups()" />
+          <app-select-field class="span-6" label="Área" [control]="form.controls.idArea" [state]="areas()" [required]="true" placeholder="Selecione a área" (retry)="tentarLookups()" />
+          <app-text-field class="span-12" label="Assunto" [control]="form.controls.assunto" placeholder="Ex.: DÚVIDA SOBRE PROMOÇÃO" [maxlength]="255" />
+        </div>
+      </section>
+
+      <section class="card secao" aria-labelledby="s-pessoas">
+        <div class="secao__cab">
+          <h2 class="secao__titulo" id="s-pessoas">Pessoas atendidas <span class="field__req" aria-hidden="true">*</span></h2>
+          <button type="button" class="btn btn--secondary btn--sm" (click)="adicionarPessoa()"><app-icon name="user-plus" /> Adicionar pessoa</button>
+        </div>
+        @if (pessoas.length === 0) {
+          <p class="vazio" [class.txt-erro]="erroPessoas()" role="status">Inclua ao menos uma pessoa atendida.</p>
+        }
+        @for (g of pessoas.controls; track g; let i = $index) {
+          <fieldset class="parte" [formGroup]="g">
+            <legend class="parte__legenda">
+              Pessoa {{ i + 1 }}
+              @if (g.controls.idPessoa.value) { <span class="tag tag--primary">Cadastrada</span> }
+            </legend>
+            @if (pessoas.length > 1) {
+              <button type="button" class="icon-btn parte__remover" (click)="removerPessoa(i)" [attr.aria-label]="'Remover pessoa ' + (i + 1)"><app-icon name="trash" /></button>
+            }
+            <div class="form-grid">
+              <div class="span-12">
+                @if (g.controls.idPessoa.value) {
+                  <p class="vinculo">Vinculada ao cadastro de pessoas. <button type="button" class="link-button" (click)="desvincular(i)">Desvincular</button></p>
+                } @else {
+                  <app-busca-pessoa [id]="'busca-pessoa-' + i" (escolhida)="vincularPessoa(i, $event)" />
+                }
+              </div>
+              <app-text-field class="span-6" label="Nome" [control]="g.controls.nome" [required]="true" />
+              <app-text-field class="span-3" label="CPF" [control]="g.controls.cpf" mask="cpf" placeholder="000.000.000-00" />
+              <app-text-field class="span-3" label="Telefone" [control]="g.controls.telefone" mask="telefone" placeholder="(00) 00000-0000" />
+            </div>
+          </fieldset>
+        }
+      </section>
+
+      <section class="card secao" aria-labelledby="s-colab">
+        <h2 class="secao__titulo" id="s-colab">Colaboradores</h2>
+        @let cols = colaboradores();
+        @if (cols.status === 'ready') {
+          @if (cols.data.length === 0) {
+            <p class="vazio">Nenhum colaborador ativo no jurídico.</p>
+          } @else {
+            <fieldset class="colabs">
+              <legend class="sr-only">Colaboradores do atendimento</legend>
+              @for (c of cols.data; track c.id) {
+                <label class="colab">
+                  <input type="checkbox" [checked]="marcado(c.id)" (change)="alternar(c.id, $event)" />
+                  <span>{{ c.nome }}@if (c.cargo) { <small>{{ c.cargo }}</small> }</span>
+                </label>
+              }
+            </fieldset>
+            <p class="nota">{{ modoAtual() === 'agendar' ? 'Os colaboradores marcados recebem uma notificação do agendamento.' : 'O usuário logado é registrado como autor do atendimento.' }}</p>
+          }
+        } @else if (cols.status === 'error') {
+          <p class="vazio">Não foi possível carregar os colaboradores. <button type="button" class="link-button" (click)="tentarLookups()">Tentar de novo</button></p>
+        } @else {
+          <span class="skeleton" style="width: 60%"></span>
+        }
+      </section>
+
+      @if (comRelato()) {
+        <section class="card secao" aria-labelledby="s-relato">
+          <h2 class="secao__titulo" id="s-relato">Registro</h2>
+          <div class="form-grid">
+            <div class="field span-12">
+              <label class="field__label" for="at-fatos">Fatos relatados</label>
+              <textarea id="at-fatos" class="field__input area" rows="4" [formControl]="form.controls.fatosCliente"></textarea>
+            </div>
+            <div class="field span-12">
+              <label class="field__label" for="at-analise">Análise jurídica</label>
+              <textarea id="at-analise" class="field__input area" rows="4" [formControl]="form.controls.analiseJuridica"></textarea>
+            </div>
+            <div class="field span-12">
+              <label class="field__label" for="at-orient">Orientação dada</label>
+              <textarea id="at-orient" class="field__input area" rows="4" [formControl]="form.controls.orientacao"></textarea>
+            </div>
+          </div>
+        </section>
+      }
+
+      @if (erro()) {
+        <app-alert tone="danger" heading="Não foi possível salvar">{{ erro() }}</app-alert>
+      }
+
+      <div class="acoes">
+        <a class="btn btn--secondary" routerLink="/juridico/atendimentos">Cancelar</a>
+        <button type="submit" class="btn btn--primary" [disabled]="enviando()">
+          @if (enviando()) { <span class="spinner" aria-hidden="true"></span> Salvando… } @else { <app-icon name="check-circle" /> {{ modoAtual() === 'agendar' ? 'Agendar' : 'Registrar atendimento' }} }
+        </button>
+      </div>
+    </form>
+  }
+}

@@ -1,0 +1,173 @@
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">Jurídico</p>
+    <h1 class="page-title">Atendimentos</h1>
+    <p class="page-subtitle">Agenda do dia, registro dos atendimentos realizados e agendamentos.</p>
+  </div>
+  <div class="page-header__actions">
+    <a class="btn btn--secondary" routerLink="/juridico/atendimentos/novo" [queryParams]="{ modo: 'agendar' }"><app-icon name="calendar" /> Agendar</a>
+    <a class="btn btn--primary" routerLink="/juridico/atendimentos/novo"><app-icon name="plus" /> Registrar atendimento</a>
+  </div>
+</header>
+
+@if (aviso(); as texto) {
+  <div class="aviso"><app-alert tone="success">{{ texto }}</app-alert><button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
+}
+
+<section class="card semana" aria-label="Semana">
+  <div class="semana__barra">
+    <div class="semana__nav">
+      <button type="button" class="icon-btn" (click)="mover(-7)" aria-label="Semana anterior"><app-icon name="chevron-left" /></button>
+      <button type="button" class="btn btn--secondary btn--sm" (click)="irPara(hoje)" [disabled]="dia() === hoje">Hoje</button>
+      <button type="button" class="icon-btn" (click)="mover(7)" aria-label="Próxima semana"><app-icon name="chevron-right" /></button>
+      <span class="semana__mes">{{ dia() + 'T12:00:00' | date: "MMMM 'de' y" }}</span>
+    </div>
+    <div class="semana__filtros">
+      <label class="sr-only" for="ag-data">Ir para a data</label>
+      <input id="ag-data" class="field__input" type="date" [value]="dia()" (change)="escolherData($event)" />
+      <label class="sr-only" for="ag-colab">Colaborador</label>
+      <select id="ag-colab" class="field__input" (change)="escolherColaborador($event)">
+        <option value="" [selected]="idColaborador() === null">Todos os colaboradores</option>
+        @let cols = colaboradores();
+        @if (cols.status === 'ready') {
+          @for (c of cols.data; track c.id) {
+            <option [value]="c.id" [selected]="idColaborador() === c.id">{{ c.nome }}</option>
+          }
+        }
+      </select>
+    </div>
+  </div>
+  <div class="semana__dias" role="tablist" aria-label="Dias da semana">
+    @for (d of diasSemana(); track d.data) {
+      <button
+        type="button"
+        role="tab"
+        class="dia"
+        [class.is-ativo]="d.data === dia()"
+        [class.is-hoje]="d.data === hoje"
+        [attr.aria-selected]="d.data === dia()"
+        [attr.aria-label]="d.nome + ' ' + d.numero + ': ' + d.total + ' atendimentos'"
+        (click)="irPara(d.data)"
+      >
+        <span class="dia__nome">{{ d.nome }}</span>
+        <span class="dia__numero">{{ d.numero }}</span>
+        <span class="dia__qtd" [class.is-zero]="d.total === 0">{{ d.total || '–' }}</span>
+      </button>
+    }
+  </div>
+</section>
+
+<section class="card lista" aria-labelledby="t-dia">
+  <header class="lista__cab">
+    <h2 class="lista__titulo" id="t-dia">{{ dia() + 'T12:00:00' | date: "EEEE, d 'de' MMMM" }}@if (dia() === hoje) { <span class="tag tag--primary">Hoje</span> }</h2>
+    @if (itens().length) {
+      <p class="lista__resumo">
+        @if (resumoDia().agendado) { <span>{{ resumoDia().agendado }} agendado(s)</span> }
+        @if (resumoDia().atrasado) { <span class="txt-alerta">{{ resumoDia().atrasado }} atrasado(s)</span> }
+        @if (resumoDia().atendido) { <span>{{ resumoDia().atendido }} atendido(s)</span> }
+        @if (resumoDia()['nao-atendido']) { <span>{{ resumoDia()['nao-atendido'] }} não compareceu</span> }
+      </p>
+    }
+  </header>
+
+  @if (erro(); as kind) {
+    <app-load-error [kind]="kind" (retry)="recarregar()" />
+  } @else if (estado().status === 'ready' && itens().length === 0) {
+    <div class="state">
+      <span class="state__icon"><app-icon name="calendar" /></span>
+      <p class="state__title">Nenhum atendimento neste dia</p>
+      <a class="btn btn--secondary btn--sm" routerLink="/juridico/atendimentos/novo" [queryParams]="{ modo: 'agendar', data: dia() }"><app-icon name="calendar" /> Agendar para este dia</a>
+    </div>
+  } @else if (estado().status === 'ready') {
+    <ol class="itens">
+      @for (a of itens(); track a.id) {
+        @let s = situacao(a);
+        <li class="item" [attr.data-situacao]="s">
+          <div class="item__hora">
+            <span class="cell-mono">{{ a.dataHora | date: 'HH:mm' }}</span>
+            <span class="situacao" [attr.data-situacao]="s">{{ rotulo[s] }}</span>
+          </div>
+          <div class="item__corpo">
+            <p class="item__pessoas">
+              @for (p of a.pessoas; track $index) {
+                <span class="pessoa">
+                  @if (p.idPessoa) { <a [routerLink]="['/pessoas', p.idPessoa]">{{ p.nome }}</a> } @else { {{ p.nome }} }
+                  @if (p.telefone) { <span class="pessoa__tel">{{ p.telefone | telefone }}</span> }
+                </span>
+              }
+            </p>
+            <p class="item__meta">{{ a.tipo | displayValue }} · {{ a.area | displayValue }}@if (a.modalidade) { · {{ a.modalidade }} }</p>
+            @if (a.assunto) { <p class="item__assunto">{{ a.assunto }}</p> }
+            @if (a.colaboradores.length) {
+              <p class="item__colab"><app-icon name="users" /> {{ a.colaboradores.map(nomeDe).join(', ') }}</p>
+            }
+            @if (s === 'nao-atendido' && a.motivoNaoAtendimento) { <p class="item__motivo">Motivo: {{ a.motivoNaoAtendimento }}</p> }
+          </div>
+          <div class="item__acoes">
+            @if (s === 'agendado' || s === 'atrasado') {
+              <a class="btn btn--primary btn--sm" [routerLink]="['/juridico/atendimentos', a.id, 'realizar']">Realizar</a>
+              <button type="button" class="btn btn--secondary btn--sm" (click)="abrirReagendar(a)">Reagendar</button>
+              <button type="button" class="btn btn--secondary btn--sm" (click)="abrirNaoAtendido(a)">Não compareceu</button>
+            } @else if (s === 'atendido') {
+              <button type="button" class="btn btn--secondary btn--sm" (click)="verRegistro(a)" [disabled]="carregandoRegistro() === a.id">
+                @if (carregandoRegistro() === a.id) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="file-text" /> }
+                Ver registro
+              </button>
+            }
+          </div>
+        </li>
+      }
+    </ol>
+  } @else {
+    <div class="lista-carregando" aria-busy="true" aria-label="Carregando atendimentos"><span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span></div>
+  }
+</section>
+
+<app-dialog titulo="Reagendar atendimento" [open]="reagendarDe() !== null" (closed)="reagendarDe.set(null)">
+  <div class="dlg">
+    <div class="field">
+      <label class="field__label" for="reag-data">Nova data e hora <span class="field__req" aria-hidden="true">*</span></label>
+      <input id="reag-data" class="field__input" type="datetime-local" [value]="novaData()" (input)="novaData.set(valor($event))" />
+    </div>
+    @if (erroAcao()) { <app-alert tone="danger">{{ erroAcao() }}</app-alert> }
+  </div>
+  <div dialog-actions>
+    <button type="button" class="btn btn--secondary btn--sm" (click)="reagendarDe.set(null)" [disabled]="enviando()">Cancelar</button>
+    <button type="button" class="btn btn--primary btn--sm" (click)="confirmarReagendar()" [disabled]="enviando()">
+      @if (enviando()) { <span class="spinner" aria-hidden="true"></span> Salvando… } @else { Reagendar }
+    </button>
+  </div>
+</app-dialog>
+
+<app-dialog titulo="Não compareceu" [open]="naoAtendidoDe() !== null" (closed)="naoAtendidoDe.set(null)">
+  <div class="dlg">
+    <p>O atendimento fica registrado como não realizado.</p>
+    <div class="field">
+      <label class="field__label" for="na-motivo">Motivo <span class="field__req" aria-hidden="true">*</span></label>
+      <textarea id="na-motivo" class="field__input area area--maiusculas" rows="3" maxlength="500" [value]="motivo()" (input)="motivo.set(valor($event))"></textarea>
+    </div>
+    @if (erroAcao()) { <app-alert tone="danger">{{ erroAcao() }}</app-alert> }
+  </div>
+  <div dialog-actions>
+    <button type="button" class="btn btn--secondary btn--sm" (click)="naoAtendidoDe.set(null)" [disabled]="enviando()">Cancelar</button>
+    <button type="button" class="btn btn--danger btn--sm" (click)="confirmarNaoAtendido()" [disabled]="enviando()">
+      @if (enviando()) { <span class="spinner" aria-hidden="true"></span> Salvando… } @else { Confirmar }
+    </button>
+  </div>
+</app-dialog>
+
+<app-dialog titulo="Registro do atendimento" [open]="registro() !== null" (closed)="registro.set(null)" size="wide">
+  @if (registro(); as r) {
+    <div class="dlg registro">
+      <p class="registro__cab">
+        <strong>{{ r.atendimento.dataHora | date: "dd/MM/yyyy 'às' HH:mm" }}</strong> · {{ r.atendimento.tipo | displayValue }} · {{ r.atendimento.area | displayValue }}@if (r.atendimento.modalidade) { · {{ r.atendimento.modalidade }} }
+      </p>
+      <p><strong>Pessoas:</strong> {{ r.atendimento.pessoas.map(nomePessoa).join(', ') }}</p>
+      @if (r.atendimento.assunto) { <p><strong>Assunto:</strong> {{ r.atendimento.assunto }}</p> }
+      <h3>Fatos relatados</h3><p class="texto">{{ r.fatosCliente | displayValue }}</p>
+      <h3>Análise jurídica</h3><p class="texto">{{ r.analiseJuridica | displayValue }}</p>
+      <h3>Orientação</h3><p class="texto">{{ r.orientacao | displayValue }}</p>
+    </div>
+  }
+  <div dialog-actions><button type="button" class="btn btn--primary btn--sm" (click)="registro.set(null)">Fechar</button></div>
+</app-dialog>

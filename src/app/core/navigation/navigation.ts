@@ -114,7 +114,7 @@ export const NAVIGATION: readonly NavGroup[] = [
         path: 'juridico/atendimentos',
         icon: 'message-square',
         description: `Atendimentos jurídicos aos ${TERMOS.membrosMin}`,
-        available: false,
+        available: true,
       },
       {
         label: 'Histórico de atividades',

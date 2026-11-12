@@ -82,6 +82,21 @@ export const routes: Routes = [
         loadComponent: () => import('./features/juridico/processos/detalhe/processo-detalhe').then((m) => m.ProcessoDetalhePage),
       },
       {
+        path: 'juridico/atendimentos',
+        title: pageTitle('Atendimentos'),
+        loadComponent: () => import('./features/juridico/atendimentos/agenda/agenda').then((m) => m.AgendaAtendimentos),
+      },
+      {
+        path: 'juridico/atendimentos/novo',
+        title: pageTitle('Novo atendimento'),
+        loadComponent: () => import('./features/juridico/atendimentos/form/atendimento-form').then((m) => m.AtendimentoFormPage),
+      },
+      {
+        path: 'juridico/atendimentos/:id/realizar',
+        title: pageTitle('Realizar atendimento'),
+        loadComponent: () => import('./features/juridico/atendimentos/form/atendimento-form').then((m) => m.AtendimentoFormPage),
+      },
+      {
         path: 'financeiro/painel',
         title: pageTitle('Painel financeiro'),
         loadComponent: () =>
