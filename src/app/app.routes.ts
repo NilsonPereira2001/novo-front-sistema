@@ -87,6 +87,16 @@ export const routes: Routes = [
         loadComponent: () => import('./features/juridico/painel/painel-juridico').then((m) => m.PainelJuridicoPage),
       },
       {
+        path: 'juridico/pessoas',
+        title: pageTitle('Pessoas · Jurídico'),
+        loadComponent: () => import('./features/juridico/pessoas/lista/pessoas-juridico-lista').then((m) => m.PessoasJuridicoLista),
+      },
+      {
+        path: 'juridico/pessoas/:id',
+        title: pageTitle('Ficha jurídica'),
+        loadComponent: () => import('./features/juridico/pessoas/ficha/pessoa-juridica').then((m) => m.PessoaJuridicaPage),
+      },
+      {
         path: 'juridico/atendimentos',
         title: pageTitle('Atendimentos'),
         loadComponent: () => import('./features/juridico/atendimentos/agenda/agenda').then((m) => m.AgendaAtendimentos),

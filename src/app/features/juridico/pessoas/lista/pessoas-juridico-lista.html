@@ -1,0 +1,107 @@
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">Jurídico</p>
+    <h1 class="page-title">Pessoas</h1>
+    <p class="page-subtitle">Ficha jurídica de cada pessoa: processos, atendimentos, arquivos e procuração.</p>
+  </div>
+</header>
+
+<section class="card table-card" aria-labelledby="titulo-pessoas">
+  <h2 id="titulo-pessoas" class="sr-only">Lista de pessoas</h2>
+
+  <div class="chips" role="group" aria-label="Filtrar por histórico jurídico">
+    @for (s of situacoes; track s.key) {
+      <button type="button" class="chip" [class.is-active]="situacao() === s.key" [attr.aria-pressed]="situacao() === s.key" (click)="setSituacao(s.key)">
+        {{ s.rotulo }}
+      </button>
+    }
+  </div>
+
+  <div class="toolbar">
+    <app-search-field
+      label="Pesquisar pessoas"
+      placeholder="Nome, CPF ou matrícula"
+      [value]="url.searchText()"
+      (valueChange)="url.search($event)"
+      (clear)="url.clearSearch()"
+    />
+  </div>
+
+  @if (carregando() && pagina()) {
+    <div class="loading-bar" role="progressbar" aria-label="Carregando"></div>
+  }
+
+  @if (erro(); as kind) {
+    <app-load-error [kind]="kind" (retry)="recarregar()" />
+  } @else if (!carregando() && pagina()?.empty) {
+    <div class="state">
+      <span class="state__icon"><app-icon name="users" /></span>
+      <p class="state__title">Nenhuma pessoa encontrada</p>
+      @if (temFiltros()) {
+        <p class="state__text">Nenhum resultado para a busca e o filtro escolhidos.</p>
+        <button type="button" class="btn btn--secondary" (click)="limpar()">Limpar filtros</button>
+      }
+    </div>
+  } @else {
+    <div class="table-scroll">
+      <table class="data-table" [class.is-stale]="carregando() && !!pagina()" [attr.aria-busy]="carregando()">
+        <thead>
+          <tr>
+            <th scope="col">Pessoa</th>
+            <th scope="col">Tipo</th>
+            <th scope="col" class="num">Processos</th>
+            <th scope="col" class="num">Atendimentos</th>
+            <th scope="col">Último atendimento</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (pagina(); as pg) {
+            @for (p of pg.content; track p.id) {
+              <tr>
+                <td class="pessoa">
+                  <a class="pessoa__nome" [routerLink]="['/juridico/pessoas', p.id]">{{ p.nome }}</a>
+                  <span class="sub cell-mono">{{ p.cpf | cpf }}@if (p.matricula) { · mat. {{ p.matricula }} }</span>
+                </td>
+                <td>
+                  {{ p.tipo | displayValue }}
+                  @if (p.status) { <span class="sub">{{ p.status }}</span> }
+                </td>
+                <td class="num">
+                  @if (p.processos) { <span class="qtd">{{ p.processos }}</span> } @else { <span class="zero">0</span> }
+                </td>
+                <td class="num">
+                  @if (p.atendimentos) { <span class="qtd">{{ p.atendimentos }}</span> } @else { <span class="zero">0</span> }
+                </td>
+                <td class="cell-mono">{{ (p.ultimoAtendimento | date: 'dd/MM/yyyy') ?? '—' }}</td>
+              </tr>
+            }
+          } @else {
+            @for (r of skeleton; track r) {
+              <tr aria-hidden="true">
+                <td><span class="skeleton" style="width: 14rem"></span></td>
+                <td><span class="skeleton" style="width: 6rem"></span></td>
+                <td><span class="skeleton" style="width: 2rem"></span></td>
+                <td><span class="skeleton" style="width: 2rem"></span></td>
+                <td><span class="skeleton" style="width: 5rem"></span></td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (pagina(); as pg) {
+      <app-pagination
+        [page]="pg.number"
+        [size]="pg.size"
+        [total]="pg.totalElements"
+        [totalPages]="pg.totalPages"
+        [first]="pg.first"
+        [last]="pg.last"
+        [sizeOptions]="url.sizeOptions"
+        itemLabel="pessoas"
+        (pageChange)="url.setPage($event)"
+        (sizeChange)="url.setSize($event)"
+      />
+    }
+  }
+</section>

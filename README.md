@@ -111,6 +111,20 @@ Código em `features/juridico/painel/`. Endpoints do `JuridicoDashboardControlle
 - **Próximas audiências** (30 dias, as 10 primeiras) e distribuições: processos por situação e por área; atendimentos realizados por tipo e por área no período.
 - **Testes:** `painel-juridico-api.spec.ts`.
 
+### Jurídico › Pessoas (`/juridico/pessoas`)
+
+Código em `features/juridico/pessoas/`. Endpoints do `JuridicoPessoaController` (PR #8), permissão `LISTAR_PESSOAS_JURIDICO`.
+
+- **Lista (`/juridico/pessoas?busca=&situacao=`):** busca por nome, CPF ou matrícula; filtro Todas / Com histórico jurídico / Com processo / Com atendimento; quantidade de processos e atendimentos e data do último atendimento.
+- **Ficha jurídica (`/juridico/pessoas/:id`):**
+  - Resumo: processos (ativos), atendimentos realizados (último, não compareceu), agendados (próximo), próxima audiência e arquivos; dados para contato e para a procuração.
+  - Aba Processos: em que a pessoa é parte (vinculada ao cadastro ou com o mesmo CPF), como parte, responsável, última movimentação, próxima audiência e situação.
+  - Aba Atendimentos: histórico com registro (fatos, análise, orientação), anexos do atendimento, realizar o agendado e link para a agenda do dia.
+  - Aba Arquivos: arquivos do jurídico da pessoa (inclui anexos de atendimentos ligados a ela); anexar com descrição, abrir e remover.
+  - **Gerar procuração** (`GET juridico/report/procuracao/{id}`): avisa antes quando faltam CPF, RG, estado civil ou endereço no cadastro.
+  - Atalhos: registrar atendimento, agendar e novo processo já com a pessoa preenchida (vai pelo `state` da navegação), e cadastro completo.
+- **Testes:** `pessoas-juridico-api.spec.ts`.
+
 ### Jurídico › Processos (`/juridico/processos`)
 
 Código em `features/juridico/processos/`. Endpoints do `ProcessoJuridicoController` (PR #8), com respostas leves. As rotas antigas do `JuridicoController` continuam funcionando.

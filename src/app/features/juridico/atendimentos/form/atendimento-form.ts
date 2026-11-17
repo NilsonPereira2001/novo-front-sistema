@@ -17,6 +17,7 @@ import { applyMask } from '../../../../shared/utils/masks';
 import { PessoaDTO } from '../../../pessoas/models/pessoa.dto';
 import { mensagemDeErro } from '../../processos/data/processos.service';
 import { BuscaPessoa } from '../../processos/form/busca-pessoa';
+import { pessoaLevada } from '../../pessoas/data/pessoas-juridico-api';
 import { AnexoPendente, AnexosAtendimento, PessoaDoAnexo } from '../components/anexos-atendimento';
 import { Anexo, MODALIDADES, isoLocal } from '../data/atendimentos-api';
 import { AtendimentosService } from '../data/atendimentos.service';
@@ -111,7 +112,23 @@ export class AtendimentoFormPage {
         inicial = dia && /^\d{4}-\d{2}-\d{2}$/.test(dia) && dia > agora.slice(0, 10) ? `${dia}T09:00` : this.proximaHora();
       }
       this.form.controls.dataHora.setValue(inicial);
-      if (this.pessoas.length === 0) this.pessoas.push(criarPessoa(this.fb));
+      if (this.pessoas.length === 0) {
+        // Vindo da ficha jurídica: a pessoa já entra vinculada.
+        const levada = pessoaLevada(history.state);
+        this.pessoas.push(
+          criarPessoa(
+            this.fb,
+            levada
+              ? {
+                  idPessoa: levada.idPessoa,
+                  nome: levada.nome.toUpperCase(),
+                  cpf: levada.cpf ? formatCpf(levada.cpf) : '',
+                  telefone: levada.telefone ? applyMask('telefone', levada.telefone) : '',
+                }
+              : undefined,
+          ),
+        );
+      }
     });
   }
 

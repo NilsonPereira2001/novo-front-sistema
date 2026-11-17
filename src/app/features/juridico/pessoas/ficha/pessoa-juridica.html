@@ -1,0 +1,269 @@
+<a class="back-link" routerLink="/juridico/pessoas"><app-icon name="arrow-left" /> Pessoas</a>
+
+@if (erro(); as kind) {
+  <section class="card"><app-load-error [kind]="kind" (retry)="recarregar()" /></section>
+} @else if (ficha(); as f) {
+  @let p = f.pessoa;
+  <header class="cabecalho card">
+    <div class="cabecalho__id">
+      <span class="avatar" aria-hidden="true">{{ p.nome.charAt(0) }}</span>
+      <div>
+        <p class="page-eyebrow">Ficha jurídica</p>
+        <h1 class="page-title">{{ p.nome }}</h1>
+        <p class="cabecalho__meta">
+          <span class="cell-mono">{{ p.cpf | cpf }}</span>
+          @if (p.tipo) { <span class="tag tag--primary">{{ p.tipo }}</span> }
+          @if (p.status) { <span class="tag">{{ p.status }}</span> }
+          @if (p.matricula) { <span>Matrícula {{ p.matricula }}</span> }
+        </p>
+      </div>
+    </div>
+    <div class="cabecalho__acoes">
+      <button type="button" class="btn btn--primary" (click)="procuracao(f)" [disabled]="gerandoProcuracao()">
+        @if (gerandoProcuracao()) { <span class="spinner" aria-hidden="true"></span> Gerando… } @else { <app-icon name="file-signature" /> Gerar procuração }
+      </button>
+      <a class="btn btn--secondary" routerLink="/juridico/atendimentos/novo" [state]="comPessoa() ?? {}"><app-icon name="message-square" /> Registrar atendimento</a>
+      <a class="btn btn--secondary" routerLink="/juridico/atendimentos/novo" [queryParams]="{ modo: 'agendar' }" [state]="comPessoa() ?? {}"><app-icon name="calendar" /> Agendar</a>
+      <a class="btn btn--secondary" routerLink="/juridico/processos/novo" [state]="comPessoa() ?? {}"><app-icon name="scale" /> Novo processo</a>
+      <a class="btn btn--secondary" [routerLink]="['/pessoas', p.id]"><app-icon name="user-check" /> Cadastro completo</a>
+    </div>
+  </header>
+
+  @if (aviso(); as a) {
+    <div class="aviso"><app-alert [tone]="a.tom">{{ a.texto }}</app-alert><button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
+  }
+
+  <div class="topo">
+    <section class="tiles" aria-label="Resumo jurídico">
+      <button type="button" class="tile card tile--link" (click)="selecionarAba('processos')">
+        <span class="tile__rotulo">Processos</span>
+        <span class="tile__valor">{{ f.totais.processos }}</span>
+        <span class="tile__sub">{{ f.totais.processosAtivos }} {{ f.totais.processosAtivos === 1 ? 'ativo' : 'ativos' }}</span>
+      </button>
+      <button type="button" class="tile card tile--link" (click)="selecionarAba('atendimentos')">
+        <span class="tile__rotulo">Atendimentos</span>
+        <span class="tile__valor">{{ f.totais.atendidos }}</span>
+        <span class="tile__sub">
+          @if (f.totais.ultimoAtendimento) { Último em {{ f.totais.ultimoAtendimento | date: 'dd/MM/yyyy' }} } @else { Nenhum realizado }
+          @if (f.totais.naoAtendidos) { · {{ f.totais.naoAtendidos }} não compareceu }
+        </span>
+      </button>
+      <button type="button" class="tile card tile--link" (click)="selecionarAba('atendimentos')">
+        <span class="tile__rotulo">Agendados</span>
+        <span class="tile__valor">{{ f.totais.agendados }}</span>
+        <span class="tile__sub">
+          @if (f.totais.proximoAgendamento) { Próximo {{ f.totais.proximoAgendamento | date: "dd/MM 'às' HH:mm" }} } @else { Nenhum futuro }
+        </span>
+      </button>
+      <article class="tile card">
+        <span class="tile__rotulo">Próxima audiência</span>
+        <span class="tile__valor tile__valor--data">{{ (dia(f.totais.proximaAudiencia) | date: 'dd/MM/yyyy') ?? '—' }}</span>
+        <span class="tile__sub">Nos processos da pessoa</span>
+      </article>
+      <button type="button" class="tile card tile--link" (click)="selecionarAba('arquivos')">
+        <span class="tile__rotulo">Arquivos</span>
+        <span class="tile__valor">{{ f.totais.arquivos }}</span>
+        <span class="tile__sub">Do jurídico</span>
+      </button>
+    </section>
+
+    <section class="card dados" aria-labelledby="t-dados">
+      <h2 class="dados__titulo" id="t-dados">Dados da pessoa</h2>
+      <dl>
+        <div><dt>RG</dt><dd>{{ p.rg | displayValue }}</dd></div>
+        <div><dt>Nascimento</dt><dd>{{ (dia(p.dataNascimento) | date: 'dd/MM/yyyy') ?? '—' }}</dd></div>
+        <div><dt>Estado civil</dt><dd>{{ p.estadoCivil | displayValue }}</dd></div>
+        <div><dt>Telefone</dt><dd>@if (p.telefone) { <a [href]="'tel:' + p.telefone">{{ p.telefone | telefone }}</a> } @else { — }</dd></div>
+        <div><dt>E-mail</dt><dd>@if (p.email) { <a [href]="'mailto:' + p.email">{{ p.email }}</a> } @else { — }</dd></div>
+        <div class="dados__largo"><dt>Endereço</dt><dd>{{ p.endereco | displayValue }}</dd></div>
+      </dl>
+      @if (f.pendenciasProcuracao.length) {
+        <p class="dados__pendencia"><app-icon name="alert-circle" /> Para a procuração sair completa, falta: {{ f.pendenciasProcuracao.join(', ') }}.</p>
+      }
+    </section>
+  </div>
+
+  <section class="card abas">
+    <div class="abas__lista" role="tablist" aria-label="Histórico jurídico">
+      @for (a of abas; track a.key; let i = $index) {
+        <button
+          type="button"
+          role="tab"
+          class="abas__aba"
+          [id]="'aba-' + a.key"
+          [class.is-active]="aba() === a.key"
+          [attr.aria-selected]="aba() === a.key"
+          [attr.aria-controls]="'painel-' + a.key"
+          [attr.tabindex]="aba() === a.key ? 0 : -1"
+          (click)="selecionarAba(a.key)"
+          (keydown)="tecladoAbas($event, i)"
+        >
+          <app-icon [name]="a.icon" /> {{ a.titulo }}
+          <span class="abas__qtd">{{ a.key === 'processos' ? f.processos.length : a.key === 'atendimentos' ? f.atendimentos.length : f.arquivos.length }}</span>
+        </button>
+      }
+    </div>
+
+    <div class="abas__painel" role="tabpanel" [id]="'painel-' + aba()" [attr.aria-labelledby]="'aba-' + aba()" tabindex="0">
+      @switch (aba()) {
+        @case ('processos') {
+          @if (f.processos.length === 0) {
+            <div class="vazio">
+              <p>Nenhum processo em que a pessoa seja parte.</p>
+              <a class="btn btn--secondary btn--sm" routerLink="/juridico/processos/novo" [state]="comPessoa() ?? {}"><app-icon name="plus" /> Novo processo</a>
+            </div>
+          } @else {
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Processo</th>
+                    <th scope="col">Como parte</th>
+                    <th scope="col">Responsável</th>
+                    <th scope="col">Última movimentação</th>
+                    <th scope="col">Próxima audiência</th>
+                    <th scope="col">Situação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (pr of f.processos; track pr.id) {
+                    @let s = st(pr.status);
+                    <tr>
+                      <td class="proc">
+                        <a class="proc__numero" [routerLink]="['/juridico/processos', pr.id]">{{ cnj(pr.numero) }}</a>
+                        @if (pr.area || pr.assunto) { <span class="sub">{{ pr.area }}@if (pr.area && pr.assunto) { · }{{ pr.assunto }}</span> }
+                      </td>
+                      <td>{{ pr.partes.length ? pr.partes.join(', ') : '—' }}</td>
+                      <td>{{ pr.responsavel | displayValue }}</td>
+                      <td class="cell-mono">{{ (dia(pr.dataUltimaMovimentacao) | date: 'dd/MM/yyyy') ?? '—' }}</td>
+                      <td class="cell-mono">{{ (dia(pr.proximaAudiencia) | date: 'dd/MM/yyyy') ?? '—' }}</td>
+                      <td><span class="situacao" [attr.data-tom]="s.tom">{{ s.rotulo }}</span></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        }
+        @case ('atendimentos') {
+          @if (f.atendimentos.length === 0) {
+            <div class="vazio">
+              <p>Nenhum atendimento jurídico.</p>
+              <a class="btn btn--secondary btn--sm" routerLink="/juridico/atendimentos/novo" [state]="comPessoa() ?? {}"><app-icon name="plus" /> Registrar atendimento</a>
+            </div>
+          } @else {
+            <ol class="atendimentos">
+              @for (a of f.atendimentos; track a.id) {
+                @let s = situacao(a);
+                <li class="atend" [attr.data-situacao]="s">
+                  <div class="atend__quando">
+                    <strong class="cell-mono">{{ a.dataHora | date: 'dd/MM/yyyy' }}</strong>
+                    <span class="cell-mono">{{ a.dataHora | date: 'HH:mm' }}</span>
+                    <span class="situacao-at" [attr.data-situacao]="s">{{ rotulo[s] }}</span>
+                  </div>
+                  <div class="atend__corpo">
+                    <p class="atend__titulo">{{ a.tipo | displayValue }} · {{ a.area | displayValue }}@if (a.modalidade) { · {{ a.modalidade }} }</p>
+                    @if (a.assunto) { <p>{{ a.assunto }}</p> }
+                    @if (a.colaboradores.length) { <p class="sub"><app-icon name="users" /> {{ a.colaboradores.map(nomeDe).join(', ') }}</p> }
+                    @if (a.qtdAnexos) { <p class="sub"><app-icon name="paperclip" /> {{ a.qtdAnexos }} {{ a.qtdAnexos === 1 ? 'anexo' : 'anexos' }}</p> }
+                    @if (s === 'nao-atendido' && a.motivoNaoAtendimento) { <p class="sub">Motivo: {{ a.motivoNaoAtendimento }}</p> }
+                  </div>
+                  <div class="atend__acoes">
+                    <button type="button" class="btn btn--secondary btn--sm" (click)="verRegistro(a)" [disabled]="carregandoRegistro() === a.id">
+                      @if (carregandoRegistro() === a.id) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="file-text" /> }
+                      {{ s === 'atendido' ? 'Ver registro' : 'Detalhes' }}
+                    </button>
+                    @if (s === 'agendado' || s === 'atrasado') {
+                      <a class="btn btn--primary btn--sm" [routerLink]="['/juridico/atendimentos', a.id, 'realizar']">Realizar</a>
+                    }
+                    <a class="link-button" routerLink="/juridico/atendimentos" [queryParams]="{ data: (a.dataHora ?? '').slice(0, 10) }">Ver na agenda</a>
+                  </div>
+                </li>
+              }
+            </ol>
+          }
+        }
+        @case ('arquivos') {
+          <div class="enviar">
+            <div class="field enviar__desc">
+              <label class="field__label" for="arq-desc">Descrição (opcional)</label>
+              <input id="arq-desc" class="field__input" type="text" maxlength="150" placeholder="Ex.: Procuração assinada" [value]="descricao()" (input)="descricao.set(valor($event))" />
+            </div>
+            <button type="button" class="btn btn--primary" (click)="seletor.click()" [disabled]="enviando()">
+              @if (enviando()) { <span class="spinner" aria-hidden="true"></span> Enviando… } @else { <app-icon name="upload" /> Anexar arquivo }
+            </button>
+            <input #seletor type="file" class="sr-only" multiple [accept]="tipos" (change)="escolheu($event, p.id)" tabindex="-1" aria-hidden="true" />
+          </div>
+          <p class="dica">PDF, imagem ou Word, até 10 MB cada. A descrição vira o nome do arquivo (quando é um só).</p>
+          @if (erroArquivo()) { <app-alert tone="danger">{{ erroArquivo() }}</app-alert> }
+
+          @if (f.arquivos.length === 0) {
+            <div class="vazio"><p>Nenhum arquivo do jurídico para esta pessoa.</p></div>
+          } @else {
+            <ul class="arquivos">
+              @for (a of f.arquivos; track a.id) {
+                <li class="arquivo">
+                  <app-icon name="file-text" />
+                  <span class="arquivo__info">
+                    <button type="button" class="link-button arquivo__nome" (click)="abrir(p.id, a)" [disabled]="abrindo() === a.id">{{ a.nome }}</button>
+                    <small>
+                      {{ tamanho(a.tamanho) }}@if (a.dataImportacao) { · {{ a.dataImportacao | date: 'dd/MM/yyyy HH:mm' }} }
+                      @if (a.idAtendimento) { · <span class="tag">Anexo de atendimento</span> }
+                    </small>
+                  </span>
+                  <button type="button" class="icon-btn" (click)="removerDe.set(a)" [attr.aria-label]="'Remover ' + a.nome"><app-icon name="trash" /></button>
+                </li>
+              }
+            </ul>
+          }
+        }
+      }
+    </div>
+  </section>
+
+  <app-dialog titulo="Cadastro incompleto para a procuração" [open]="pendenciasAbertas()" (closed)="pendenciasAbertas.set(false)">
+    <div class="dlg">
+      <p>Faltam no cadastro: <strong>{{ f.pendenciasProcuracao.join(', ') }}</strong>. Esses campos sairão em branco na procuração.</p>
+      <p><a [routerLink]="['/pessoas', p.id, 'editar']">Completar o cadastro</a> antes, ou gere assim mesmo e preencha à mão.</p>
+    </div>
+    <div dialog-actions>
+      <button type="button" class="btn btn--secondary btn--sm" (click)="pendenciasAbertas.set(false)">Cancelar</button>
+      <button type="button" class="btn btn--primary btn--sm" (click)="procuracao(f, true)">Gerar assim mesmo</button>
+    </div>
+  </app-dialog>
+
+  <app-dialog titulo="Remover arquivo" [open]="removerDe() !== null" (closed)="removerDe.set(null)">
+    <div class="dlg">
+      <p>Remover <strong>{{ removerDe()?.nome }}</strong>? Essa ação não pode ser desfeita.</p>
+      @if (removerDe()?.idAtendimento) { <p>Este arquivo também é anexo de um atendimento e sairá de lá.</p> }
+    </div>
+    <div dialog-actions>
+      <button type="button" class="btn btn--secondary btn--sm" (click)="removerDe.set(null)" [disabled]="removendo()">Cancelar</button>
+      <button type="button" class="btn btn--danger btn--sm" (click)="confirmarRemocao(p.id)" [disabled]="removendo()">
+        @if (removendo()) { <span class="spinner" aria-hidden="true"></span> Removendo… } @else { Remover }
+      </button>
+    </div>
+  </app-dialog>
+
+  <app-dialog [titulo]="tituloRegistro()" [open]="registro() !== null" (closed)="registro.set(null)" size="wide">
+    @if (registro(); as r) {
+      <div class="dlg registro">
+        <p><strong>{{ r.atendimento.dataHora | date: "dd/MM/yyyy 'às' HH:mm" }}</strong> · {{ r.atendimento.tipo | displayValue }} · {{ r.atendimento.area | displayValue }}@if (r.atendimento.modalidade) { · {{ r.atendimento.modalidade }} }</p>
+        @if (r.atendimento.assunto) { <p><strong>Assunto:</strong> {{ r.atendimento.assunto }}</p> }
+        @if (r.atendimento.status === 'ATENDIDO') {
+          <h3>Fatos relatados</h3><p class="texto">{{ r.fatosCliente | displayValue }}</p>
+          <h3>Análise jurídica</h3><p class="texto">{{ r.analiseJuridica | displayValue }}</p>
+          <h3>Orientação</h3><p class="texto">{{ r.orientacao | displayValue }}</p>
+        }
+        <h3>Anexos</h3>
+        <app-anexos-atendimento [idAtendimento]="r.atendimento.id" [anexos]="r.anexos" [pessoas]="pessoasDoAnexo(r)" [enviarNaHora]="true" (alterado)="anexosAlterados()" />
+      </div>
+    }
+    <div dialog-actions><button type="button" class="btn btn--primary btn--sm" (click)="registro.set(null)">Fechar</button></div>
+  </app-dialog>
+} @else {
+  <section class="cabecalho card" aria-busy="true" aria-label="Carregando ficha">
+    <span class="skeleton" style="width: 18rem; height: 1.75rem"></span>
+    <span class="skeleton" style="width: 10rem"></span>
+  </section>
+}

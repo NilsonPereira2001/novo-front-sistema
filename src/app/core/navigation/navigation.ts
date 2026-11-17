@@ -110,6 +110,13 @@ export const NAVIGATION: readonly NavGroup[] = [
         available: true,
       },
       {
+        label: 'Pessoas',
+        path: 'juridico/pessoas',
+        icon: 'users',
+        description: 'Ficha jurídica: processos, atendimentos, arquivos e procuração',
+        available: true,
+      },
+      {
         label: 'Processos',
         path: 'juridico/processos',
         icon: 'scale',

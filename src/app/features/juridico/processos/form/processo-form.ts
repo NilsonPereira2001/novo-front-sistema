@@ -17,6 +17,7 @@ import { applyMask } from '../../../../shared/utils/masks';
 import { PessoaDTO } from '../../../pessoas/models/pessoa.dto';
 import { STATUS_PROCESSO, statusProcesso } from '../data/processos-api';
 import { ProcessosService, mensagemDeErro } from '../data/processos.service';
+import { pessoaLevada } from '../../pessoas/data/pessoas-juridico-api';
 import { BuscaPessoa } from './busca-pessoa';
 import { ParteForm, criarParte, criarProcessoForm, preencherProcessoForm, toProcessoPayload } from './processo-form.model';
 
@@ -74,6 +75,19 @@ export class ProcessoFormPage {
       if (this.editando()) {
         if (id === null) this.carga.set('nao-encontrado');
         else this.carregar(id);
+      } else if (this.partes.length === 0) {
+        // Vindo da ficha jurídica: a pessoa já entra como parte (falta escolher o tipo).
+        const levada = pessoaLevada(history.state);
+        if (levada) {
+          this.partes.push(
+            criarParte(this.fb, {
+              idPessoa: levada.idPessoa,
+              nome: levada.nome.toUpperCase(),
+              cpf: levada.cpf ? formatCpf(levada.cpf) : '',
+              telefone: levada.telefone ? applyMask('telefone', levada.telefone) : '',
+            }),
+          );
+        }
       }
     });
   }
