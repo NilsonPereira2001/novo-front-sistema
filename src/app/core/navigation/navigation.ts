@@ -103,6 +103,13 @@ export const NAVIGATION: readonly NavGroup[] = [
     label: 'Jurídico',
     items: [
       {
+        label: 'Painel jurídico',
+        path: 'juridico/painel',
+        icon: 'bar-chart',
+        description: 'Processos, atendimentos, ranking e audiências',
+        available: true,
+      },
+      {
         label: 'Processos',
         path: 'juridico/processos',
         icon: 'scale',

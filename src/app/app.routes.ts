@@ -82,6 +82,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/juridico/processos/detalhe/processo-detalhe').then((m) => m.ProcessoDetalhePage),
       },
       {
+        path: 'juridico/painel',
+        title: pageTitle('Painel jurídico'),
+        loadComponent: () => import('./features/juridico/painel/painel-juridico').then((m) => m.PainelJuridicoPage),
+      },
+      {
         path: 'juridico/atendimentos',
         title: pageTitle('Atendimentos'),
         loadComponent: () => import('./features/juridico/atendimentos/agenda/agenda').then((m) => m.AgendaAtendimentos),

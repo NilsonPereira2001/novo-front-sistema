@@ -1,0 +1,223 @@
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">Jurídico</p>
+    <h1 class="page-title">Painel jurídico</h1>
+    <p class="page-subtitle">Processos, atendimentos, desempenho da equipe e próximas audiências.</p>
+  </div>
+  <div class="page-header__actions">
+    <a class="btn btn--secondary" routerLink="/juridico/processos"><app-icon name="scale" /> Processos</a>
+    <a class="btn btn--secondary" routerLink="/juridico/atendimentos"><app-icon name="calendar" /> Agenda</a>
+  </div>
+</header>
+
+<div class="filtros">
+  <div class="segmented" role="group" aria-label="Período dos gráficos">
+    @for (p of periodos; track p) {
+      <button type="button" class="segmented__item" [class.is-active]="meses() === p" [attr.aria-pressed]="meses() === p" (click)="meses.set(p)">
+        {{ p }} meses
+      </button>
+    }
+  </div>
+  <button type="button" class="btn btn--secondary btn--sm" (click)="recarregar()"><app-icon name="refresh-cw" /> Atualizar</button>
+</div>
+
+@if (erro(); as kind) {
+  <section class="card"><app-load-error [kind]="kind" (retry)="recarregar()" /></section>
+} @else if (dados(); as d) {
+  <div class="conteudo" [class.is-stale]="recarregando()" [attr.aria-busy]="recarregando()">
+    <section class="tiles" aria-label="Indicadores">
+      <a class="tile card tile--link" routerLink="/juridico/processos">
+        <p class="tile__rotulo">Processos</p>
+        <p class="tile__valor">{{ d.totais.processos }}</p>
+        <p class="tile__sub">{{ d.totais.processosAtivos }} ativos · {{ d.totais.processosNoMes }} cadastrados este mês</p>
+      </a>
+      <a class="tile card tile--link" routerLink="/juridico/atendimentos">
+        <p class="tile__rotulo">Atendimentos agendados</p>
+        <p class="tile__valor">{{ d.totais.agendados }}</p>
+        <p class="tile__sub">
+          {{ d.totais.agendadosHoje }} hoje
+          @if (d.totais.agendadosAtrasados) { · <span class="alerta">{{ d.totais.agendadosAtrasados }} sem baixa</span> }
+        </p>
+      </a>
+      <article class="tile card">
+        <p class="tile__rotulo">Atendidos em {{ mesAtual }}</p>
+        <p class="tile__valor">{{ d.totais.atendidosNoMes }}</p>
+        @if (varAtendidos(); as v) {
+          <p class="tile__sub"><span class="var" [attr.data-dir]="v.direcao">{{ v.texto }}</span></p>
+        }
+      </article>
+      <article class="tile card">
+        <p class="tile__rotulo">Advogados ativos</p>
+        <p class="tile__valor">{{ d.totais.advogadosAtivos }}</p>
+        <p class="tile__sub">
+          @if (d.totais.processosSemResponsavel) {
+            <span class="alerta">{{ d.totais.processosSemResponsavel }} processos ativos sem responsável</span>
+          } @else {
+            Todos os processos ativos têm responsável
+          }
+        </p>
+      </article>
+      <article class="tile card">
+        <p class="tile__rotulo">Audiências em 30 dias</p>
+        <p class="tile__valor">{{ d.totais.audienciasProximos30Dias }}</p>
+        <p class="tile__sub">Próximas listadas abaixo</p>
+      </article>
+      <article class="tile card">
+        <p class="tile__rotulo">Processos parados</p>
+        <p class="tile__valor" [class.tile__valor--alerta]="d.totais.processosParados > 0">{{ d.totais.processosParados }}</p>
+        <p class="tile__sub">Ativos sem movimentação há mais de 180 dias</p>
+      </article>
+    </section>
+
+    <div class="grade-2">
+      <section class="card bloco" aria-labelledby="t-proc-mes">
+        <header class="bloco__cab">
+          <div>
+            <h2 class="bloco__titulo" id="t-proc-mes">Processos cadastrados por mês</h2>
+            <p class="bloco__sub">{{ somaProcessos() }} nos últimos {{ meses() }} meses.</p>
+          </div>
+        </header>
+        <app-colunas-mensais [dados]="d.processosPorMes" [series]="serieProcessos" titulo="Processos cadastrados por mês" vazio="Nenhum processo cadastrado no período." />
+      </section>
+
+      <section class="card bloco" aria-labelledby="t-atend-mes">
+        <header class="bloco__cab">
+          <div>
+            <h2 class="bloco__titulo" id="t-atend-mes">Atendimentos por mês</h2>
+            <p class="bloco__sub">{{ somaAtendidos() }} realizados nos últimos {{ meses() }} meses.</p>
+          </div>
+        </header>
+        <app-colunas-mensais [dados]="d.atendimentosPorMes" [series]="serieAtendimentos" titulo="Atendimentos por mês" vazio="Nenhum atendimento no período." />
+      </section>
+
+      <section class="card bloco" aria-labelledby="t-ranking">
+        <header class="bloco__cab">
+          <div>
+            <h2 class="bloco__titulo" id="t-ranking">Ranking de atendimentos</h2>
+            <p class="bloco__sub">Atendimentos realizados por colaborador no mês.</p>
+          </div>
+        </header>
+        <app-ranking-atendimentos />
+      </section>
+
+      <section class="card bloco" aria-labelledby="t-audiencias">
+        <header class="bloco__cab">
+          <div>
+            <h2 class="bloco__titulo" id="t-audiencias">Próximas audiências</h2>
+            <p class="bloco__sub">Próximos 30 dias{{ d.totais.audienciasProximos30Dias > d.proximasAudiencias.length ? ' (as 10 primeiras)' : '' }}.</p>
+          </div>
+        </header>
+        @if (d.proximasAudiencias.length === 0) {
+          <p class="vazio">Nenhuma audiência nos próximos 30 dias.</p>
+        } @else {
+          <ol class="audiencias">
+            @for (a of d.proximasAudiencias; track $index) {
+              <li>
+                <span class="audiencias__data">
+                  <strong>{{ dia(a.data) | date: 'dd/MM' }}</strong>
+                  <small>{{ dia(a.data) | date: 'EEE' }}</small>
+                </span>
+                <span class="audiencias__info">
+                  <a [routerLink]="['/juridico/processos', a.idProcesso]" class="cell-mono">{{ cnj(a.numeroProcesso) }}</a>
+                  <small>{{ a.tipo ?? 'Audiência' }}@if (a.situacao) { · {{ a.situacao }} } · {{ a.responsavel ?? 'Sem responsável' }}</small>
+                </span>
+              </li>
+            }
+          </ol>
+        }
+      </section>
+    </div>
+
+    <section class="card bloco" aria-labelledby="t-advogados">
+      <header class="bloco__cab">
+        <div>
+          <h2 class="bloco__titulo" id="t-advogados">Advogados</h2>
+          <p class="bloco__sub">Carteira de processos, atendimentos em {{ mesAtual }} e agenda de cada advogado ativo.</p>
+        </div>
+      </header>
+      @if (d.advogados.length === 0) {
+        <p class="vazio">Nenhum advogado ativo cadastrado.</p>
+      } @else {
+        <div class="table-scroll">
+          <table class="data-table tabela">
+            <caption class="sr-only">Advogados ativos</caption>
+            <thead>
+              <tr>
+                <th scope="col">Advogado</th>
+                <th scope="col" class="num">Processos ativos</th>
+                <th scope="col" class="num">Total</th>
+                <th scope="col" class="num">Atendidos no mês</th>
+                <th scope="col" class="num">Agendados</th>
+                <th scope="col">Próxima audiência</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (a of d.advogados; track a.id) {
+                <tr>
+                  <th scope="row">{{ a.nome }}@if (a.oab) { <span class="sub">OAB {{ a.oab }}</span> }</th>
+                  <td class="num">
+                    @if (a.processos) {
+                      <a [routerLink]="['/juridico/processos']" [queryParams]="{ responsavel: a.id }">{{ a.processosAtivos }}</a>
+                    } @else { 0 }
+                  </td>
+                  <td class="num">{{ a.processos }}</td>
+                  <td class="num">{{ a.atendidosNoMes }}</td>
+                  <td class="num">{{ a.agendados }}</td>
+                  <td>{{ (dia(a.proximaAudiencia) | date: 'dd/MM/yyyy') ?? '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+    <div class="grade-2">
+      <section class="card bloco" aria-labelledby="t-status">
+        <header class="bloco__cab">
+          <div>
+            <h2 class="bloco__titulo" id="t-status">Processos por situação</h2>
+            <p class="bloco__sub">Todos os processos cadastrados.</p>
+          </div>
+        </header>
+        <app-barras [itens]="d.processosPorStatus" titulo="Processos por situação" semNome="Sem situação" vazio="Nenhum processo cadastrado." />
+      </section>
+
+      <section class="card bloco" aria-labelledby="t-area">
+        <header class="bloco__cab">
+          <div>
+            <h2 class="bloco__titulo" id="t-area">Processos por área</h2>
+            <p class="bloco__sub">Todos os processos cadastrados.</p>
+          </div>
+        </header>
+        <app-barras [itens]="d.processosPorArea" titulo="Processos por área" semNome="Área não informada" vazio="Nenhum processo cadastrado." />
+      </section>
+
+      <section class="card bloco" aria-labelledby="t-tipo">
+        <header class="bloco__cab">
+          <div>
+            <h2 class="bloco__titulo" id="t-tipo">Atendimentos por tipo</h2>
+            <p class="bloco__sub">Realizados nos últimos {{ meses() }} meses.</p>
+          </div>
+        </header>
+        <app-barras [itens]="d.atendimentosPorTipo" titulo="Atendimentos por tipo" semNome="Tipo não informado" vazio="Nenhum atendimento realizado no período." />
+      </section>
+
+      <section class="card bloco" aria-labelledby="t-area-atend">
+        <header class="bloco__cab">
+          <div>
+            <h2 class="bloco__titulo" id="t-area-atend">Atendimentos por área</h2>
+            <p class="bloco__sub">Realizados nos últimos {{ meses() }} meses.</p>
+          </div>
+        </header>
+        <app-barras [itens]="d.atendimentosPorArea" titulo="Atendimentos por área" semNome="Área não informada" vazio="Nenhum atendimento realizado no período." />
+      </section>
+    </div>
+  </div>
+} @else {
+  <section class="tiles" aria-busy="true" aria-label="Carregando painel jurídico">
+    @for (i of [0, 1, 2, 3, 4, 5]; track i) {
+      <div class="tile card"><span class="skeleton" style="width: 6rem"></span><span class="skeleton skeleton--titulo" style="width: 4rem"></span></div>
+    }
+  </section>
+}

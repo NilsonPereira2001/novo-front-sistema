@@ -97,6 +97,20 @@ Em produção, o servidor web precisa encaminhar `/backend/*` ao Spring Boot rem
 - A expiração do JWT (`exp`) é respeitada: ao expirar, ou se a API responder 401, o usuário volta ao login com o aviso "sessão expirada".
 - Os guards só controlam a navegação. **Toda permissão precisa ser validada também no backend.**
 
+### Jurídico › Painel (`/juridico/painel`)
+
+Código em `features/juridico/painel/`. Endpoints do `JuridicoDashboardController` (PR #8), permissão `DASHBOARD_JURIDICO`.
+
+- `GET juridico/dashboard?meses=6|12|24` e `GET juridico/dashboard/ranking?mes=AAAA-MM`.
+- **Indicadores:** processos (ativos e cadastrados no mês), atendimentos agendados (hoje e sem baixa), atendidos no mês com variação sobre o mês anterior, advogados ativos (e processos ativos sem responsável), audiências em 30 dias e processos parados.
+  - Processo *ativo*: situação que não indica encerramento (arquivado, baixado, encerrado, extinto, transitado, finalizado, concluído).
+  - *Parado*: ativo sem movimentação há mais de 180 dias (sem movimentação registrada, conta a data de cadastro).
+- **Gráficos mensais** (`components/colunas-mensais.ts`, com dica, legenda e "Ver tabela"): processos cadastrados por mês (data de registro; sem ela, a de cadastro) e atendimentos por mês (atendidos, não compareceu, agendados).
+- **Ranking de atendimentos** (`components/ranking-atendimentos.ts`): realizados por colaborador no mês escolhido, com ▲▼ sobre o mês anterior. Um atendimento conta para cada colaborador que participou.
+- **Advogados:** processos ativos (link para a lista filtrada pelo responsável), total, atendidos no mês, agendados e próxima audiência.
+- **Próximas audiências** (30 dias, as 10 primeiras) e distribuições: processos por situação e por área; atendimentos realizados por tipo e por área no período.
+- **Testes:** `painel-juridico-api.spec.ts`.
+
 ### Jurídico › Processos (`/juridico/processos`)
 
 Código em `features/juridico/processos/`. Endpoints do `ProcessoJuridicoController` (PR #8), com respostas leves. As rotas antigas do `JuridicoController` continuam funcionando.
