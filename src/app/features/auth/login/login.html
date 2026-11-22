@@ -20,7 +20,7 @@
   <form class="login__form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
     <!-- Usuário -->
     <div class="field" [class.field--invalid]="showError('username')">
-      <label class="field__label" for="login-username">Usuário</label>
+      <label class="field__label" for="login-username">Usuário (CPF)</label>
       <div class="field__control">
         <app-icon class="field__icon" name="user" />
         <input
@@ -32,7 +32,7 @@
           autocomplete="username"
           autocapitalize="none"
           spellcheck="false"
-          placeholder="Digite seu usuário"
+          placeholder="Digite seu CPF" inputmode="text"
           [attr.aria-invalid]="showError('username')"
           [attr.aria-describedby]="showError('username') ? 'login-username-error' : null"
         />

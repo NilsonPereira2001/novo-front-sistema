@@ -1,0 +1,172 @@
+<a class="back-link" routerLink="/administracao/usuarios"><app-icon name="arrow-left" /> Usuários</a>
+
+@if (erro(); as kind) {
+  <section class="card"><app-load-error [kind]="kind" (retry)="recarregar()" /></section>
+} @else if (u(); as u) {
+  @let s = st(u);
+  <header class="cabecalho card">
+    <div class="cabecalho__id">
+      <span class="avatar" aria-hidden="true">{{ u.nome.charAt(0) }}</span>
+      <div>
+        <p class="page-eyebrow">Usuário do sistema</p>
+        <h1 class="page-title">{{ u.nome }}</h1>
+        <p class="cabecalho__meta">
+          <span>Usuário <strong class="cell-mono">{{ u.usuario | cpf }}</strong></span>
+          <span class="situacao" [attr.data-tom]="s.tom">{{ s.texto }}</span>
+          @if (euMesmo()) { <span class="tag tag--primary">Você</span> }
+        </p>
+      </div>
+    </div>
+    <div class="cabecalho__acoes">
+      @if (euMesmo()) {
+        <a class="btn btn--secondary" routerLink="/trocar-senha"><app-icon name="key" /> Alterar minha senha</a>
+      } @else {
+        @if (u.status !== 'DESLIGADO') {
+          <button type="button" class="btn btn--secondary" (click)="pedir('redefinir', u)"><app-icon name="key" /> Redefinir senha</button>
+        }
+        @if (u.status === 'ATIVO') {
+          <button type="button" class="btn btn--secondary" (click)="pedir('bloquear', u)"><app-icon name="lock" /> Bloquear</button>
+        } @else if (u.status === 'BLOQUEADO') {
+          <button type="button" class="btn btn--secondary" (click)="pedir('desbloquear', u)"><app-icon name="shield" /> Desbloquear</button>
+        }
+        @if (u.status === 'DESLIGADO') {
+          <button type="button" class="btn btn--primary" (click)="pedir('reativar', u)"><app-icon name="refresh-cw" /> Reativar</button>
+        } @else {
+          <button type="button" class="btn btn--danger-outline" (click)="pedir('desligar', u)"><app-icon name="power" /> Desligar</button>
+        }
+      }
+    </div>
+  </header>
+
+  @if (aviso(); as a) {
+    <div class="aviso"><app-alert tone="success">{{ a }}</app-alert><button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
+  }
+  @if (erroAcao() && !confirmar() && !editando()) {
+    <app-alert tone="danger">{{ erroAcao() }}</app-alert>
+  }
+  @if (euMesmo()) {
+    <app-alert tone="info">Este é o seu usuário. Bloqueio, desligamento e mudança de permissões precisam ser feitos por outro administrador.</app-alert>
+  }
+
+  <div class="grade">
+    <section class="card bloco" aria-labelledby="t-dados">
+      <h2 class="bloco__titulo" id="t-dados">Dados</h2>
+      <dl class="dados">
+        <div><dt>Vínculo</dt><dd>{{ vinculo(u.vinculo) }}</dd></div>
+        <div><dt>Função</dt><dd>{{ u.funcao ?? '—' }}</dd></div>
+        <div><dt>E-mail</dt><dd>{{ u.email ?? '—' }}</dd></div>
+        <div><dt>Perfil</dt><dd>{{ u.perfil ?? '—' }}</dd></div>
+        <div><dt>Último acesso</dt><dd>{{ (u.ultimoLogin | date: "dd/MM/yyyy 'às' HH:mm") ?? 'Nunca acessou' }}</dd></div>
+        <div><dt>Senha</dt><dd>{{ u.primeiroLogin ? 'Provisória: troca pendente no próximo acesso' : 'Definida pelo usuário' }}</dd></div>
+      </dl>
+      @if (u.idPessoa) {
+        <a class="link-button" [routerLink]="['/pessoas', u.idPessoa]"><app-icon name="users" /> Ver cadastro da pessoa</a>
+      }
+    </section>
+
+    <section class="card bloco" aria-labelledby="t-acessos">
+      <h2 class="bloco__titulo" id="t-acessos">Últimos acessos</h2>
+      @if (u.ultimosAcessos.length === 0) {
+        <p class="vazio">Nenhum acesso registrado.</p>
+      } @else {
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th scope="col">Entrada</th><th scope="col">Saída</th><th scope="col">Navegador</th><th scope="col">IP</th></tr></thead>
+            <tbody>
+              @for (a of u.ultimosAcessos; track $index) {
+                <tr>
+                  <td class="cell-mono">{{ (a.entrada | date: 'dd/MM/yy HH:mm') ?? '—' }}</td>
+                  <td class="cell-mono">{{ (a.saida | date: 'dd/MM/yy HH:mm') ?? '—' }}</td>
+                  <td>{{ a.navegador ?? '—' }}</td>
+                  <td class="cell-mono">{{ a.ip ?? '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  </div>
+
+  <section class="card bloco" aria-labelledby="t-perm">
+    <header class="bloco__cab">
+      <div>
+        <h2 class="bloco__titulo" id="t-perm">Permissões</h2>
+        <p class="sub">{{ u.permissoes.length }} {{ u.permissoes.length === 1 ? 'permissão' : 'permissões' }} · perfil {{ u.perfil ?? '—' }}</p>
+      </div>
+      @if (!editando() && !euMesmo() && u.status !== 'DESLIGADO') {
+        <button type="button" class="btn btn--secondary btn--sm" (click)="editar(u)"><app-icon name="pencil" /> Editar acesso</button>
+      }
+    </header>
+
+    @if (editando()) {
+      @let pm = permissoes();
+      @let pf = perfis();
+      @if (pm.status === 'ready' && pf.status === 'ready') {
+        <app-permissoes-editor [permissoes]="pm.data" [perfis]="pf.data" [(perfil)]="perfil" [(selecionados)]="selecionados" [desabilitado]="salvando()" />
+      } @else if (pm.status === 'error') {
+        <app-load-error [kind]="pm.kind" (retry)="recarregar()" />
+      } @else {
+        <span class="skeleton" style="width: 100%"></span>
+      }
+      @if (erroAcao()) { <app-alert tone="danger">{{ erroAcao() }}</app-alert> }
+      <div class="acoes">
+        <button type="button" class="btn btn--secondary" (click)="editando.set(false)" [disabled]="salvando()">Cancelar</button>
+        <button type="button" class="btn btn--primary" (click)="salvarAcesso(u)" [disabled]="salvando()">
+          @if (salvando()) { <span class="spinner" aria-hidden="true"></span> Salvando… } @else { <app-icon name="check-circle" /> Salvar acesso }
+        </button>
+      </div>
+    } @else if (u.permissoes.length === 0) {
+      <p class="vazio">Nenhuma permissão.</p>
+    } @else if (admin(u)) {
+      <p class="sub">Administrador: tem todas as permissões do sistema ({{ u.permissoes.length }}).</p>
+    } @else {
+      <div class="grupos">
+        @for (g of grupos(); track g.tipo) {
+          <div class="grupo">
+            <h3 class="grupo__titulo">{{ g.tipo }} <span>{{ g.itens.length }}</span></h3>
+            <ul>
+              @for (p of g.itens; track p.id) { <li [title]="p.nome"><app-icon name="check-circle" /> {{ rotuloPerm(p) }}</li> }
+            </ul>
+          </div>
+        }
+      </div>
+    }
+  </section>
+
+  <app-dialog [titulo]="confirmar()?.titulo ?? ''" [open]="confirmar() !== null" (closed)="confirmar.set(null)">
+    @if (confirmar(); as c) {
+      <div class="dlg">
+        <p>{{ c.texto }}</p>
+        @if (c.acao === 'redefinir') {
+          <label class="check" [class.is-disabled]="!u.email">
+            <input type="checkbox" [checked]="enviarEmail()" [disabled]="!u.email" (change)="enviarEmail.set(!enviarEmail())" />
+            Enviar a nova senha também por e-mail
+            @if (!u.email) { <small>(sem e-mail cadastrado)</small> }
+          </label>
+        }
+        @if (erroAcao()) { <app-alert tone="danger">{{ erroAcao() }}</app-alert> }
+      </div>
+    }
+    <div dialog-actions>
+      <button type="button" class="btn btn--secondary btn--sm" (click)="confirmar.set(null)" [disabled]="executando()">Cancelar</button>
+      <button type="button" class="btn btn--sm" [class.btn--danger]="confirmar()?.perigo" [class.btn--primary]="!confirmar()?.perigo" (click)="executar(u)" [disabled]="executando()">
+        @if (executando()) { <span class="spinner" aria-hidden="true"></span> Aguarde… } @else { {{ confirmar()?.botao }} }
+      </button>
+    </div>
+  </app-dialog>
+
+  @if (senha(); as r) {
+    <app-senha-dialog
+      titulo="Nova senha provisória"
+      [open]="true"
+      [nome]="r.usuario.nome"
+      [login]="r.usuario.usuario"
+      [senha]="r.senhaProvisoria"
+      [emailEnviado]="r.emailEnviado"
+      (closed)="senha.set(null)"
+    />
+  }
+} @else {
+  <section class="cabecalho card" aria-busy="true"><span class="skeleton" style="width: 18rem; height: 1.75rem"></span></section>
+}

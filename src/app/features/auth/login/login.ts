@@ -131,7 +131,8 @@ export class Login {
     }
 
     const { username, password, remember } = this.form.getRawValue();
-    const identifier = username.trim();
+    // O usuário é o CPF: "529.982.247-25" e "52998224725" entram iguais.
+    const identifier = /^[\d.\-\s]+$/.test(username.trim()) ? username.replace(/\D/g, '') : username.trim();
 
     this.state.set('submitting');
     this.form.disable({ emitEvent: false });

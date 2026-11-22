@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 
-import { authGuard } from './core/auth/guards/auth.guard';
+import { authGuard, sessionGuard } from './core/auth/guards/auth.guard';
 import { guestGuard } from './core/auth/guards/guest.guard';
 import { pageTitle } from './core/config/app-title';
 import { NAV_ITEMS } from './core/navigation/navigation';
@@ -36,6 +36,19 @@ export const routes: Routes = [
         path: 'login',
         title: pageTitle('Entrar'),
         loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),
+      },
+    ],
+  },
+  {
+    // Troca de senha: abre mesmo com senha provisória (o authGuard manda para cá).
+    path: '',
+    loadComponent: () => import('./layout/auth-layout/auth-layout').then((m) => m.AuthLayout),
+    canActivate: [sessionGuard],
+    children: [
+      {
+        path: 'trocar-senha',
+        title: pageTitle('Alterar senha'),
+        loadComponent: () => import('./features/auth/trocar-senha/trocar-senha').then((m) => m.TrocarSenha),
       },
     ],
   },
@@ -80,6 +93,21 @@ export const routes: Routes = [
         path: 'juridico/processos/:id',
         title: pageTitle('Processo'),
         loadComponent: () => import('./features/juridico/processos/detalhe/processo-detalhe').then((m) => m.ProcessoDetalhePage),
+      },
+      {
+        path: 'administracao/usuarios',
+        title: pageTitle('Usuários e permissões'),
+        loadComponent: () => import('./features/usuarios/lista/usuarios-lista').then((m) => m.UsuariosLista),
+      },
+      {
+        path: 'administracao/usuarios/novo',
+        title: pageTitle('Novo usuário'),
+        loadComponent: () => import('./features/usuarios/novo/usuario-novo').then((m) => m.UsuarioNovo),
+      },
+      {
+        path: 'administracao/usuarios/:id',
+        title: pageTitle('Usuário'),
+        loadComponent: () => import('./features/usuarios/detalhe/usuario-detalhe').then((m) => m.UsuarioDetalhePage),
       },
       {
         path: 'juridico/painel',

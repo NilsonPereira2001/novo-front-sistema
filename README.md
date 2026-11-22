@@ -97,6 +97,25 @@ Em produção, o servidor web precisa encaminhar `/backend/*` ao Spring Boot rem
 - A expiração do JWT (`exp`) é respeitada: ao expirar, ou se a API responder 401, o usuário volta ao login com o aviso "sessão expirada".
 - Os guards só controlam a navegação. **Toda permissão precisa ser validada também no backend.**
 
+### Administração › Usuários e permissões (`/administracao/usuarios`)
+
+Código em `features/usuarios/`. Endpoints do `UsuarioSistemaController` (PR #8), permissão `CREDENCIAL_SISTEMA`.
+
+- **Quem pode ter acesso:** só funcionários ativos e associados que são diretores ativos. O usuário é sempre o **CPF** (o login aceita com ou sem pontuação).
+- **Lista:** resumo por situação (ativos, aguardando 1º acesso, bloqueados, desligados), filtro por vínculo, busca por nome/CPF, perfil e último acesso.
+- **Novo usuário (`/novo`):** escolhe a pessoa entre os elegíveis sem acesso, o perfil e as permissões. O sistema gera uma senha provisória de 10 caracteres, mostrada **uma única vez** (com botão de copiar e, se houver e-mail, envio opcional por e-mail). Nada da senha fica guardado no front.
+- **Ficha do usuário (`/:id`):** dados, últimos acessos (entrada, saída, navegador, IP), permissões agrupadas por módulo e ações:
+  - editar perfil/permissões (`app-permissoes-editor`: perfil pronto marca as permissões dele; mexer nas caixas vira PERSONALIZADO, a não ser que as marcadas sejam exatamente as de um perfil);
+  - redefinir senha (nova senha provisória, troca obrigatória no próximo acesso);
+  - bloquear/desbloquear, desligar/reativar (com confirmação).
+- **Regras do backend:** ninguém altera o próprio usuário nem o proprietário; só ADMINISTRADOR concede ADMINISTRADOR; quem concede só pode dar permissões que tem; bloqueado/desligado perde o acesso na hora.
+
+### Troca de senha (`/trocar-senha`)
+
+- Com senha provisória (`primeiroLogin` no login), o `authGuard` leva para esta tela antes de qualquer outra.
+- Também acessível pelo menu do usuário ("Alterar minha senha").
+- Regras (iguais às do backend): mínimo de 8 caracteres, letras e números, sem espaços, sem o CPF e diferente da atual. `POST usuarios/minha-senha`.
+
 ### Jurídico › Painel (`/juridico/painel`)
 
 Código em `features/juridico/painel/`. Endpoints do `JuridicoDashboardController` (PR #8), permissão `DASHBOARD_JURIDICO`.

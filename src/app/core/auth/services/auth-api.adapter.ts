@@ -60,6 +60,8 @@ export function toAuthSession(body: unknown): AuthSession | null {
     user,
     accessToken,
     expiresAt: accessToken ? readJwtExpiration(accessToken) : null,
+    // LoginResponseDTO.primeiroLogin: senha gerada pelo sistema, troca obrigatória.
+    mustChangePassword: body['primeiroLogin'] === true,
   };
 }
 

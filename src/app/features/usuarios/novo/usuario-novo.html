@@ -1,0 +1,106 @@
+<a class="back-link" routerLink="/administracao/usuarios"><app-icon name="arrow-left" /> Usuários</a>
+
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">Administração</p>
+    <h1 class="page-title">Novo usuário</h1>
+    <p class="page-subtitle">Só funcionários ativos e associados que são diretores ativos podem ter acesso. O usuário será o CPF e a senha é gerada pelo sistema.</p>
+  </div>
+</header>
+
+@if (erroCarga(); as kind) {
+  <section class="card"><app-load-error [kind]="kind" (retry)="recarregar()" /></section>
+} @else {
+  <section class="card secao" aria-labelledby="s-pessoa">
+    <h2 class="secao__titulo" id="s-pessoa"><span class="passo">1</span> Pessoa</h2>
+    @if (pessoa(); as p) {
+      <div class="escolhida">
+        <div>
+          <p class="escolhida__nome">{{ p.nome }}</p>
+          <p class="sub">
+            Usuário: <span class="cell-mono">{{ p.cpf | cpf }}</span> · {{ vinculo(p.vinculo) }}@if (p.funcao) { · {{ p.funcao }} }
+          </p>
+          <p class="sub">{{ p.email ? 'E-mail: ' + p.email : 'Sem e-mail cadastrado' }}</p>
+        </div>
+        <button type="button" class="btn btn--secondary btn--sm" (click)="pessoa.set(null)">Trocar</button>
+      </div>
+    } @else {
+      <div class="field">
+        <label class="field__label" for="nu-busca">Buscar funcionário ou diretor</label>
+        <input id="nu-busca" class="field__input" type="search" placeholder="Nome ou CPF" [value]="busca()" (input)="busca.set(valor($event))" />
+      </div>
+      @let el = elegiveis();
+      @if (el.status === 'ready') {
+        @if (el.data.length === 0) {
+          <p class="vazio">Todos os funcionários e diretores ativos já têm usuário.</p>
+        } @else if (filtrados().length === 0) {
+          <p class="vazio">Ninguém encontrado com "{{ busca() }}".</p>
+        } @else {
+          <ul class="opcoes" aria-label="Pessoas sem acesso">
+            @for (p of filtrados(); track p.idPessoa) {
+              <li>
+                <button type="button" class="opcao" (click)="escolher(p)">
+                  <span class="opcao__nome">{{ p.nome }}</span>
+                  <span class="sub"><span class="cell-mono">{{ p.cpf | cpf }}</span> · {{ vinculo(p.vinculo) }}@if (p.funcao) { · {{ p.funcao }} }</span>
+                </button>
+              </li>
+            }
+          </ul>
+          @if (el.data.length > filtrados().length && !busca()) {
+            <p class="sub">Mostrando {{ filtrados().length }} de {{ el.data.length }}. Use a busca para encontrar os demais.</p>
+          }
+        }
+      } @else {
+        <span class="skeleton" style="width: 100%"></span><span class="skeleton" style="width: 80%"></span>
+      }
+    }
+    @if (tentou() && !pessoa()) { <p class="field__error" role="alert">Escolha a pessoa.</p> }
+  </section>
+
+  <section class="card secao" aria-labelledby="s-acesso">
+    <h2 class="secao__titulo" id="s-acesso"><span class="passo">2</span> Perfil e permissões</h2>
+    @let pm = permissoes();
+    @let pf = perfis();
+    @if (pm.status === 'ready' && pf.status === 'ready') {
+      <app-permissoes-editor [permissoes]="pm.data" [perfis]="pf.data" [(perfil)]="perfil" [(selecionados)]="selecionados" />
+    } @else {
+      <span class="skeleton" style="width: 100%"></span>
+    }
+  </section>
+
+  <section class="card secao" aria-labelledby="s-senha">
+    <h2 class="secao__titulo" id="s-senha"><span class="passo">3</span> Senha provisória</h2>
+    <p class="sub">O sistema gera uma senha de 10 caracteres. Ela aparece uma única vez, depois de criar. No primeiro acesso a pessoa cria a própria senha.</p>
+    <label class="check" [class.is-disabled]="!pessoa()?.email">
+      <input type="checkbox" [checked]="enviarEmail()" [disabled]="!pessoa()?.email" (change)="enviarEmail.set(!enviarEmail())" />
+      Enviar a senha provisória também por e-mail
+      @if (pessoa() && !pessoa()?.email) { <small>(pessoa sem e-mail cadastrado)</small> }
+    </label>
+  </section>
+
+  @if (tentou() && pendencia(); as msg) {
+    <app-alert tone="warning">{{ msg }}</app-alert>
+  }
+  @if (erro()) {
+    <app-alert tone="danger" heading="Usuário não criado">{{ erro() }}</app-alert>
+  }
+
+  <div class="acoes">
+    <a class="btn btn--secondary" routerLink="/administracao/usuarios">Cancelar</a>
+    <button type="button" class="btn btn--primary" (click)="criar()" [disabled]="enviando()">
+      @if (enviando()) { <span class="spinner" aria-hidden="true"></span> Criando… } @else { <app-icon name="user-plus" /> Criar usuário }
+    </button>
+  </div>
+}
+
+@if (resultado(); as r) {
+  <app-senha-dialog
+    titulo="Usuário criado"
+    [open]="true"
+    [nome]="r.usuario.nome"
+    [login]="r.usuario.usuario"
+    [senha]="r.senhaProvisoria"
+    [emailEnviado]="r.emailEnviado"
+    (closed)="concluir()"
+  />
+}

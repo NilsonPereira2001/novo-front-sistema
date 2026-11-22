@@ -16,6 +16,9 @@ import {
 import { toAuthSession, toLoginRequest } from './auth-api.adapter';
 import { toAuthError } from './auth-error.mapper';
 
+/** Troca da própria senha (UsuarioSistemaController). */
+const MINHA_SENHA_PATH = '/usuarios/minha-senha';
+
 /**
  * Estado e operações de autenticação.
  *
@@ -49,6 +52,8 @@ export class AuthService {
   readonly sessionStartedAt = this.startedAtSignal.asReadonly();
   /** Expiração informada pelo token (epoch em ms), quando existir. */
   readonly sessionExpiresAt = computed(() => this.session()?.expiresAt ?? null);
+  /** Senha provisória (primeiro acesso ou redefinida): o guard leva para /trocar-senha. */
+  readonly mustChangePassword = computed(() => this.session()?.mustChangePassword === true);
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.clearExpirationTimer());
@@ -112,6 +117,22 @@ export class AuthService {
       );
 
     return this.restoreRequest$;
+  }
+
+  /**
+   * Troca a própria senha (POST usuarios/minha-senha). Erros chegam como
+   * HttpErrorResponse; a mensagem do backend (400) é mostrada na tela.
+   */
+  changePassword(currentPassword: string, newPassword: string): Observable<void> {
+    return this.http
+      .post<void>(this.url(MINHA_SENHA_PATH), { senhaAtual: currentPassword, novaSenha: newPassword })
+      .pipe(
+        tap(() => {
+          const s = this.session();
+          if (s) this.session.set({ ...s, mustChangePassword: false });
+        }),
+        map(() => undefined),
+      );
   }
 
   /** Verifica se o usuário possui ao menos um dos perfis informados. */

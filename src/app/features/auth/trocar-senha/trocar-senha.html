@@ -1,0 +1,65 @@
+<section class="troca" aria-labelledby="troca-titulo">
+  <header class="troca__header">
+    <h1 id="troca-titulo" class="troca__titulo">{{ obrigatoria() ? 'Crie sua senha' : 'Alterar senha' }}</h1>
+    <p class="troca__sub">
+      @if (obrigatoria()) {
+        Olá{{ nome() ? ', ' + nome() : '' }}. Você entrou com uma senha provisória. Para continuar, crie uma senha pessoal.
+      } @else {
+        Informe a senha atual e escolha a nova.
+      }
+    </p>
+  </header>
+
+  <div aria-live="polite">
+    @if (ok()) {
+      <app-alert tone="success">Senha alterada. Redirecionando…</app-alert>
+    }
+    @if (erro()) {
+      <app-alert tone="danger" heading="Senha não alterada">{{ erro() }}</app-alert>
+    }
+  </div>
+
+  <form class="troca__form" [formGroup]="form" (ngSubmit)="salvar()" novalidate>
+    <div class="field" [class.field--invalid]="tentou() && form.controls.atual.invalid">
+      <label class="field__label" for="ts-atual">{{ obrigatoria() ? 'Senha provisória' : 'Senha atual' }}</label>
+      <div class="field__control">
+        <app-icon class="field__icon" name="lock" />
+        <input id="ts-atual" class="field__input" [type]="mostrar() ? 'text' : 'password'" formControlName="atual" autocomplete="current-password" />
+      </div>
+      @if (tentou() && form.controls.atual.invalid) { <p class="field__error">Informe a senha {{ obrigatoria() ? 'provisória' : 'atual' }}.</p> }
+    </div>
+
+    <div class="field" [class.field--invalid]="tentou() && (form.controls.nova.invalid || !regras().every(okDe))">
+      <label class="field__label" for="ts-nova">Nova senha</label>
+      <div class="field__control">
+        <app-icon class="field__icon" name="key" />
+        <input id="ts-nova" class="field__input has-trailing" [type]="mostrar() ? 'text' : 'password'" formControlName="nova" autocomplete="new-password" aria-describedby="ts-regras" />
+        <button type="button" class="field__trailing" (click)="mostrar.set(!mostrar())" [attr.aria-pressed]="mostrar()" [attr.aria-label]="mostrar() ? 'Ocultar senhas' : 'Mostrar senhas'">
+          <app-icon [name]="mostrar() ? 'eye-off' : 'eye'" />
+        </button>
+      </div>
+      <ul class="regras" id="ts-regras" aria-label="Requisitos da senha">
+        @for (r of regras(); track r.texto) {
+          <li [class.is-ok]="r.ok">
+            <app-icon [name]="r.ok ? 'check-circle' : 'alert-circle'" />
+            {{ r.texto }}<span class="sr-only">{{ r.ok ? ': atendido' : ': pendente' }}</span>
+          </li>
+        }
+      </ul>
+    </div>
+
+    <div class="field" [class.field--invalid]="tentou() && !confere()">
+      <label class="field__label" for="ts-confirmar">Confirmar nova senha</label>
+      <div class="field__control">
+        <app-icon class="field__icon" name="key" />
+        <input id="ts-confirmar" class="field__input" [type]="mostrar() ? 'text' : 'password'" formControlName="confirmar" autocomplete="new-password" />
+      </div>
+      @if (tentou() && !confere()) { <p class="field__error">As senhas não conferem.</p> }
+    </div>
+
+    <button type="submit" class="btn btn--primary btn--block" [disabled]="enviando() || ok()">
+      @if (enviando()) { <span class="spinner" aria-hidden="true"></span> Salvando… } @else { Salvar nova senha }
+    </button>
+    <button type="button" class="link-button troca__sair" (click)="sair()">Sair</button>
+  </form>
+</section>

@@ -27,6 +27,8 @@ export interface AuthSession {
   readonly accessToken: string | null;
   /** Momento de expiração (epoch em ms), se conhecido. */
   readonly expiresAt: number | null;
+  /** Senha provisória: o usuário precisa trocá-la antes de usar o sistema (`primeiroLogin`). */
+  readonly mustChangePassword: boolean;
 }
 
 /** Situação da sessão. `unknown` = ainda não verificamos com o servidor. */

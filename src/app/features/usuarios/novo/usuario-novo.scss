@@ -1,0 +1,27 @@
+:host { display: flex; flex-direction: column; gap: var(--space-5); }
+.back-link { align-self: flex-start; margin-bottom: 0; }
+.secao { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-5) var(--space-6); }
+.secao__titulo { display: flex; align-items: center; gap: var(--space-2); margin: 0; font-size: var(--text-base, 1rem); font-weight: 700; color: var(--color-navy-900); }
+.passo { display: inline-grid; place-items: center; width: 1.5rem; height: 1.5rem; border-radius: 50%; background: var(--color-primary); color: #fff; font-size: var(--text-xs); }
+.sub { display: block; margin: 0; font-size: var(--text-xs); color: var(--color-text-muted); }
+.vazio { margin: 0; font-size: var(--text-sm); color: var(--color-text-muted); }
+.opcoes { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: var(--space-2); margin: 0; padding: 0; list-style: none; max-height: 22rem; overflow-y: auto; }
+.opcao {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; padding: var(--space-3);
+  border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); font: inherit; text-align: left; cursor: pointer;
+  &:hover { border-color: var(--color-primary); }
+  &:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+}
+.opcao__nome { font-size: var(--text-sm); font-weight: 600; color: var(--color-text); }
+.escolhida {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-primary); border-radius: var(--radius-md); background: var(--color-primary-soft);
+  p { margin: 0; }
+}
+.escolhida__nome { font-weight: 700; color: var(--color-navy-900); }
+.check { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); small { color: var(--color-text-muted); } &.is-disabled { color: var(--color-text-muted); } }
+.acoes { display: flex; justify-content: flex-end; gap: var(--space-3); }
+@media (max-width: 40rem) {
+  .secao { padding: var(--space-4); }
+  .acoes { flex-direction: column-reverse; .btn { width: 100%; } }
+}

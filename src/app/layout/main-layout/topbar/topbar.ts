@@ -13,13 +13,14 @@ import { filter, map } from 'rxjs';
 
 import { AuthService } from '../../../core/auth/services/auth.service';
 import { findNavEntry } from '../../../core/navigation/navigation';
+import { RouterLink } from '@angular/router';
 import { Icon } from '../../../shared/components/icon/icon';
 import { initials } from '../../../shared/utils/text';
 
 /** Barra superior: botão do menu (mobile), localização atual e menu do usuário. */
 @Component({
   selector: 'app-topbar',
-  imports: [Icon],
+  imports: [Icon, RouterLink],
   templateUrl: './topbar.html',
   styleUrl: './topbar.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

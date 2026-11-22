@@ -1,0 +1,122 @@
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">Administração</p>
+    <h1 class="page-title">Usuários e permissões</h1>
+    <p class="page-subtitle">Acesso ao sistema para funcionários e diretores. O usuário é sempre o CPF.</p>
+  </div>
+  <div class="page-header__actions">
+    <a class="btn btn--primary" routerLink="/administracao/usuarios/novo"><app-icon name="user-plus" /> Novo usuário</a>
+  </div>
+</header>
+
+@if (aviso(); as texto) {
+  <div class="aviso" role="status"><app-icon name="check-circle" /> {{ texto }} <button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
+}
+
+<section class="card table-card" aria-labelledby="titulo-usuarios">
+  <h2 id="titulo-usuarios" class="sr-only">Lista de usuários</h2>
+
+  <div class="chips" role="group" aria-label="Filtrar por situação">
+    @for (f of filtros; track f.key) {
+      <button type="button" class="chip" [class.is-active]="status() === f.key" [attr.aria-pressed]="status() === f.key" (click)="setStatus(f.key)">
+        {{ f.rotulo }}
+        @if (contagem(f.key) !== null) { <span class="chip__qtd">{{ contagem(f.key) }}</span> }
+      </button>
+    }
+  </div>
+
+  <div class="toolbar">
+    <app-search-field
+      label="Pesquisar usuários"
+      placeholder="Nome ou CPF"
+      [value]="url.searchText()"
+      (valueChange)="url.search($event)"
+      (clear)="url.clearSearch()"
+    />
+    <label class="sr-only" for="f-vinculo">Vínculo</label>
+    <select id="f-vinculo" class="field__input filtro-vinculo" (change)="onVinculo($event)">
+      <option value="" [selected]="vinculoFiltro() === ''">Todos os vínculos</option>
+      <option value="FUNCIONARIO" [selected]="vinculoFiltro() === 'FUNCIONARIO'">Funcionários</option>
+      <option value="DIRETOR" [selected]="vinculoFiltro() === 'DIRETOR'">Diretores</option>
+    </select>
+  </div>
+
+  @if (carregando() && pagina()) {
+    <div class="loading-bar" role="progressbar" aria-label="Carregando"></div>
+  }
+
+  @if (erro(); as kind) {
+    <app-load-error [kind]="kind" (retry)="recarregar()" />
+  } @else if (!carregando() && pagina()?.empty) {
+    <div class="state">
+      <span class="state__icon"><app-icon name="users" /></span>
+      <p class="state__title">Nenhum usuário encontrado</p>
+      @if (temFiltros()) {
+        <button type="button" class="btn btn--secondary" (click)="limpar()">Limpar filtros</button>
+      } @else {
+        <a class="btn btn--primary" routerLink="/administracao/usuarios/novo"><app-icon name="user-plus" /> Criar o primeiro usuário</a>
+      }
+    </div>
+  } @else {
+    <div class="table-scroll">
+      <table class="data-table" [class.is-stale]="carregando() && !!pagina()" [attr.aria-busy]="carregando()">
+        <thead>
+          <tr>
+            <th scope="col">Usuário</th>
+            <th scope="col">Vínculo</th>
+            <th scope="col">Perfil</th>
+            <th scope="col">Situação</th>
+            <th scope="col">Último acesso</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (pagina(); as pg) {
+            @for (u of pg.content; track u.id) {
+              @let s = st(u);
+              <tr>
+                <td class="usuario">
+                  <a class="usuario__nome" [routerLink]="['/administracao/usuarios', u.id]">{{ u.nome }}</a>
+                  <span class="sub cell-mono">{{ u.usuario | cpf }}</span>
+                </td>
+                <td>
+                  {{ vinculo(u.vinculo) }}
+                  @if (u.funcao) { <span class="sub">{{ u.funcao }}</span> }
+                </td>
+                <td>
+                  {{ u.perfil ?? '—' }}
+                  <span class="sub">{{ u.permissoes }} {{ u.permissoes === 1 ? 'permissão' : 'permissões' }}</span>
+                </td>
+                <td><span class="situacao" [attr.data-tom]="s.tom">{{ s.texto }}</span></td>
+                <td class="cell-mono">{{ (u.ultimoLogin | date: 'dd/MM/yyyy HH:mm') ?? 'Nunca' }}</td>
+              </tr>
+            }
+          } @else {
+            @for (r of skeleton; track r) {
+              <tr aria-hidden="true">
+                <td><span class="skeleton" style="width: 14rem"></span></td>
+                <td><span class="skeleton" style="width: 7rem"></span></td>
+                <td><span class="skeleton" style="width: 7rem"></span></td>
+                <td><span class="skeleton" style="width: 5rem"></span></td>
+                <td><span class="skeleton" style="width: 7rem"></span></td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (pagina(); as pg) {
+      <app-pagination
+        [page]="pg.number"
+        [size]="pg.size"
+        [total]="pg.totalElements"
+        [totalPages]="pg.totalPages"
+        [first]="pg.first"
+        [last]="pg.last"
+        [sizeOptions]="url.sizeOptions"
+        itemLabel="usuários"
+        (pageChange)="url.setPage($event)"
+        (sizeChange)="url.setSize($event)"
+      />
+    }
+  }
+</section>

@@ -45,6 +45,10 @@
               <span>{{ user()?.username }}</span>
             </span>
           </div>
+          <a class="user-menu__item user-menu__item--neutro" routerLink="/trocar-senha" (click)="closeUserMenu()">
+            <app-icon name="key" />
+            Alterar minha senha
+          </a>
           <button type="button" class="user-menu__item" (click)="logout()">
             <app-icon name="log-out" />
             Sair do sistema

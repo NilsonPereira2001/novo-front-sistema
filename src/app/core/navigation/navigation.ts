@@ -194,7 +194,7 @@ export const NAVIGATION: readonly NavGroup[] = [
         path: 'administracao/usuarios',
         icon: 'key',
         description: 'Contas de acesso e perfis',
-        available: false,
+        available: true,
       },
       {
         label: 'Configurações',

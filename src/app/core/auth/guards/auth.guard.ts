@@ -23,6 +23,11 @@ export const authGuard: CanActivateFn = (route, state): Observable<boolean | Url
         return router.createUrlTree(['/login'], { queryParams: { redirect: state.url } });
       }
 
+      // Senha provisória: nada abre antes da troca.
+      if (auth.mustChangePassword()) {
+        return router.createUrlTree(['/trocar-senha'], { queryParams: { redirect: state.url } });
+      }
+
       const requiredRoles: unknown = route.data['roles'];
       if (Array.isArray(requiredRoles) && !auth.hasAnyRole(requiredRoles as string[])) {
         return router.createUrlTree(['/acesso-negado']);
@@ -31,4 +36,13 @@ export const authGuard: CanActivateFn = (route, state): Observable<boolean | Url
       return true;
     }),
   );
+};
+
+/** Só exige sessão (usado na troca de senha, que precisa abrir mesmo com a senha provisória). */
+export const sessionGuard: CanActivateFn = (_route, state): Observable<boolean | UrlTree> => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  return auth
+    .ensureSession()
+    .pipe(map((ok) => (ok ? true : router.createUrlTree(['/login'], { queryParams: { redirect: state.url } }))));
 };
