@@ -1,0 +1,155 @@
+<a class="back-link" routerLink="/colaboradores"><app-icon name="arrow-left" /> Colaboradores</a>
+
+@if (erro(); as kind) {
+  <section class="card"><app-load-error [kind]="kind" (retry)="recarregar()" /></section>
+} @else if (f(); as f) {
+  @let c = f.colaborador;
+  @let p = f.pessoa;
+  @let fu = f.funcional;
+  @let ativo = c.status === 'ATIVO';
+  <header class="cabecalho card">
+    <div class="cabecalho__pessoa">
+      @if (p.foto) { <img class="foto" [src]="p.foto" [alt]="'Foto de ' + c.nome" /> } @else { <span class="foto foto--vazia" aria-hidden="true"><app-icon name="user" /></span> }
+      <div>
+        <p class="page-eyebrow">Colaborador</p>
+        <h1 class="page-title">{{ c.nome }}</h1>
+        <p class="cabecalho__meta">
+          <span class="situacao" [class.is-off]="!ativo">{{ ativo ? 'Ativo' : 'Desligado' }}</span>
+          <span>{{ fu.cargo ?? 'Sem cargo' }} · {{ fu.departamento ?? 'Sem departamento' }}</span>
+          <span class="cell-mono">{{ c.cpf | cpf }}</span>
+        </p>
+      </div>
+    </div>
+    <div class="cabecalho__acoes">
+      <a class="btn btn--secondary" [routerLink]="['/colaboradores', c.id, 'editar']"><app-icon name="pencil" /> Editar</a>
+      <a class="btn btn--secondary" [routerLink]="['/pessoas', p.idPessoa]">Cadastro da pessoa</a>
+      @if (ativo) {
+        <button type="button" class="btn btn--danger-outline" (click)="abrir('desligar')"><app-icon name="power" /> Desligar</button>
+      } @else {
+        <button type="button" class="btn btn--primary" (click)="abrir('reativar')"><app-icon name="refresh-cw" /> Reativar</button>
+      }
+    </div>
+  </header>
+
+  @if (aviso(); as a) {
+    <div class="aviso" role="status"><app-icon name="check-circle" /> {{ a }} <button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
+  }
+  @if (!ativo) {
+    <app-alert tone="warning">Desligado em {{ fu.dataDesligamento | date: 'dd/MM/yyyy' }}@if (fu.motivoDesligamento) { · {{ fu.motivoDesligamento }} }</app-alert>
+  }
+
+  <div class="grade">
+    <section class="card bloco" aria-labelledby="t-fu">
+      <h2 class="bloco__titulo" id="t-fu">Vínculo funcional</h2>
+      <dl class="dados">
+        <div><dt>Cargo</dt><dd>{{ fu.cargo ?? '—' }}</dd></div>
+        <div><dt>Departamento</dt><dd>{{ fu.departamento ?? '—' }}</dd></div>
+        <div><dt>Contratação</dt><dd>{{ fu.tipoContratacao ?? '—' }}@if (fu.terceirizada) { · {{ fu.terceirizada }} }</dd></div>
+        <div><dt>Admissão</dt><dd>{{ (fu.dataAdmissao | date: 'dd/MM/yyyy') ?? '—' }}@if (tempo(fu.dataAdmissao, fu.dataDesligamento); as t) { <span class="sub">{{ t }} de casa</span> }</dd></div>
+        <div><dt>Salário</dt><dd>{{ fu.salario !== null ? (fu.salario | currency: 'BRL') : '—' }}</dd></div>
+        <div><dt>CTPS</dt><dd>{{ fu.ctps ?? '—' }}</dd></div>
+        <div><dt>PIS/PASEP</dt><dd class="cell-mono">{{ fu.pis ?? '—' }}</dd></div>
+        @if (fu.oab) { <div><dt>OAB</dt><dd>{{ fu.oab }}</dd></div> }
+      </dl>
+    </section>
+
+    <section class="card bloco" aria-labelledby="t-ac">
+      <h2 class="bloco__titulo" id="t-ac">Acesso e outros vínculos</h2>
+      <dl class="dados dados--1">
+        <div>
+          <dt>Usuário do sistema</dt>
+          <dd>
+            @if (f.usuario) {
+              {{ f.usuario }} · {{ (f.statusUsuario ?? '') | lowercase }}
+            } @else if (ativo) {
+              Sem acesso. <a routerLink="/administracao/usuarios/novo">Criar usuário</a>
+            } @else { Sem acesso }
+          </dd>
+        </div>
+        @if (f.servicosSaude.length) {
+          <div><dt>Atende na saúde</dt><dd>@for (s of f.servicosSaude; track s.id; let last = $last) { {{ s.nome }}@if (!last) { , } }</dd></div>
+        }
+        <div><dt>Associado</dt><dd>{{ f.associado ? (f.associado | lowercase) : 'Não' }}</dd></div>
+        @if (f.diretoria) { <div><dt>Diretoria</dt><dd>{{ f.diretoria }}</dd></div> }
+      </dl>
+      @if (f.outrosVinculos.length) {
+        <h3 class="bloco__sub">Vínculos anteriores</h3>
+        <ul class="vinculos">
+          @for (v of f.outrosVinculos; track v.id) {
+            <li>
+              <a [routerLink]="['/colaboradores', v.id]">{{ v.cargo ?? 'Sem cargo' }} · {{ v.departamento ?? '—' }}</a>
+              <span class="sub">{{ (v.dataAdmissao | date: 'dd/MM/yyyy') ?? '?' }} a {{ (v.dataDesligamento | date: 'dd/MM/yyyy') ?? (v.status === 'ATIVO' ? 'hoje' : '?') }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <section class="card bloco" aria-labelledby="t-pe">
+      <h2 class="bloco__titulo" id="t-pe">Dados pessoais</h2>
+      <dl class="dados">
+        <div><dt>Nascimento</dt><dd>{{ (p.dataNascimento | date: 'dd/MM/yyyy') ?? '—' }}</dd></div>
+        <div><dt>Sexo</dt><dd>{{ p.sexo ?? '—' }}</dd></div>
+        <div><dt>Estado civil</dt><dd>{{ p.estadoCivil ?? '—' }}</dd></div>
+        <div><dt>RG</dt><dd>{{ p.rg ?? '—' }}</dd></div>
+        <div><dt>Naturalidade</dt><dd>{{ p.naturalidade ?? '—' }}</dd></div>
+        <div><dt>Título de eleitor</dt><dd>{{ p.tituloEleitor ?? '—' }}</dd></div>
+        <div><dt>Mãe</dt><dd>{{ p.nomeMae ?? '—' }}</dd></div>
+        <div><dt>Pai</dt><dd>{{ p.nomePai ?? '—' }}</dd></div>
+      </dl>
+    </section>
+
+    <section class="card bloco" aria-labelledby="t-co">
+      <h2 class="bloco__titulo" id="t-co">Contato e banco</h2>
+      <dl class="dados">
+        <div><dt>Telefones</dt><dd>@for (t of p.telefones; track t.telefone; let last = $last) { {{ t.telefone | telefone }}@if (t.principal) { <small>(principal)</small> }@if (!last) { <br /> } } @empty { — }</dd></div>
+        <div><dt>E-mail</dt><dd>@if (p.email) { <a [href]="'mailto:' + p.email">{{ p.email }}</a> } @else { — }</dd></div>
+        <div class="dados__largo"><dt>Endereço</dt><dd>{{ endereco(p) }}</dd></div>
+        <div><dt>Banco</dt><dd>{{ p.banco ?? '—' }}@if (p.tipoConta) { · {{ p.tipoConta | lowercase }} }</dd></div>
+        <div>
+          <dt>Agência / conta</dt>
+          <dd class="cell-mono">{{ mascarar(p.agencia) }} / {{ mascarar(p.numeroConta) }}
+            @if (p.agencia || p.numeroConta) { <button type="button" class="link-button" (click)="mostrarBanco.set(!mostrarBanco())">{{ mostrarBanco() ? 'Ocultar' : 'Mostrar' }}</button> }
+          </dd>
+        </div>
+        <div><dt>Pix</dt><dd>@if (p.chavePix) { {{ p.tipoPix ?? '' }} · <span class="cell-mono">{{ mascarar(p.chavePix) }}</span> } @else { — }</dd></div>
+      </dl>
+    </section>
+  </div>
+
+  <app-dialog [titulo]="dialogo() === 'desligar' ? 'Desligar colaborador' : 'Reativar colaborador'" [open]="dialogo() !== null" (closed)="dialogo.set(null)">
+    <div class="dlg">
+      @if (dialogo() === 'desligar') {
+        <p>Desligar <strong>{{ c.nome }}</strong>? O histórico é mantido.</p>
+        @if (f.pendencias.agendamentosSaudeFuturos || f.pendencias.diasAgendaFuturos) {
+          <app-alert tone="warning">
+            Atende na saúde: {{ f.pendencias.agendamentosSaudeFuturos }} pacientes marcados e {{ f.pendencias.diasAgendaFuturos }} dias de agenda à frente.
+            Remarque os pacientes e bloqueie as agendas em Saúde.
+          </app-alert>
+        }
+        @if (f.usuario && !f.diretoria) { <p class="sub">O usuário {{ f.usuario }} será desligado (a pessoa perde o acesso ao sistema).</p> }
+        <div class="grade-dlg">
+          <div class="field">
+            <label class="field__label" for="dl-data">Data <span class="field__req" aria-hidden="true">*</span></label>
+            <input id="dl-data" class="field__input" type="date" [min]="fu.dataAdmissao ?? ''" [value]="dataDeslig()" (input)="dataDeslig.set(valor($event))" />
+          </div>
+          <div class="field">
+            <label class="field__label" for="dl-motivo">Motivo <span class="field__req" aria-hidden="true">*</span></label>
+            <input id="dl-motivo" class="field__input" type="text" maxlength="1000" placeholder="Ex.: pedido de demissão, fim de contrato" [value]="motivo()" (input)="motivo.set(valor($event))" />
+          </div>
+        </div>
+      } @else {
+        <p>Reativar o vínculo de <strong>{{ c.nome }}</strong>? A data e o motivo do desligamento são apagados. O acesso ao sistema, se houver, é reativado em Usuários.</p>
+      }
+      @if (erroAcao()) { <app-alert tone="danger">{{ erroAcao() }}</app-alert> }
+    </div>
+    <div dialog-actions class="acoes">
+      <button type="button" class="btn btn--secondary btn--sm" (click)="dialogo.set(null)" [disabled]="enviando()">Cancelar</button>
+      <button type="button" class="btn btn--sm" [class.btn--danger]="dialogo() === 'desligar'" [class.btn--primary]="dialogo() !== 'desligar'" (click)="confirmar(f)" [disabled]="enviando()">
+        @if (enviando()) { <span class="spinner" aria-hidden="true"></span> Aguarde… } @else { {{ dialogo() === 'desligar' ? 'Desligar' : 'Reativar' }} }
+      </button>
+    </div>
+  </app-dialog>
+} @else {
+  <section class="cabecalho card" aria-busy="true"><span class="skeleton" style="width: 16rem; height: 1.75rem"></span></section>
+}

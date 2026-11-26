@@ -1,0 +1,119 @@
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">Pessoas</p>
+    <h1 class="page-title">Colaboradores</h1>
+    <p class="page-subtitle">Funcionários próprios e terceirizados. Abra a ficha para ver o vínculo, o acesso ao sistema e o histórico.</p>
+  </div>
+  <div class="page-header__actions">
+    <a class="btn btn--secondary" routerLink="/colaboradores/cargos"><app-icon name="sliders" /> Cargos e departamentos</a>
+    <a class="btn btn--primary" routerLink="/colaboradores/novo"><app-icon name="user-plus" /> Novo colaborador</a>
+  </div>
+</header>
+
+@if (aviso(); as a) {
+  <div class="aviso" role="status"><app-icon name="check-circle" /> {{ a }} <button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
+}
+
+<section class="tiles" aria-label="Resumo">
+  @let r = resumo();
+  @if (r.status === 'ready') {
+    <article class="tile card"><p class="tile__rotulo">Ativos</p><p class="tile__valor">{{ r.data.ativos }}</p><p class="tile__sub">{{ r.data.terceirizados }} terceirizados</p></article>
+    <article class="tile card"><p class="tile__rotulo">Sem acesso ao sistema</p><p class="tile__valor">{{ r.data.semUsuario }}</p><p class="tile__sub">Ativos sem usuário</p></article>
+    <article class="tile card"><p class="tile__rotulo">Desligados</p><p class="tile__valor">{{ r.data.desligados }}</p><p class="tile__sub">Histórico</p></article>
+    <article class="tile card tile--deps">
+      <p class="tile__rotulo">Por departamento</p>
+      <ul class="deps">
+        @for (d of r.data.porDepartamento.slice(0, 5); track d.nome) {
+          <li><button type="button" class="link-button" (click)="filtrarDepartamento(d.nome)">{{ d.nome }}</button><span>{{ d.quantidade }}</span></li>
+        }
+      </ul>
+    </article>
+  } @else if (r.status === 'error') {
+    <p class="tiles__erro">Não foi possível carregar o resumo.</p>
+  } @else {
+    @for (i of [0, 1, 2, 3]; track i) { <div class="tile card"><span class="skeleton" style="width: 6rem"></span></div> }
+  }
+</section>
+
+<section class="card table-card" aria-labelledby="t-col">
+  <h2 id="t-col" class="sr-only">Lista de colaboradores</h2>
+  <div class="toolbar">
+    <app-search-field label="Pesquisar colaboradores" placeholder="Nome ou CPF" [value]="url.searchText()" (valueChange)="url.search($event)" (clear)="url.clearSearch()" />
+    <label class="sr-only" for="c-status">Situação</label>
+    <select id="c-status" class="field__input filtro" (change)="onStatus($event)">
+      <option value="ATIVO" [selected]="status() === 'ATIVO'">Ativos</option>
+      <option value="DESLIGADO" [selected]="status() === 'DESLIGADO'">Desligados</option>
+      <option value="TODOS" [selected]="status() === ''">Todos</option>
+    </select>
+    <label class="sr-only" for="c-dep">Departamento</label>
+    <select id="c-dep" class="field__input filtro" (change)="onSelect('departamento', $event)">
+      <option value="" [selected]="idDepartamento() === null">Todos os departamentos</option>
+      @for (d of departamentos(); track d.id) { <option [value]="d.id" [selected]="idDepartamento() === d.id">{{ d.nome }}</option> }
+    </select>
+    <label class="sr-only" for="c-cargo">Cargo</label>
+    <select id="c-cargo" class="field__input filtro" (change)="onSelect('cargo', $event)">
+      <option value="" [selected]="idCargo() === null">Todos os cargos</option>
+      @for (c of cargos(); track c.id) { <option [value]="c.id" [selected]="idCargo() === c.id">{{ c.nome }}</option> }
+    </select>
+  </div>
+
+  @if (carregando() && pagina()) { <div class="loading-bar" role="progressbar" aria-label="Carregando"></div> }
+
+  @if (erro(); as kind) {
+    <app-load-error [kind]="kind" (retry)="recarregar()" />
+  } @else if (!carregando() && pagina()?.empty) {
+    <div class="state">
+      <span class="state__icon"><app-icon name="briefcase" /></span>
+      <p class="state__title">Nenhum colaborador encontrado</p>
+      @if (temFiltros()) {
+        <button type="button" class="btn btn--secondary" (click)="limpar()">Limpar filtros</button>
+      } @else {
+        <a class="btn btn--primary" routerLink="/colaboradores/novo"><app-icon name="user-plus" /> Cadastrar colaborador</a>
+      }
+    </div>
+  } @else {
+    <div class="table-scroll">
+      <table class="data-table" [class.is-stale]="carregando() && !!pagina()" [attr.aria-busy]="carregando()">
+        <thead>
+          <tr>
+            <th scope="col">Colaborador</th>
+            <th scope="col">Cargo</th>
+            <th scope="col">Departamento</th>
+            <th scope="col">Contratação</th>
+            <th scope="col">Admissão</th>
+            <th scope="col">Acesso</th>
+            <th scope="col">Situação</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (pagina(); as pg) {
+            @for (c of pg.content; track c.id) {
+              <tr>
+                <td>
+                  <a class="nome" [routerLink]="['/colaboradores', c.id]">{{ c.nome }}</a>
+                  <span class="sub cell-mono">{{ c.cpf | cpf }}</span>
+                </td>
+                <td>{{ c.cargo ?? '—' }}</td>
+                <td>{{ c.departamento ?? '—' }}</td>
+                <td>{{ c.tipoContratacao ?? '—' }}@if (c.terceirizada) { <span class="sub">{{ c.terceirizada }}</span> }</td>
+                <td class="cell-mono">{{ (c.dataAdmissao | date: 'dd/MM/yyyy') ?? '—' }}</td>
+                <td>{{ c.temUsuario ? 'Sim' : 'Não' }}</td>
+                <td>
+                  <span class="situacao" [class.is-off]="c.status !== 'ATIVO'">{{ c.status === 'ATIVO' ? 'Ativo' : 'Desligado' }}</span>
+                  @if (c.dataDesligamento) { <span class="sub">{{ c.dataDesligamento | date: 'dd/MM/yyyy' }}</span> }
+                </td>
+              </tr>
+            }
+          } @else {
+            @for (r of skeleton; track r) {
+              <tr aria-hidden="true">@for (c of [0, 1, 2, 3, 4, 5, 6]; track c) { <td><span class="skeleton" style="width: 6rem"></span></td> }</tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (pagina(); as pg) {
+      <app-pagination [page]="pg.number" [size]="pg.size" [total]="pg.totalElements" [totalPages]="pg.totalPages" [first]="pg.first" [last]="pg.last" [sizeOptions]="url.sizeOptions" itemLabel="colaboradores" (pageChange)="url.setPage($event)" (sizeChange)="url.setSize($event)" />
+    }
+  }
+</section>

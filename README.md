@@ -249,6 +249,17 @@ Código em `features/juridico/atendimentos/`. Endpoints do `AtendimentoJuridicoC
 - **Permissões:** `ATENDIMENTO_LISTAR_JURIDICO`, `ATENDIMENTO_NOVO_JURIDICO` (registrar/realizar) e `ATENDIMENTO_AGENDAR_JURIDICO` (agendar, reagendar, não compareceu).
 - **Testes:** `atendimentos-api.spec.ts` (inclui anexos) e `atendimento-form.model.spec.ts`.
 
+### Colaboradores (`/colaboradores`)
+
+Funcionários da entidade. Permissões: `FUNCIONÁRIO_LISTAR` (ver) e `FUNCIONÁRIO_CRIAR` (cadastrar, editar, desligar, cargos/departamentos).
+
+- **Lista**: resumo (ativos, desligados, terceirizados, ativos sem usuário), filtros por status (padrão ATIVO), departamento, cargo e busca por nome/CPF, paginada.
+- **Novo** (`/colaboradores/novo`): começa pelo CPF (`GET colaboradores/verificar`). Se a pessoa já existe (associado, dependente, ex-colaborador), os dados são reaproveitados e atualizados; uma pessoa só pode ter um vínculo de colaborador ATIVO. Terceirizada é obrigatória quando o tipo de contratação é terceirizado; PIS é validado pelo dígito.
+- **Ficha** (`/colaboradores/:id`): dados funcionais, tempo de casa, acesso ao sistema, outros vínculos (associado, dependente, diretoria), dados pessoais e bancários (mascarados, com "Mostrar").
+- **Desligar**: data e motivo; avisa sobre agendamentos de saúde e dias de agenda futuros. O usuário só é desativado se a pessoa não tiver outro vínculo ativo nem cargo na diretoria. **Reativar** desfaz.
+- **Cargos e departamentos** (`/colaboradores/cargos`): criar e renomear (JURÍDICO e SAÚDE não podem ser renomeados).
+- `/pessoas/novo/funcionario` redireciona para `/colaboradores/novo`.
+
 ### Painel financeiro (`/financeiro/painel`)
 
 Código em `features/financeiro/dashboard/`. Endpoint `GET financeiro/dashboard?lancamentos=6|12|24` (`FinanceiroDashboardController`, PR #8).

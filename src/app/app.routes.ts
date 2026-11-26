@@ -1,10 +1,13 @@
-import { Routes } from '@angular/router';
+import { CanDeactivateFn, Routes } from '@angular/router';
 
 import { authGuard, sessionGuard } from './core/auth/guards/auth.guard';
 import { guestGuard } from './core/auth/guards/guest.guard';
 import { pageTitle } from './core/config/app-title';
 import { NAV_ITEMS } from './core/navigation/navigation';
 import { TERMOS } from './core/config/terminologia';
+
+/** Pergunta antes de sair de um formulário com dados preenchidos (o componente decide). */
+const confirmarSaida: CanDeactivateFn<{ podeSair(): boolean }> = (c) => c.podeSair();
 
 /**
  * Rotas provisórias dos módulos ainda não construídos: todas abrem a página
@@ -103,6 +106,33 @@ export const routes: Routes = [
         path: 'agenda',
         title: pageTitle('Minha agenda'),
         loadComponent: () => import('./features/agenda/calendario/minha-agenda').then((m) => m.MinhaAgenda),
+      },
+      {
+        path: 'colaboradores',
+        title: pageTitle('Colaboradores'),
+        loadComponent: () => import('./features/colaboradores/lista/colaboradores-lista').then((m) => m.ColaboradoresLista),
+      },
+      {
+        path: 'colaboradores/novo',
+        title: pageTitle('Novo colaborador'),
+        canDeactivate: [confirmarSaida],
+        loadComponent: () => import('./features/colaboradores/form/colaborador-form').then((m) => m.ColaboradorFormPage),
+      },
+      {
+        path: 'colaboradores/cargos',
+        title: pageTitle('Cargos e departamentos'),
+        loadComponent: () => import('./features/colaboradores/cadastros/cargos-departamentos').then((m) => m.CargosDepartamentos),
+      },
+      {
+        path: 'colaboradores/:id/editar',
+        title: pageTitle('Editar colaborador'),
+        canDeactivate: [confirmarSaida],
+        loadComponent: () => import('./features/colaboradores/form/colaborador-form').then((m) => m.ColaboradorFormPage),
+      },
+      {
+        path: 'colaboradores/:id',
+        title: pageTitle('Colaborador'),
+        loadComponent: () => import('./features/colaboradores/ficha/colaborador-ficha').then((m) => m.ColaboradorFicha),
       },
       {
         path: 'saude',

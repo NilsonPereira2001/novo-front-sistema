@@ -72,6 +72,13 @@ export const NAVIGATION: readonly NavGroup[] = [
         available: true,
       },
       {
+        label: 'Colaboradores',
+        path: 'colaboradores',
+        icon: 'briefcase',
+        description: 'Funcionários próprios e terceirizados',
+        available: true,
+      },
+      {
         label: 'Diretoria',
         path: 'diretoria',
         icon: 'award',

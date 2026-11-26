@@ -1,0 +1,138 @@
+<a class="back-link" [routerLink]="idNumero() ? ['/colaboradores', idNumero()] : ['/colaboradores']"><app-icon name="arrow-left" /> {{ idNumero() ? 'Ficha do colaborador' : 'Colaboradores' }}</a>
+
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">Colaboradores</p>
+    <h1 class="page-title">{{ editando() ? 'Editar colaborador' : 'Novo colaborador' }}</h1>
+    <p class="page-subtitle">Campos com <span class="field__req">*</span> são obrigatórios. Os textos são gravados em maiúsculas.</p>
+  </div>
+</header>
+
+@switch (etapa()) {
+  @case ('carregando') {
+    <section class="card secao" aria-busy="true"><span class="skeleton" style="width: 100%; height: 6rem"></span></section>
+  }
+  @case ('erro') {
+    <section class="card"><div class="state"><p class="state__title">Não foi possível carregar o colaborador.</p><a class="btn btn--secondary btn--sm" routerLink="/colaboradores">Voltar</a></div></section>
+  }
+  @case ('cpf') {
+    <section class="card secao cpf" aria-labelledby="s-cpf">
+      <h2 class="secao__titulo" id="s-cpf">Comece pelo CPF</h2>
+      <p class="secao__texto">Se a pessoa já estiver no sistema (como associado, dependente ou ex-colaborador), os dados dela são trazidos e o cadastro não é duplicado.</p>
+      <form class="cpf__linha" (ngSubmit)="verificar()" novalidate>
+        <app-text-field label="CPF" [control]="form.controls.cpf" mask="cpf" placeholder="000.000.000-00" [required]="true" />
+        <button type="submit" class="btn btn--primary" [disabled]="verificando()">
+          @if (verificando()) { <span class="spinner" aria-hidden="true"></span> Consultando… } @else { Continuar }
+        </button>
+      </form>
+      @if (verificacao()?.idColaboradorAtivo; as idAtivo) {
+        <app-alert tone="warning">Esta pessoa já é colaborador ativo. <a [routerLink]="['/colaboradores', idAtivo]">Abrir a ficha</a> para editar.</app-alert>
+      }
+      @if (erroCpf()) { <app-alert tone="danger">{{ erroCpf() }}</app-alert> }
+    </section>
+  }
+  @default {
+    @if (verificacao(); as v) {
+      @if (v.pessoaExiste) {
+        <div class="trazido card">
+          <app-icon name="info" />
+          <p>
+            <strong>{{ v.pessoa?.nome }}</strong> já está no sistema
+            @if (v.associado) { como associado ({{ v.associado | lowercase }}) }
+            @if (v.dependente) { como dependente }
+            @if (v.diretoria) { · diretor(a) de {{ v.diretoria }} }.
+            Os dados foram trazidos: confira e complete. Alterações valem para todo o cadastro da pessoa.
+          </p>
+          <button type="button" class="link-button" (click)="trocarCpf()">Outro CPF</button>
+        </div>
+      } @else {
+        <div class="trazido card"><app-icon name="user-plus" /><p>CPF novo: preencha os dados da pessoa.</p><button type="button" class="link-button" (click)="trocarCpf()">Outro CPF</button></div>
+      }
+    }
+
+    <form class="form" [formGroup]="form" (ngSubmit)="salvar()" novalidate>
+      <section class="card secao" aria-labelledby="s-func">
+        <h2 class="secao__titulo" id="s-func">Vínculo funcional</h2>
+        <div class="form-grid">
+          <app-select-field class="span-4" label="Cargo" [control]="form.controls.idCargo" [state]="cargos()" [required]="true" (retry)="tentarLookups()" />
+          <app-select-field class="span-4" label="Departamento" [control]="form.controls.idDepartamento" [state]="departamentos()" [required]="true" (retry)="tentarLookups()" />
+          <app-select-field class="span-4" label="Tipo de contratação" [control]="form.controls.idTipoContratacao" [state]="contratacoes()" [required]="true" (retry)="tentarLookups()" />
+          @if (terceirizado()) {
+            <app-select-field class="span-6" label="Empresa terceirizada" [control]="form.controls.idTerceirizada" [state]="terceirizadas()" [required]="true" (retry)="tentarLookups()" />
+          }
+          <app-text-field class="span-3" label="Data de admissão" type="date" [control]="form.controls.dataAdmissao" [required]="true" />
+          <div class="field span-3" [class.field--invalid]="form.controls.salario.invalid && form.controls.salario.touched">
+            <label class="field__label" for="cl-sal">Salário</label>
+            <div class="valor"><span class="valor__prefixo" aria-hidden="true">R$</span><input id="cl-sal" class="field__input" type="text" inputmode="decimal" placeholder="0,00" [formControl]="form.controls.salario" /></div>
+            @if (form.controls.salario.invalid && form.controls.salario.touched) { <p class="field__error">Valor inválido. Use o formato 1.234,56.</p> }
+          </div>
+          <app-text-field class="span-3" label="CTPS" [control]="form.controls.ctps" [maxlength]="30" />
+          <div class="field span-3" [class.field--invalid]="form.controls.pis.invalid && form.controls.pis.touched">
+            <label class="field__label" for="cl-pis">PIS/PASEP</label>
+            <input id="cl-pis" class="field__input" type="text" inputmode="numeric" maxlength="14" [formControl]="form.controls.pis" />
+            @if (form.controls.pis.invalid && form.controls.pis.touched) { <p class="field__error">PIS inválido. Confira os 11 números.</p> }
+          </div>
+          <app-text-field class="span-3" label="OAB" [control]="form.controls.oab" [maxlength]="20" hint="Para advogados." />
+        </div>
+      </section>
+
+      <section class="card secao" aria-labelledby="s-pes">
+        <h2 class="secao__titulo" id="s-pes">Dados pessoais</h2>
+        <div class="form-grid">
+          <div class="span-12"><app-foto-field [control]="form.controls.foto" /></div>
+          <app-text-field class="span-4" label="CPF" [control]="form.controls.cpf" mask="cpf" [required]="true" [blocked]="true" />
+          <app-text-field class="span-8" label="Nome completo" [control]="form.controls.nome" [required]="true" [maxlength]="255" autocomplete="name" />
+          <app-text-field class="span-4" label="Nome social / apelido" [control]="form.controls.nomeGuerra" [maxlength]="100" />
+          <app-text-field class="span-4" label="Data de nascimento" type="date" [control]="form.controls.dataNascimento" [required]="true" />
+          <app-select-field class="span-4" label="Sexo" [control]="form.controls.idSexo" [state]="sexos()" [required]="true" (retry)="tentarLookups()" />
+          <app-select-field class="span-4" label="Estado civil" [control]="form.controls.idEstadoCivil" [state]="estadosCivis()" (retry)="tentarLookups()" />
+          <app-text-field class="span-4" label="RG" [control]="form.controls.rg" [maxlength]="30" />
+          <app-text-field class="span-4" label="Título de eleitor" [control]="form.controls.tituloEleitor" [maxlength]="20" />
+          <app-text-field class="span-6" label="Naturalidade" [control]="form.controls.naturalidade" [maxlength]="100" />
+          <app-text-field class="span-6" label="E-mail" type="email" [control]="form.controls.email" autocomplete="email" />
+          <app-text-field class="span-6" label="Nome da mãe" [control]="form.controls.nomeMae" [maxlength]="255" />
+          <app-text-field class="span-6" label="Nome do pai" [control]="form.controls.nomePai" [maxlength]="255" />
+        </div>
+      </section>
+
+      <section class="card secao" aria-labelledby="s-tel">
+        <h2 class="secao__titulo" id="s-tel">Telefones</h2>
+        <app-telefones-field [array]="form.controls.telefones" />
+      </section>
+
+      <section class="card secao" aria-labelledby="s-end">
+        <h2 class="secao__titulo" id="s-end">Endereço</h2>
+        <div class="form-grid">
+          <app-text-field class="span-4" label="CEP" [control]="form.controls.cep" mask="cep" placeholder="00000-000" />
+          <app-text-field class="span-8" label="Logradouro" [control]="form.controls.logradouro" [maxlength]="255" />
+          <app-text-field class="span-3" label="Número" [control]="form.controls.numero" [maxlength]="20" />
+          <app-text-field class="span-6" label="Complemento" [control]="form.controls.complemento" [maxlength]="255" />
+          <app-select-field class="span-3" label="UF" [control]="form.controls.idEstado" [state]="estados()" (retry)="tentarLookups()" />
+          <app-text-field class="span-6" label="Cidade" [control]="form.controls.cidade" [maxlength]="255" />
+          <app-text-field class="span-6" label="Bairro" [control]="form.controls.bairro" [maxlength]="255" />
+        </div>
+      </section>
+
+      <section class="card secao" aria-labelledby="s-ban">
+        <h2 class="secao__titulo" id="s-ban">Dados bancários <small>(para pagamento)</small></h2>
+        <div class="form-grid">
+          <app-select-field class="span-6" label="Banco" [control]="form.controls.idBanco" [state]="bancos()" (retry)="tentarLookups()" />
+          <app-text-field class="span-6" label="Tipo de conta" [control]="form.controls.tipoConta" placeholder="Ex.: corrente, poupança, salário" />
+          <app-text-field class="span-6" label="Agência" [control]="form.controls.agencia" [maxlength]="20" />
+          <app-text-field class="span-6" label="Número da conta" [control]="form.controls.numeroConta" [maxlength]="30" />
+          <app-select-field class="span-6" label="Tipo de Pix" [control]="form.controls.idTipoPix" [state]="tiposPix()" (retry)="tentarLookups()" />
+          <app-text-field class="span-6" label="Chave Pix" [control]="form.controls.chavePix" [maiusculas]="false" [maxlength]="255" />
+        </div>
+      </section>
+
+      @if (erro()) { <app-alert tone="danger" heading="Não foi possível salvar">{{ erro() }}</app-alert> }
+
+      <div class="acoes">
+        <a class="btn btn--secondary" [routerLink]="idNumero() ? ['/colaboradores', idNumero()] : ['/colaboradores']">Cancelar</a>
+        <button type="submit" class="btn btn--primary" [disabled]="enviando()">
+          @if (enviando()) { <span class="spinner" aria-hidden="true"></span> Salvando… } @else { <app-icon name="check-circle" /> {{ editando() ? 'Salvar alterações' : 'Cadastrar colaborador' }} }
+        </button>
+      </div>
+    </form>
+  }
+}

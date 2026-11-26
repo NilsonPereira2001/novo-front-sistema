@@ -37,12 +37,8 @@ const routes: Routes = [
   },
   {
     path: 'novo/funcionario',
-    title: pageTitle('Novo funcionário'),
-    data: {
-      titulo: 'Novo funcionário',
-      descricao: 'Cadastro de um novo funcionário da instituição.',
-    },
-    loadComponent: () => import('./em-construcao/em-construcao').then((m) => m.EmConstrucao),
+    // O cadastro de funcionário fica em Colaboradores.
+    redirectTo: '/colaboradores/novo',
   },
   // As rotas com :id ficam por último para não capturar os caminhos fixos acima.
   {
