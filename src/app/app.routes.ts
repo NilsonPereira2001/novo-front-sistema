@@ -162,6 +162,21 @@ export const routes: Routes = [
           import('./features/financeiro/associados/lista/fin-associados-lista').then((m) => m.FinAssociadosLista),
       },
       {
+        path: 'financeiro/lancamentos',
+        title: pageTitle('Lançamentos'),
+        loadComponent: () => import('./features/financeiro/lancamentos/lista/lancamentos-lista').then((m) => m.LancamentosLista),
+      },
+      {
+        path: 'financeiro/lancamentos/novo',
+        title: pageTitle('Novo lançamento'),
+        loadComponent: () => import('./features/financeiro/lancamentos/novo/novo-lancamento').then((m) => m.NovoLancamento),
+      },
+      {
+        path: 'financeiro/lancamentos/:id',
+        title: pageTitle('Lançamento'),
+        loadComponent: () => import('./features/financeiro/lancamentos/ficha/lancamento-ficha').then((m) => m.LancamentoFicha),
+      },
+      {
         path: 'financeiro/convenios',
         title: pageTitle('Convênios'),
         loadComponent: () => import('./features/financeiro/convenios/lista/convenios-lista').then((m) => m.ConveniosLista),

@@ -1,0 +1,156 @@
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">Financeiro</p>
+    <h1 class="page-title">Lançamentos</h1>
+    <p class="page-subtitle">A cobrança mensal: cada lançamento gera os débitos de convênios, planos e acordos. Abra a ficha para ver o que foi pago, o que falta e os atrasados.</p>
+  </div>
+  <div class="page-header__actions">
+    <a class="btn btn--primary" routerLink="/financeiro/lancamentos/novo"><app-icon name="plus" /> Novo lançamento</a>
+  </div>
+</header>
+
+@if (aviso(); as a) {
+  <div class="aviso" role="status"><app-icon name="check-circle" /> {{ a }} <button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
+}
+
+@if (aberto(); as a) {
+  @let fa = fatias(a.valores);
+  <section class="aberto card" aria-labelledby="t-aberto">
+    <div class="aberto__cab">
+      <div>
+        <p class="aberto__eyebrow"><span class="ponto" aria-hidden="true"></span> Em andamento</p>
+        <h2 id="t-aberto" class="aberto__titulo">Lançamento NSA {{ a.nsa }}</h2>
+        <p class="aberto__meta">Gerado em {{ a.dataGeracao | date: "dd/MM/yyyy 'às' HH:mm" }} · {{ a.valores.debitos }} débitos de {{ a.associados }} associados</p>
+      </div>
+      <a class="btn btn--secondary" [routerLink]="['/financeiro/lancamentos', a.id]">Abrir ficha <app-icon name="arrow-right" /></a>
+    </div>
+    <dl class="aberto__valores">
+      <div><dt>Total</dt><dd>{{ a.valores.total | currency: 'BRL' }}</dd></div>
+      <div><dt><span class="legenda legenda--pago"></span>Pago</dt><dd>{{ a.valores.pago | currency: 'BRL' }}</dd></div>
+      <div><dt><span class="legenda legenda--receber"></span>A receber</dt><dd>{{ a.valores.aReceber | currency: 'BRL' }}</dd></div>
+      <div><dt><span class="legenda legenda--atraso"></span>Atrasado</dt><dd>{{ a.valores.atrasado | currency: 'BRL' }}</dd></div>
+    </dl>
+    <div class="barra" role="img" [attr.aria-label]="pct(a.valores) + '% recebido'">
+      <span class="barra__pago" [style.width.%]="fa.pago"></span>
+      <span class="barra__receber" [style.width.%]="fa.aReceber"></span>
+      <span class="barra__atraso" [style.width.%]="fa.atrasado"></span>
+    </div>
+  </section>
+} @else if (abertoCarregado()) {
+  <div class="sem-aberto card">
+    <app-icon name="info" />
+    <p>Nenhum lançamento aberto. Quando for a hora da cobrança do mês, inicie um novo — a tela mostra antes o que será gerado.</p>
+  </div>
+}
+
+<section class="card table-card" aria-labelledby="titulo-lancamentos">
+  <h2 id="titulo-lancamentos" class="sr-only">Lista de lançamentos</h2>
+  <div class="toolbar">
+    <div class="chips" role="group" aria-label="Situação">
+      @for (s of situacoes; track s.key) {
+        <button type="button" class="chip" [class.is-active]="situacao() === s.key" [attr.aria-pressed]="situacao() === s.key" (click)="setSituacao(s.key)">{{ s.rotulo }}</button>
+      }
+    </div>
+    <label class="sr-only" for="f-ano">Ano</label>
+    <select id="f-ano" class="field__input filtro-ano" (change)="onAno($event)">
+      <option value="" [selected]="ano() === null">Todos os anos</option>
+      @for (a of anos; track a) {
+        <option [value]="a" [selected]="ano() === a">{{ a }}</option>
+      }
+    </select>
+  </div>
+
+  @if (carregando() && pagina()) {
+    <div class="loading-bar" role="progressbar" aria-label="Carregando"></div>
+  }
+
+  @if (erro(); as kind) {
+    <app-load-error [kind]="kind" (retry)="recarregar()" />
+  } @else if (!carregando() && pagina()?.empty) {
+    <div class="state">
+      <span class="state__icon"><app-icon name="receipt" /></span>
+      <p class="state__title">Nenhum lançamento encontrado</p>
+      @if (temFiltros()) {
+        <button type="button" class="btn btn--secondary" (click)="limpar()">Limpar filtros</button>
+      }
+    </div>
+  } @else {
+    <div class="table-scroll">
+      <table class="data-table" [class.is-stale]="carregando() && !!pagina()" [attr.aria-busy]="carregando()">
+        <thead>
+          <tr>
+            <th scope="col">Lançamento</th>
+            <th scope="col">Situação</th>
+            <th scope="col" class="num">Débitos</th>
+            <th scope="col" class="num">Total</th>
+            <th scope="col" class="num">Pago</th>
+            <th scope="col" class="num">A receber</th>
+            <th scope="col" class="num">Atrasado</th>
+            <th scope="col" class="col-recebido">Recebido</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (pagina(); as pg) {
+            @for (l of pg.content; track l.id) {
+              @let fl = fatias(l.valores);
+              <tr>
+                <td>
+                  <a class="nome" [routerLink]="['/financeiro/lancamentos', l.id]">NSA {{ l.nsa }}</a>
+                  <span class="sub">{{ l.dataGeracao | date: 'dd/MM/yyyy' }} · {{ l.associados }} associados</span>
+                </td>
+                <td>
+                  @if (l.fechado) {
+                    <span class="situacao is-off">Fechado</span>
+                    <span class="sub">{{ l.dataFechamento | date: 'dd/MM/yyyy' }}</span>
+                  } @else {
+                    <span class="situacao">Aberto</span>
+                  }
+                </td>
+                <td class="num">{{ l.valores.debitos }}</td>
+                <td class="num">{{ l.valores.total | currency: 'BRL' }}</td>
+                <td class="num">{{ l.valores.pago | currency: 'BRL' }}</td>
+                <td class="num">{{ l.valores.aReceber > 0 ? (l.valores.aReceber | currency: 'BRL') : '—' }}</td>
+                <td class="num" [class.atraso]="l.valores.atrasado > 0">{{ l.valores.atrasado > 0 ? (l.valores.atrasado | currency: 'BRL') : '—' }}</td>
+                <td class="col-recebido">
+                  <div class="mini">
+                    <div class="barra barra--mini" aria-hidden="true">
+                      <span class="barra__pago" [style.width.%]="fl.pago"></span>
+                      <span class="barra__receber" [style.width.%]="fl.aReceber"></span>
+                      <span class="barra__atraso" [style.width.%]="fl.atrasado"></span>
+                    </div>
+                    <span class="mini__pct">{{ pct(l.valores) }}%</span>
+                  </div>
+                </td>
+              </tr>
+            }
+          } @else {
+            @for (r of skeleton; track r) {
+              <tr aria-hidden="true">
+                <td><span class="skeleton" style="width: 7rem"></span></td>
+                <td><span class="skeleton" style="width: 4rem"></span></td>
+                @for (c of [0, 1, 2, 3, 4]; track c) {
+                  <td><span class="skeleton" style="width: 5rem"></span></td>
+                }
+                <td><span class="skeleton" style="width: 6rem"></span></td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (pagina(); as pg) {
+      <app-pagination
+        [page]="pg.number"
+        [size]="pg.size"
+        [total]="pg.totalElements"
+        [totalPages]="pg.totalPages"
+        [first]="pg.first"
+        [last]="pg.last"
+        [sizeOptions]="url.sizeOptions"
+        itemLabel="lançamentos"
+        (pageChange)="url.setPage($event)"
+        (sizeChange)="url.setSize($event)"
+      />
+    }
+  }
+</section>

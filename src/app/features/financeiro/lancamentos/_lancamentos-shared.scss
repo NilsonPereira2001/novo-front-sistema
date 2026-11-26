@@ -1,0 +1,12 @@
+// Barra empilhada (pago · a receber · atrasado) e legendas, usada na lista e na ficha.
+.barra {
+  display: flex; height: 0.625rem; overflow: hidden; border-radius: 999px; background: var(--color-gray-100);
+  > span { height: 100%; }
+  > span + span { box-shadow: inset 2px 0 0 var(--color-surface); }
+}
+.barra--mini { flex: 1; height: 0.4rem; }
+.barra__pago, .legenda--pago { background: var(--color-success); }
+.barra__receber, .legenda--receber { background: var(--color-primary); }
+.barra__atraso, .legenda--atraso { background: var(--color-danger); }
+.legenda--outros { background: var(--color-gray-400, #9aa3ae); }
+.legenda { display: inline-block; flex: none; width: 0.625rem; height: 0.625rem; border-radius: 3px; }

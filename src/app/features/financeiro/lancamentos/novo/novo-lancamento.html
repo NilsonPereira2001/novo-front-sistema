@@ -1,0 +1,125 @@
+<a class="back-link" routerLink="/financeiro/lancamentos"><app-icon name="arrow-left" /> Lançamentos</a>
+
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">Financeiro › Lançamentos</p>
+    <h1 class="page-title">Novo lançamento</h1>
+    <p class="page-subtitle">Confira o que será cobrado antes de gerar. Os valores são uma prévia: o lançamento usa os cadastros do momento em que for gerado.</p>
+  </div>
+</header>
+
+@if (erro(); as kind) {
+  <section class="card"><app-load-error [kind]="kind" (retry)="recarregar()" /></section>
+} @else if (previa(); as p) {
+  @if (p.aberto; as a) {
+    <div class="bloqueio card" role="alert">
+      <app-icon name="lock" />
+      <div>
+        <p><strong>O lançamento NSA {{ a.nsa }} ainda está aberto</strong> (gerado em {{ a.dataGeracao | date: 'dd/MM/yyyy' }}).</p>
+        <p>Feche-o antes de iniciar outro: no fechamento, o que não foi pago vira atraso e o crédito dos associados é abatido.</p>
+      </div>
+      <a class="btn btn--primary btn--sm" [routerLink]="['/financeiro/lancamentos', a.id]">Ir para o NSA {{ a.nsa }}</a>
+    </div>
+  }
+
+  <section class="tiles" aria-label="Resumo da prévia">
+    <article class="tile card tile--destaque">
+      <p class="tile__rotulo">Total previsto</p>
+      <p class="tile__valor">{{ p.totalPrevisto | currency: 'BRL' }}</p>
+      <p class="tile__sub">Novos débitos do mês</p>
+    </article>
+    <article class="tile card">
+      <p class="tile__rotulo">Próximo NSA</p>
+      <p class="tile__valor">{{ p.proximoNsa }}</p>
+      <p class="tile__sub">@if (p.ultimo; as u) { Último: NSA {{ u.nsa }} em {{ u.dataGeracao | date: 'dd/MM/yyyy' }} } @else { Primeiro lançamento }</p>
+    </article>
+    <article class="tile card">
+      <p class="tile__rotulo">Associados ativos</p>
+      <p class="tile__valor">{{ p.associadosAtivos }}</p>
+      <p class="tile__sub">Só associados ativos são cobrados</p>
+    </article>
+  </section>
+
+  <div class="grade">
+    <section class="card bloco" aria-labelledby="t-previstos">
+      <h2 class="bloco__titulo" id="t-previstos">O que será cobrado</h2>
+      @if (p.previstos.length === 0) {
+        <p class="vazio">Nada a cobrar: nenhum convênio fixo, acordo ou plano ativo.</p>
+      } @else {
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th scope="col">Item</th><th scope="col">Origem</th><th scope="col" class="num">Qtd.</th><th scope="col" class="num">Valor</th></tr></thead>
+            <tbody>
+              @for (i of p.previstos; track i.nome) {
+                <tr>
+                  <td>{{ i.nome }}</td>
+                  <td><span class="origem" [attr.data-tipo]="i.tipo">{{ rotuloOrigem[i.tipo] }}</span></td>
+                  <td class="num">{{ i.quantidade }}</td>
+                  <td class="num">{{ i.valor | currency: 'BRL' }}</td>
+                </tr>
+              }
+            </tbody>
+            <tfoot><tr><th scope="row" colspan="3">Total</th><td class="num"><strong>{{ p.totalPrevisto | currency: 'BRL' }}</strong></td></tr></tfoot>
+          </table>
+        </div>
+        <p class="nota">Convênio: adesões ativas a convênio ativo, fixo e com valor. Plano: valor pela faixa etária de cada vida. Acordo: uma parcela por acordo ativo.</p>
+      }
+    </section>
+
+    <section class="card bloco" aria-labelledby="t-pend">
+      <h2 class="bloco__titulo" id="t-pend">Pendências em aberto</h2>
+      <ul class="pendencias">
+        <li>
+          <span class="pendencias__rotulo">Voltam a ser cobradas neste lançamento</span>
+          <span class="pendencias__valor">{{ p.pendenciasRelancar }} · {{ p.valorRelancar | currency: 'BRL' }}</span>
+          <span class="sub">Convênios que relançam o débito não pago.</span>
+        </li>
+        <li>
+          <span class="pendencias__rotulo">Passam a "não debitado"</span>
+          <span class="pendencias__valor">{{ p.pendenciasNaoDebitar }} · {{ p.valorNaoDebitar | currency: 'BRL' }}</span>
+          <span class="sub">Convênios que não relançam: a dívida continua, mas fora do débito automático.</span>
+        </li>
+        <li>
+          <span class="pendencias__rotulo">Continuam em aberto</span>
+          <span class="pendencias__valor">{{ p.pendenciasSemConvenio }} · {{ p.valorSemConvenio | currency: 'BRL' }}</span>
+          <span class="sub">Parcelas de acordo, planos e avulsos atrasados.</span>
+        </li>
+      </ul>
+    </section>
+  </div>
+
+  <div class="acoes card">
+    <p>Ao gerar, os débitos ficam <strong>a receber</strong> até o fechamento. Depois você gera a remessa do débito em conta e dá baixa nos pagamentos.</p>
+    <button type="button" class="btn btn--primary" (click)="abrir()" [disabled]="!p.podeIniciar">
+      <app-icon name="plus" /> Gerar lançamento NSA {{ p.proximoNsa }}
+    </button>
+  </div>
+
+  <app-dialog titulo="Gerar lançamento" [open]="confirmando()" (closed)="confirmando.set(false)">
+    <div class="dlg">
+      <p>Gerar o lançamento <strong>NSA {{ p.proximoNsa }}</strong> com cerca de <strong>{{ p.totalPrevisto | currency: 'BRL' }}</strong> em novos débitos? Não dá para desfazer.</p>
+      @if (jaNoMes()) {
+        <app-alert tone="warning">Já existe um lançamento gerado este mês (NSA {{ p.ultimo?.nsa }}, em {{ p.ultimo?.dataGeracao | date: 'dd/MM/yyyy' }}). Gerar outro cobra o mês de novo.</app-alert>
+        <label class="check">
+          <input type="checkbox" [checked]="cienteMes()" (change)="cienteMes.set(!cienteMes())" />
+          <span>Entendo e quero gerar mesmo assim</span>
+        </label>
+      }
+      @if (erroAcao()) {
+        <app-alert tone="danger">{{ erroAcao() }}</app-alert>
+      }
+    </div>
+    <div dialog-actions>
+      <button type="button" class="btn btn--secondary btn--sm" (click)="confirmando.set(false)" [disabled]="gerando()">Cancelar</button>
+      <button type="button" class="btn btn--primary btn--sm" (click)="iniciar()" [disabled]="gerando() || (jaNoMes() && !cienteMes())">
+        @if (gerando()) { <span class="spinner" aria-hidden="true"></span> Gerando… } @else { Gerar lançamento }
+      </button>
+    </div>
+  </app-dialog>
+} @else {
+  <section class="tiles" aria-busy="true">
+    @for (i of [0, 1, 2]; track i) {
+      <div class="tile card"><span class="skeleton" style="width: 8rem"></span><span class="skeleton" style="width: 6rem; height: 1.5rem"></span></div>
+    }
+  </section>
+}

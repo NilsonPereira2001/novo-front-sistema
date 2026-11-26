@@ -234,6 +234,16 @@ Código em `features/financeiro/dashboard/`. Endpoint `GET financeiro/dashboard?
 - **Gráficos:** as barras e as cores das séries (`--viz-serie-1..4`, validadas para daltonismo) ficam em `shared/components/charts/`.
 - **Testes:** `dashboard-api.spec.ts`.
 
+### Financeiro › Lançamentos (`/financeiro/lancamentos`)
+
+Código em `features/financeiro/lancamentos/`. Endpoints do `LancamentoAdminController` (PR #8), permissão `FINANCEIRO_LANCAMENTOS` (criada na subida do back).
+
+- **Ciclo:** gerar (débitos do mês ficam *a receber*) → remessa do débito em conta → baixas → fechar (o que não foi pago vira *atrasado* e o crédito dos associados é abatido, dos débitos mais antigos para os mais novos). Só um lançamento aberto por vez (409).
+- **Lista:** o lançamento aberto em destaque; tabela paginada com total, pago, a receber, atrasado e % recebido; filtros de situação e ano.
+- **Novo:** prévia do que será cobrado (convênios ativos/fixos/com valor, parcelas de acordo, planos pela faixa etária) e do destino das pendências (relançadas, não debitadas, continuam em aberto). Pede confirmação extra se já houve lançamento no mês.
+- **Ficha:** valores com barra de recebimento, composição por item, pendências relançadas, débito em conta (gerar remessa Caixa SIACC 150 com data do débito; baixar arquivos já gerados) e débitos paginados por situação, com busca e link para a ficha financeira do associado.
+- Situações: *a receber* = EM TRANSAÇÃO ATUAL; *atrasado* = EM ABERTO + NÃO DEBITADO; cancelados ficam fora do total.
+
 ### Financeiro › Convênios (`/financeiro/convenios`)
 
 Código em `features/financeiro/convenios/`. Endpoints do `ConvenioAdminController` (PR #8), permissão `FINANCEIRO_CONVENIOS`.

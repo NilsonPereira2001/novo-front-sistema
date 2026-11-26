@@ -101,8 +101,8 @@ export const NAVIGATION: readonly NavGroup[] = [
         label: 'Lançamentos',
         path: 'financeiro/lancamentos',
         icon: 'receipt',
-        description: 'Registro das movimentações financeiras',
-        available: false,
+        description: 'Cobrança mensal: gerar, acompanhar, remessa e fechamento',
+        available: true,
       },
       {
         label: 'Débitos',

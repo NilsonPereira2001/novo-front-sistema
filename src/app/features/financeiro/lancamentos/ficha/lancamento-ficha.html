@@ -1,0 +1,285 @@
+<a class="back-link" routerLink="/financeiro/lancamentos"><app-icon name="arrow-left" /> Lançamentos</a>
+
+@if (erro(); as kind) {
+  <section class="card"><app-load-error [kind]="kind" (retry)="recarregar()" /></section>
+} @else if (f(); as f) {
+  @let l = f.lancamento;
+  @let v = l.valores;
+  @let fa = fatias(v);
+  <header class="cabecalho card">
+    <div>
+      <p class="page-eyebrow">Financeiro › Lançamento</p>
+      <h1 class="page-title">NSA {{ l.nsa }}</h1>
+      <p class="cabecalho__meta">
+        <span class="situacao" [class.is-off]="l.fechado">{{ l.fechado ? 'Fechado' : 'Aberto' }}</span>
+        <span>Gerado em {{ l.dataGeracao | date: "dd/MM/yyyy 'às' HH:mm" }}</span>
+        @if (l.fechado) { <span>Fechado em {{ l.dataFechamento | date: 'dd/MM/yyyy' }}</span> }
+        <span>{{ v.debitos }} débitos · {{ l.associados }} associados</span>
+      </p>
+    </div>
+    <div class="cabecalho__acoes">
+      @if (f.remessa.debitosDebitoConta > 0) {
+        <button type="button" class="btn btn--secondary" (click)="abrir('remessa')"><app-icon name="download" /> Gerar remessa</button>
+      }
+      @if (!l.fechado) {
+        <button type="button" class="btn btn--primary" (click)="abrir('fechar')"><app-icon name="lock" /> Fechar lançamento</button>
+      }
+    </div>
+  </header>
+
+  @if (aviso(); as a) {
+    <div class="aviso"><app-alert tone="success">{{ a }}</app-alert><button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
+  }
+
+  <section class="card valores" aria-labelledby="t-valores">
+    <h2 class="sr-only" id="t-valores">Valores do lançamento</h2>
+    <dl class="valores__lista">
+      <div class="valores__item valores__item--total">
+        <dt>Total lançado</dt>
+        <dd>{{ v.total | currency: 'BRL' }}</dd>
+        <p>{{ v.debitos }} débitos</p>
+      </div>
+      <div class="valores__item">
+        <dt><span class="legenda legenda--pago"></span>Pago</dt>
+        <dd>{{ v.pago | currency: 'BRL' }}</dd>
+        <p>{{ pct(v) }}% · {{ v.debitosPagos }} débitos</p>
+      </div>
+      <div class="valores__item">
+        <dt><span class="legenda legenda--receber"></span>A receber</dt>
+        <dd>{{ v.aReceber | currency: 'BRL' }}</dd>
+        <p>{{ l.fechado ? 'Lançamento fechado' : 'Aguardando pagamento' }}</p>
+      </div>
+      <div class="valores__item">
+        <dt><span class="legenda legenda--atraso"></span>Atrasado</dt>
+        <dd [class.atraso]="v.atrasado > 0">{{ v.atrasado | currency: 'BRL' }}</dd>
+        <p>Em aberto ou não debitado</p>
+      </div>
+    </dl>
+    <div class="barra" role="img" [attr.aria-label]="pct(v) + '% recebido'">
+      <span class="barra__pago" [style.width.%]="fa.pago"></span>
+      <span class="barra__receber" [style.width.%]="fa.aReceber"></span>
+      <span class="barra__atraso" [style.width.%]="fa.atrasado"></span>
+    </div>
+    @if (v.anistiado > 0 || v.renegociado > 0 || v.cancelado > 0) {
+      <p class="valores__outros">
+        @if (v.anistiado > 0) { <span>Anistiado {{ v.anistiado | currency: 'BRL' }}</span> }
+        @if (v.renegociado > 0) { <span>Renegociado {{ v.renegociado | currency: 'BRL' }}</span> }
+        @if (v.cancelado > 0) { <span>Cancelado {{ v.cancelado | currency: 'BRL' }} (fora do total)</span> }
+      </p>
+    }
+  </section>
+
+  <div class="grade">
+    <section class="card bloco" aria-labelledby="t-origem">
+      <h2 class="bloco__titulo" id="t-origem">Composição</h2>
+      @if (f.porOrigem.length === 0) {
+        <p class="vazio">Nenhum débito neste lançamento.</p>
+      } @else {
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr><th scope="col">Item</th><th scope="col" class="num">Qtd.</th><th scope="col" class="num">Total</th><th scope="col" class="num">Pago</th><th scope="col" class="num">Pendente</th></tr>
+            </thead>
+            <tbody>
+              @for (o of f.porOrigem; track o.nome) {
+                <tr>
+                  <td>{{ o.nome }}<span class="sub">{{ rotuloOrigem[o.tipo] }}</span></td>
+                  <td class="num">{{ o.quantidade }}</td>
+                  <td class="num">{{ o.total | currency: 'BRL' }}</td>
+                  <td class="num">{{ o.pago | currency: 'BRL' }}</td>
+                  <td class="num" [class.atraso]="o.pendente > 0 && l.fechado">{{ o.pendente > 0 ? (o.pendente | currency: 'BRL') : '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+      @if (f.porTipo.length) {
+        <p class="nota">
+          @for (t of f.porTipo; track t.status; let last = $last) {
+            {{ t.status === 'FIXO' ? 'Fixos' : t.status === 'AVULSO' ? 'Avulsos' : t.status }}: {{ t.quantidade }} · {{ t.valor | currency: 'BRL' }}@if (!last) { &nbsp;·&nbsp; }
+          }
+        </p>
+      }
+    </section>
+
+    <div class="coluna">
+      <section class="card bloco" aria-labelledby="t-remessa">
+        <h2 class="bloco__titulo" id="t-remessa">Débito em conta</h2>
+        @if (f.remessa.debitosDebitoConta > 0) {
+          <p class="linha"><span>Débitos pendentes para a remessa</span><strong>{{ f.remessa.debitosDebitoConta }} · {{ f.remessa.valor | currency: 'BRL' }}</strong></p>
+          @if (f.remessa.semConta > 0) {
+            <app-alert tone="warning">{{ f.remessa.semConta }} {{ f.remessa.semConta === 1 ? 'associado está' : 'associados estão' }} sem agência, conta ou operação. Corrija o cadastro antes de gerar a remessa.</app-alert>
+          }
+        } @else {
+          <p class="vazio vazio--esq">Nenhum débito em conta pendente neste lançamento.</p>
+        }
+        <h3 class="bloco__sub">Arquivos gerados</h3>
+        @if (f.arquivos.length === 0) {
+          <p class="vazio vazio--esq">Nenhuma remessa gerada ainda.</p>
+        } @else {
+          <ul class="arquivos">
+            @for (a of f.arquivos; track a.id) {
+              <li>
+                <app-icon name="file-text" />
+                <div class="arquivos__info">
+                  <span class="arquivos__nome">{{ a.nome }}</span>
+                  <span class="sub">
+                    {{ a.dataGeracao | date: 'dd/MM/yyyy HH:mm' }}@if (a.usuario) { · {{ a.usuario }} }
+                    · {{ a.registros }} registros · {{ tamanho(a.tamanho) }}@if (a.dataDebito) { · débito em {{ a.dataDebito | date: 'dd/MM/yyyy' }} }
+                  </span>
+                </div>
+                <button type="button" class="btn btn--secondary btn--sm" (click)="baixar(f, a.id, a.nome)" [disabled]="baixando() !== null" [attr.aria-label]="'Baixar ' + a.nome">
+                  @if (baixando() === a.id) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="download" /> }
+                </button>
+              </li>
+            }
+          </ul>
+        }
+        @if (erroArquivo()) { <app-alert tone="danger">{{ erroArquivo() }}</app-alert> }
+      </section>
+
+      @if (f.relancados.quantidade > 0) {
+        <section class="card bloco" aria-labelledby="t-rel">
+          <h2 class="bloco__titulo" id="t-rel">Pendências relançadas</h2>
+          <p class="nota">Débitos de lançamentos anteriores cobrados de novo neste (não entram no total acima).</p>
+          <p class="linha"><span>Relançados</span><strong>{{ f.relancados.quantidade }} · {{ f.relancados.valor | currency: 'BRL' }}</strong></p>
+          <p class="linha"><span>Pagos</span><strong>{{ f.relancados.pago | currency: 'BRL' }}</strong></p>
+          <p class="linha"><span>Ainda pendentes</span><strong [class.atraso]="f.relancados.pendente > 0">{{ f.relancados.pendente | currency: 'BRL' }}</strong></p>
+          <button type="button" class="link-button" (click)="setEscopo('RELANCADOS')">Ver os relançados</button>
+        </section>
+      }
+    </div>
+  </div>
+
+  <section class="card bloco" aria-labelledby="t-debitos">
+    <header class="bloco__cab">
+      <h2 class="bloco__titulo" id="t-debitos">Débitos</h2>
+      @if (f.relancados.quantidade > 0) {
+        <div class="segmented" role="group" aria-label="Quais débitos">
+          <button type="button" class="segmented__item" [class.is-active]="escopo() === 'GERADOS'" (click)="setEscopo('GERADOS')">Deste lançamento</button>
+          <button type="button" class="segmented__item" [class.is-active]="escopo() === 'RELANCADOS'" (click)="setEscopo('RELANCADOS')">Relançados ({{ f.relancados.quantidade }})</button>
+        </div>
+      }
+    </header>
+    <div class="filtros">
+      <div class="chips" role="group" aria-label="Situação do débito">
+        @for (g of grupos; track g.key) {
+          <button type="button" class="chip" [class.is-active]="grupo() === g.key" [attr.aria-pressed]="grupo() === g.key" (click)="setGrupo(g.key)">{{ g.rotulo }}</button>
+        }
+      </div>
+      <label class="sr-only" for="deb-busca">Buscar débito</label>
+      <input id="deb-busca" class="field__input busca" type="search" placeholder="Associado, CPF, matrícula ou item" (input)="buscar($event)" />
+    </div>
+
+    @if (pagina(); as pg) {
+      @if (pg.content.length === 0) {
+        <p class="vazio">Nenhum débito {{ grupo() ? 'nesta situação' : '' }}{{ busca() ? ' para "' + busca() + '"' : '' }}.</p>
+      } @else {
+        <div class="table-scroll">
+          <table class="data-table" [class.is-stale]="debitos().status === 'loading'" [attr.aria-busy]="debitos().status === 'loading'">
+            <thead>
+              <tr>
+                <th scope="col">Associado</th>
+                <th scope="col">Débito</th>
+                <th scope="col" class="num">Valor</th>
+                <th scope="col">Situação</th>
+                <th scope="col">Pagamento</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (d of pg.content; track d.id) {
+                <tr>
+                  <td>
+                    <a class="nome" [routerLink]="['/financeiro/associados', d.idAssociado]">{{ d.nome }}</a>
+                    <span class="sub cell-mono">{{ d.cpf | cpf }}@if (d.matricula) { · mat. {{ d.matricula }} }</span>
+                    @if (d.formaAssociado) { <span class="sub">{{ d.formaAssociado }}</span> }
+                  </td>
+                  <td>
+                    {{ d.descricao }}
+                    <span class="sub">{{ rotuloOrigem[d.origem] }}@if (escopo() === 'RELANCADOS' && d.nsaOrigem) { · do NSA {{ d.nsaOrigem }} }</span>
+                  </td>
+                  <td class="num">
+                    {{ d.valor | currency: 'BRL' }}
+                    @if (d.valorBase !== null && d.valorBase !== d.valor) {
+                      <span class="sub" title="Valor original">orig. {{ d.valorBase | number: '1.2-2' }}</span>
+                    }
+                  </td>
+                  <td><span class="selo" [attr.data-tom]="tomStatus(d.status)">{{ rotuloStatus(d.status) }}</span></td>
+                  <td>
+                    @if (d.dataPagamento) {
+                      {{ d.dataPagamento | date: 'dd/MM/yyyy' }}
+                      @if (d.formaPagamento) { <span class="sub">{{ d.formaPagamento }}</span> }
+                    } @else { — }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <app-pagination
+          [page]="pg.number"
+          [size]="pg.size"
+          [total]="pg.totalElements"
+          [totalPages]="pg.totalPages"
+          [first]="pg.first"
+          [last]="pg.last"
+          [sizeOptions]="[20, 50, 100]"
+          itemLabel="débitos"
+          (pageChange)="paginaDeb.set($event)"
+          (sizeChange)="setTamanho($event)"
+        />
+      }
+    } @else if (debitos().status === 'error') {
+      <p class="vazio">Não foi possível carregar os débitos.</p>
+    } @else {
+      <span class="skeleton" style="width: 100%"></span><span class="skeleton" style="width: 90%"></span>
+    }
+  </section>
+
+  <app-dialog [titulo]="dialogo() === 'fechar' ? 'Fechar lançamento NSA ' + l.nsa : 'Gerar remessa · Caixa'" [open]="dialogo() !== null" (closed)="dialogo.set(null)">
+    <div class="dlg">
+      @if (dialogo() === 'fechar') {
+        @if (f.fechamento; as fe) {
+          <p>Ao fechar:</p>
+          <ul class="dlg__lista">
+            <li><strong>{{ fe.debitos }} débitos a receber ({{ fe.valor | currency: 'BRL' }})</strong> que não foram pagos passam a <strong>atrasado</strong>.</li>
+            @if (fe.associadosComCredito > 0) {
+              <li>O crédito de <strong>{{ fe.associadosComCredito }} associados</strong> ({{ fe.creditoDisponivel | currency: 'BRL' }}) é abatido dos débitos pendentes, dos mais antigos para os mais novos.</li>
+            }
+            <li>Depois de fechado, um novo lançamento pode ser gerado.</li>
+          </ul>
+          <p class="dlg__aviso">Confira antes se as baixas do retorno do banco já foram feitas. Não dá para reabrir.</p>
+        }
+      } @else if (dialogo() === 'remessa') {
+        <p>Arquivo SIACC 150 da Caixa com <strong>{{ f.remessa.debitosDebitoConta }} débitos ({{ f.remessa.valor | currency: 'BRL' }})</strong> de associados em débito em conta.</p>
+        @if (!f.remessa.disponivel) {
+          <app-alert tone="warning">A Caixa (banco 104) não está cadastrada nos bancos do sistema.</app-alert>
+        }
+        @if (f.remessa.semConta > 0) {
+          <app-alert tone="warning">{{ f.remessa.semConta }} associados sem dados bancários completos: a remessa será recusada até corrigir.</app-alert>
+        }
+        <div class="field">
+          <label class="field__label" for="data-debito">Data do débito</label>
+          <input id="data-debito" class="field__input" type="date" [min]="hoje" [value]="dataDebito()" (input)="dataDebito.set($any($event.target).value)" />
+          <p class="field__hint">Dia em que o banco vai debitar. Sugerido: próximo dia útil.</p>
+        </div>
+      }
+      @if (erroAcao()) { <app-alert tone="danger">{{ erroAcao() }}</app-alert> }
+    </div>
+    <div dialog-actions>
+      <button type="button" class="btn btn--secondary btn--sm" (click)="dialogo.set(null)" [disabled]="executando()">Cancelar</button>
+      @if (dialogo() === 'fechar') {
+        <button type="button" class="btn btn--primary btn--sm" (click)="fechar(f)" [disabled]="executando()">
+          @if (executando()) { <span class="spinner" aria-hidden="true"></span> Fechando… } @else { Fechar lançamento }
+        </button>
+      } @else {
+        <button type="button" class="btn btn--primary btn--sm" (click)="gerarRemessa(f)" [disabled]="executando() || !dataDebito() || dataDebito() < hoje || f.remessa.semConta > 0 || !f.remessa.disponivel">
+          @if (executando()) { <span class="spinner" aria-hidden="true"></span> Gerando… } @else { Gerar e baixar }
+        </button>
+      }
+    </div>
+  </app-dialog>
+} @else {
+  <section class="cabecalho card" aria-busy="true"><span class="skeleton" style="width: 12rem; height: 1.75rem"></span></section>
+}
