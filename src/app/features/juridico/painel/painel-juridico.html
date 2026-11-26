@@ -132,7 +132,7 @@
       <header class="bloco__cab">
         <div>
           <h2 class="bloco__titulo" id="t-advogados">Advogados</h2>
-          <p class="bloco__sub">Carteira de processos, atendimentos em {{ mesAtual }} e agenda de cada advogado ativo.</p>
+          <p class="bloco__sub">Carteira de processos, atendimentos em {{ mesAtual }} e agenda de cada advogado ativo. Clique no nome para abrir o painel dele.</p>
         </div>
       </header>
       @if (d.advogados.length === 0) {
@@ -154,7 +154,7 @@
             <tbody>
               @for (a of d.advogados; track a.id) {
                 <tr>
-                  <th scope="row">{{ a.nome }}@if (a.oab) { <span class="sub">OAB {{ a.oab }}</span> }</th>
+                  <th scope="row"><a [routerLink]="['/juridico/advogados', a.id, 'painel']" [attr.aria-label]="'Abrir o painel de ' + a.nome">{{ a.nome }}</a>@if (a.oab) { <span class="sub">OAB {{ a.oab }}</span> }</th>
                   <td class="num">
                     @if (a.processos) {
                       <a [routerLink]="['/juridico/processos']" [queryParams]="{ responsavel: a.id }">{{ a.processosAtivos }}</a>

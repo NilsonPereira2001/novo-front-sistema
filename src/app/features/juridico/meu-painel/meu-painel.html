@@ -1,0 +1,338 @@
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">{{ proprio() ? 'Jurídico · Meu painel' : 'Jurídico · Painel do advogado' }}</p>
+    <h1 class="page-title">{{ titulo() }}</h1>
+    @if (dados(); as d) {
+      <p class="page-subtitle">
+        {{ d.advogado.cargo ?? 'Advogado(a)' }}@if (d.advogado.oab) { · OAB {{ d.advogado.oab }} }
+        @if (d.advogado.dataAdmissao) { · na equipe desde {{ dia(d.advogado.dataAdmissao) | date: 'MM/yyyy' }} }
+        @if (d.advogado.status && d.advogado.status !== 'ATIVO') { · <strong class="alerta">{{ d.advogado.status }}</strong> }
+      </p>
+    } @else if (!naoEhAdvogado()) {
+      <p class="page-subtitle">Seu dia, seus processos e sua evolução.</p>
+    }
+  </div>
+  <div class="page-header__actions">
+    @if (!proprio()) {
+      <a class="btn btn--secondary" routerLink="/juridico/painel"><app-icon name="arrow-left" /> Painel jurídico</a>
+    }
+    @if (dados(); as d) {
+      <a class="btn btn--secondary" routerLink="/juridico/atendimentos" [queryParams]="{ colaborador: d.advogado.idFuncionario }">
+        <app-icon name="calendar" /> Agenda
+      </a>
+      <a class="btn btn--secondary" routerLink="/juridico/processos" [queryParams]="{ responsavel: d.advogado.idFuncionario }">
+        <app-icon name="scale" /> {{ proprio() ? 'Meus processos' : 'Processos' }}
+      </a>
+    }
+    <button type="button" class="btn btn--secondary" (click)="recarregar()" aria-label="Atualizar painel">
+      <app-icon name="refresh-cw" />
+    </button>
+  </div>
+</header>
+
+@if (naoEhAdvogado()) {
+  <section class="card state">
+    <span class="state__icon"><app-icon name="briefcase" /></span>
+    <p class="state__title">Este painel é para advogados</p>
+    <p class="state__text">
+      Seu usuário não está ligado a um colaborador ativo com cargo de advogado(a). Se isso estiver errado,
+      peça para ajustarem o seu cadastro em Colaboradores.
+    </p>
+    <a class="btn btn--secondary" routerLink="/juridico/painel">Ir para o painel jurídico</a>
+  </section>
+} @else if (erro(); as kind) {
+  <section class="card"><app-load-error [kind]="kind" (retry)="recarregar()" /></section>
+} @else if (dados(); as d) {
+  <div class="conteudo" [class.is-stale]="recarregando()" [attr.aria-busy]="recarregando()">
+    <!-- Indicadores -->
+    <section class="tiles" aria-label="Indicadores">
+      <a class="tile card tile--link" routerLink="/juridico/processos" [queryParams]="{ responsavel: d.advogado.idFuncionario }">
+        <p class="tile__rotulo">Processos sob responsabilidade</p>
+        <p class="tile__valor">{{ d.totais.processosAtivos }}</p>
+        <p class="tile__sub">ativos de {{ d.totais.processos }} · {{ d.totais.processosNoMes }} novos este mês</p>
+      </a>
+      <article class="tile card">
+        <p class="tile__rotulo">Processos parados</p>
+        <p class="tile__valor" [class.tile__valor--alerta]="d.totais.processosParados > 0">{{ d.totais.processosParados }}</p>
+        <p class="tile__sub">Ativos sem movimentação há mais de 180 dias</p>
+      </article>
+      <article class="tile card">
+        <p class="tile__rotulo">Movimentações</p>
+        <p class="tile__valor">{{ d.totais.movimentacoes30Dias }}</p>
+        <p class="tile__sub">Nos processos {{ proprio() ? 'seus' : 'dele' }}, últimos 30 dias</p>
+      </article>
+      <article class="tile card">
+        <p class="tile__rotulo">Audiências</p>
+        <p class="tile__valor">{{ d.totais.audiencias30Dias }}</p>
+        <p class="tile__sub">Nos próximos 30 dias</p>
+      </article>
+      <a class="tile card tile--link" routerLink="/juridico/atendimentos" [queryParams]="{ colaborador: d.advogado.idFuncionario }">
+        <p class="tile__rotulo">Atendimentos hoje</p>
+        <p class="tile__valor">{{ d.totais.atendimentosHoje }}</p>
+        <p class="tile__sub">Lista abaixo · abrir agenda</p>
+      </a>
+      <article class="tile card">
+        <p class="tile__rotulo">Agendados</p>
+        <p class="tile__valor">{{ d.totais.agendadosFuturos }}</p>
+        <p class="tile__sub">
+          Daqui em diante
+          @if (d.totais.agendadosSemBaixa) { · <span class="alerta">{{ d.totais.agendadosSemBaixa }} sem baixa</span> }
+        </p>
+      </article>
+      <article class="tile card">
+        <p class="tile__rotulo">Atendidos em {{ mesAtual }}</p>
+        <p class="tile__valor">{{ d.totais.atendidosNoMes }}</p>
+        @if (varAtendidos(); as v) {
+          <p class="tile__sub"><span class="var" [attr.data-dir]="v.direcao">{{ v.texto }}</span></p>
+        }
+      </article>
+      <article class="tile card">
+        <p class="tile__rotulo">Ranking do mês</p>
+        <p class="tile__valor">
+          @if (d.totais.posicaoRanking !== null) { {{ d.totais.posicaoRanking }}º } @else { — }
+        </p>
+        <p class="tile__sub">{{ ranking() }}</p>
+      </article>
+    </section>
+
+    <!-- O dia -->
+    <div class="grade-2">
+      <section class="card bloco" aria-labelledby="t-hoje">
+        <header class="bloco__cab">
+          <div>
+            <h2 class="bloco__titulo" id="t-hoje">Atendimentos de hoje</h2>
+            <p class="bloco__sub">{{ dia(hojeIso) | date: "EEEE, d 'de' MMMM" }}</p>
+          </div>
+          <a class="link-button" routerLink="/juridico/atendimentos" [queryParams]="{ colaborador: d.advogado.idFuncionario }">Ver agenda</a>
+        </header>
+        @if (d.atendimentosHoje.length === 0) {
+          <p class="vazio">Nenhum atendimento para hoje.</p>
+        } @else {
+          <ol class="atend">
+            @for (a of d.atendimentosHoje; track a.id) {
+              @let s = situacao(a);
+              <li class="atend__item" [attr.data-situacao]="s">
+                <span class="atend__hora">
+                  <strong class="cell-mono">{{ hora(a.dataHora) }}</strong>
+                  <span class="situacao" [attr.data-situacao]="s">{{ rotuloSituacao[s] }}</span>
+                </span>
+                <span class="atend__info">
+                  <span class="atend__nome">
+                    @if (idPessoa(a); as idp) {
+                      <a [routerLink]="['/juridico/pessoas', idp]">{{ nomes(a) }}</a>
+                    } @else {
+                      {{ nomes(a) }}
+                    }
+                  </span>
+                  <small>{{ a.tipo ?? 'Atendimento' }}@if (a.area) { · {{ a.area }} }@if (a.modalidade) { · {{ a.modalidade }} }</small>
+                  @if (a.assunto) { <small class="atend__assunto">{{ a.assunto }}</small> }
+                </span>
+                @if (podeRegistrar(a)) {
+                  <a class="btn btn--primary btn--sm" [routerLink]="['/juridico/atendimentos', a.id, 'realizar']">Registrar</a>
+                }
+              </li>
+            }
+          </ol>
+        }
+      </section>
+
+      <section class="card bloco" aria-labelledby="t-proximos">
+        <header class="bloco__cab">
+          <div>
+            <h2 class="bloco__titulo" id="t-proximos">Próximos atendimentos</h2>
+            <p class="bloco__sub">Agendados nos próximos 14 dias{{ d.proximosAtendimentos.length === 10 ? ' (os 10 primeiros)' : '' }}.</p>
+          </div>
+        </header>
+        @if (d.proximosAtendimentos.length === 0) {
+          <p class="vazio">Nenhum atendimento agendado nos próximos dias.</p>
+        } @else {
+          <ol class="datas">
+            @for (a of d.proximosAtendimentos; track a.id) {
+              <li>
+                <span class="datas__dia">
+                  <strong>{{ dia(a.dataHora) | date: 'dd/MM' }}</strong>
+                  <small>{{ dia(a.dataHora) | date: 'EEE' }} {{ hora(a.dataHora) }}</small>
+                </span>
+                <span class="datas__info">
+                  @if (idPessoa(a); as idp) {
+                    <a [routerLink]="['/juridico/pessoas', idp]">{{ nomes(a) }}</a>
+                  } @else {
+                    <span class="datas__texto">{{ nomes(a) }}</span>
+                  }
+                  <small>{{ a.tipo ?? 'Atendimento' }}@if (a.assunto) { · {{ a.assunto }} }</small>
+                </span>
+              </li>
+            }
+          </ol>
+        }
+      </section>
+    </div>
+
+    <!-- Processos: movimentações e audiências -->
+    <div class="grade-2">
+      <section class="card bloco" aria-labelledby="t-movs">
+        <header class="bloco__cab">
+          <div>
+            <h2 class="bloco__titulo" id="t-movs">Últimas movimentações</h2>
+            <p class="bloco__sub">Nos processos sob {{ proprio() ? 'sua' : 'a' }} responsabilidade.</p>
+          </div>
+        </header>
+        @if (d.ultimasMovimentacoes.length === 0) {
+          <p class="vazio">Nenhuma movimentação registrada.</p>
+        } @else {
+          <ol class="movs">
+            @for (m of d.ultimasMovimentacoes; track $index) {
+              <li>
+                <span class="movs__data cell-mono">{{ (dia(m.data) | date: 'dd/MM/yy') ?? '—' }}</span>
+                <span class="movs__info">
+                  <a [routerLink]="['/juridico/processos', m.idProcesso]" class="cell-mono">{{ cnj(m.numeroProcesso) }}</a>
+                  @if (m.titulo) { <strong>{{ m.titulo }}</strong> }
+                  @if (m.resumo) { <small>{{ m.resumo }}</small> }
+                </span>
+              </li>
+            }
+          </ol>
+        }
+      </section>
+
+      <section class="card bloco" aria-labelledby="t-aud">
+        <header class="bloco__cab">
+          <div>
+            <h2 class="bloco__titulo" id="t-aud">Próximas audiências</h2>
+            <p class="bloco__sub">Próximos 30 dias{{ d.totais.audiencias30Dias > d.proximasAudiencias.length ? ' (as 10 primeiras)' : '' }}.</p>
+          </div>
+        </header>
+        @if (d.proximasAudiencias.length === 0) {
+          <p class="vazio">Nenhuma audiência nos próximos 30 dias.</p>
+        } @else {
+          <ol class="datas">
+            @for (a of d.proximasAudiencias; track $index) {
+              <li>
+                <span class="datas__dia">
+                  <strong>{{ dia(a.data) | date: 'dd/MM' }}</strong>
+                  <small>{{ dia(a.data) | date: 'EEE' }}</small>
+                </span>
+                <span class="datas__info">
+                  <a [routerLink]="['/juridico/processos', a.idProcesso]" class="cell-mono">{{ cnj(a.numeroProcesso) }}</a>
+                  <small>{{ a.tipo ?? 'Audiência' }}@if (a.situacao) { · {{ a.situacao }} }</small>
+                </span>
+              </li>
+            }
+          </ol>
+        }
+      </section>
+    </div>
+
+    <!-- Evolução -->
+    <section class="card bloco" aria-labelledby="t-evolucao">
+      <header class="bloco__cab bloco__cab--wrap">
+        <div>
+          <h2 class="bloco__titulo" id="t-evolucao">{{ proprio() ? 'Sua evolução' : 'Evolução' }}</h2>
+          <p class="bloco__sub">{{ tituloMetrica() }} · {{ somaMetrica() }} nos últimos {{ meses() }} meses.</p>
+        </div>
+        <div class="evolucao__filtros">
+          <div class="segmented" role="group" aria-label="O que mostrar">
+            @for (m of metricas; track m.key) {
+              <button type="button" class="segmented__item" [class.is-active]="metrica() === m.key" [attr.aria-pressed]="metrica() === m.key" (click)="metrica.set(m.key)">
+                {{ m.nome }}
+              </button>
+            }
+          </div>
+          <div class="segmented" role="group" aria-label="Período">
+            @for (p of periodos; track p) {
+              <button type="button" class="segmented__item" [class.is-active]="meses() === p" [attr.aria-pressed]="meses() === p" (click)="meses.set(p)">
+                {{ p }}m
+              </button>
+            }
+          </div>
+        </div>
+      </header>
+      <app-colunas-mensais [dados]="d.evolucao" [series]="serieAtual()" [titulo]="tituloMetrica()" vazio="Nenhum registro no período." />
+    </section>
+
+    <!-- Carteira -->
+    <div class="grade-2">
+      <section class="card bloco" aria-labelledby="t-recentes">
+        <header class="bloco__cab">
+          <div>
+            <h2 class="bloco__titulo" id="t-recentes">Processos com movimento recente</h2>
+            <p class="bloco__sub">Ativos, do mais recentemente movimentado.</p>
+          </div>
+          <a class="link-button" routerLink="/juridico/processos" [queryParams]="{ responsavel: d.advogado.idFuncionario }">Ver todos</a>
+        </header>
+        @if (d.processosRecentes.length === 0) {
+          <p class="vazio">Nenhum processo ativo sob responsabilidade.</p>
+        } @else {
+          <ul class="procs">
+            @for (p of d.processosRecentes; track p.id) {
+              <li>
+                <span class="procs__info">
+                  <a [routerLink]="['/juridico/processos', p.id]" class="cell-mono">{{ cnj(p.numeroProcesso) }}</a>
+                  <small>{{ p.classe ?? p.assunto ?? p.area ?? 'Sem classe' }}@if (p.partes.length) { · {{ p.partes.join(', ') }} }</small>
+                </span>
+                <span class="procs__lado">
+                  @if (p.status) { <span class="selo">{{ p.status }}</span> }
+                  <small>{{ parado(p) }}</small>
+                </span>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+
+      <section class="card bloco" aria-labelledby="t-parados">
+        <header class="bloco__cab">
+          <div>
+            <h2 class="bloco__titulo" id="t-parados">Precisam de atenção</h2>
+            <p class="bloco__sub">Ativos sem movimentação há mais de 180 dias, do mais antigo.</p>
+          </div>
+        </header>
+        @if (d.processosParados.length === 0) {
+          <p class="vazio vazio--ok"><app-icon name="check-circle" /> Nenhum processo parado.</p>
+        } @else {
+          <ul class="procs">
+            @for (p of d.processosParados; track p.id) {
+              <li>
+                <span class="procs__info">
+                  <a [routerLink]="['/juridico/processos', p.id]" class="cell-mono">{{ cnj(p.numeroProcesso) }}</a>
+                  <small>{{ p.classe ?? p.assunto ?? p.area ?? 'Sem classe' }}@if (p.partes.length) { · {{ p.partes.join(', ') }} }</small>
+                </span>
+                <span class="procs__lado">
+                  <span class="alerta">{{ parado(p) }}</span>
+                  <small>{{ p.ultimaMovimentacao ? 'última movimentação' : 'sem movimentação' }}</small>
+                </span>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    </div>
+
+    <div class="grade-2">
+      <section class="card bloco" aria-labelledby="t-status">
+        <header class="bloco__cab">
+          <div>
+            <h2 class="bloco__titulo" id="t-status">Processos por situação</h2>
+            <p class="bloco__sub">Todos sob responsabilidade, inclusive encerrados.</p>
+          </div>
+        </header>
+        <app-barras [itens]="d.processosPorStatus" titulo="Processos por situação" semNome="Sem situação" vazio="Nenhum processo sob responsabilidade." />
+      </section>
+      <section class="card bloco" aria-labelledby="t-area">
+        <header class="bloco__cab">
+          <div>
+            <h2 class="bloco__titulo" id="t-area">Processos por área</h2>
+            <p class="bloco__sub">Todos sob responsabilidade.</p>
+          </div>
+        </header>
+        <app-barras [itens]="d.processosPorArea" titulo="Processos por área" semNome="Área não informada" vazio="Nenhum processo sob responsabilidade." />
+      </section>
+    </div>
+  </div>
+} @else {
+  <section class="tiles" aria-busy="true" aria-label="Carregando painel">
+    @for (i of [0, 1, 2, 3, 4, 5, 6, 7]; track i) {
+      <div class="tile card"><span class="skeleton" style="width: 6rem"></span><span class="skeleton skeleton--titulo" style="width: 4rem"></span></div>
+    }
+  </section>
+}

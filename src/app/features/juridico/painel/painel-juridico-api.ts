@@ -92,7 +92,7 @@ export interface RankingMensal {
 const n = (r: JsonRecord | null, k: string) => (r ? (readNumber(r, [k]) ?? 0) : 0);
 const registros = (raw: unknown) => (Array.isArray(raw) ? raw.filter(isRecord) : []);
 
-function contagens(raw: unknown): Quantidade[] {
+export function contagens(raw: unknown): Quantidade[] {
   return registros(raw)
     .map((r) => ({ nome: readString(r, ['nome']), total: n(r, 'qtd') }))
     .filter((q) => q.total > 0)
@@ -100,7 +100,7 @@ function contagens(raw: unknown): Quantidade[] {
 }
 
 /** Série mensal ordenada; as chaves listadas viram `valores` (ausente = 0). */
-function serie(raw: unknown, chaves: readonly string[]): MesSerie[] {
+export function serie(raw: unknown, chaves: readonly string[]): MesSerie[] {
   return registros(raw)
     .map((r) => ({
       ano: n(r, 'ano'),

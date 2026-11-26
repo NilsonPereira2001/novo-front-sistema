@@ -220,6 +220,17 @@ export const routes: Routes = [
         loadComponent: () => import('./features/juridico/painel/painel-juridico').then((m) => m.PainelJuridicoPage),
       },
       {
+        path: 'juridico/meu-painel',
+        title: pageTitle('Meu painel'),
+        loadComponent: () => import('./features/juridico/meu-painel/meu-painel').then((m) => m.MeuPainelPage),
+      },
+      {
+        // Painel de um advogado (id do funcionário), aberto pelo Painel jurídico.
+        path: 'juridico/advogados/:id/painel',
+        title: pageTitle('Painel do advogado'),
+        loadComponent: () => import('./features/juridico/meu-painel/meu-painel').then((m) => m.MeuPainelPage),
+      },
+      {
         path: 'juridico/pessoas',
         title: pageTitle('Pessoas · Jurídico'),
         loadComponent: () => import('./features/juridico/pessoas/lista/pessoas-juridico-lista').then((m) => m.PessoasJuridicoLista),

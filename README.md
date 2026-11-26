@@ -184,6 +184,17 @@ Código em `features/juridico/painel/`. Endpoints do `JuridicoDashboardControlle
 - **Próximas audiências** (30 dias, as 10 primeiras) e distribuições: processos por situação e por área; atendimentos realizados por tipo e por área no período.
 - **Testes:** `painel-juridico-api.spec.ts`.
 
+### Jurídico › Meu painel (`/juridico/meu-painel`)
+
+Painel do advogado logado (`GET juridico/meu-painel?meses=`). Advogado = colaborador ATIVO com cargo de advogado(a) ligado ao usuário; para outros usuários a tela explica que o painel é para advogados (o back responde 404).
+
+- **Indicadores:** processos sob responsabilidade (ativos/total/novos no mês), parados (> 180 dias sem movimentação), movimentações em 30 dias, audiências em 30 dias, atendimentos de hoje, agendados (e sem baixa), atendidos no mês com variação e posição no ranking do mês.
+- **O dia:** atendimentos de hoje com situação e botão **Registrar** (abre o registro do atendimento agendado) e próximos atendimentos (14 dias).
+- **Processos:** últimas movimentações, próximas audiências, processos com movimento recente, processos que precisam de atenção (parados), por situação e por área. Links levam ao processo, à lista filtrada pelo responsável e à agenda filtrada pelo colaborador.
+- **Evolução:** atendimentos (atendidos/não compareceu), processos novos ou movimentações por mês, em 6, 12 ou 24 meses.
+- **Gestão:** no Painel jurídico, o nome de cada advogado abre `/juridico/advogados/:id/painel` (`GET juridico/advogados/{id}/painel`, permissão DASHBOARD_JURIDICO).
+- "Processos novos" usa o mês de cadastro dos processos que hoje estão com o advogado (não há histórico de transferência de responsável).
+
 ### Jurídico › Pessoas (`/juridico/pessoas`)
 
 Código em `features/juridico/pessoas/`. Endpoints do `JuridicoPessoaController` (PR #8), permissão `LISTAR_PESSOAS_JURIDICO`.

@@ -137,6 +137,13 @@ export const NAVIGATION: readonly NavGroup[] = [
     label: 'Jurídico',
     items: [
       {
+        label: 'Meu painel',
+        path: 'juridico/meu-painel',
+        icon: 'user-check',
+        description: 'Para advogados: seu dia, seus processos e sua evolução',
+        available: true,
+      },
+      {
         label: 'Painel jurídico',
         path: 'juridico/painel',
         icon: 'bar-chart',
