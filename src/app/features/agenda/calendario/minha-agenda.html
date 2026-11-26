@@ -1,0 +1,93 @@
+<header class="page-header">
+  <div class="page-header__text">
+    <h1 class="page-title">Minha agenda</h1>
+    <p class="page-subtitle"><app-icon name="lock" /> Seus compromissos. Só você vê.</p>
+  </div>
+  <div class="page-header__actions">
+    <button type="button" class="btn btn--primary" (click)="novo()"><app-icon name="plus" /> Novo compromisso</button>
+  </div>
+</header>
+
+@if (aviso(); as a) {
+  <div class="aviso"><app-alert tone="success">{{ a }}</app-alert><button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
+}
+
+<div class="agenda">
+  <section class="card calendario" aria-labelledby="t-mes">
+    <header class="calendario__barra">
+      <div class="calendario__nav">
+        <button type="button" class="icon-btn" (click)="mover(-1)" aria-label="Mês anterior"><app-icon name="chevron-left" /></button>
+        <button type="button" class="icon-btn" (click)="mover(1)" aria-label="Próximo mês"><app-icon name="chevron-right" /></button>
+        <h2 class="calendario__titulo" id="t-mes" aria-live="polite">{{ titulo() }}</h2>
+      </div>
+      <button type="button" class="btn btn--secondary btn--sm" (click)="irHoje()" [disabled]="diaSelecionado() === hoje">Hoje</button>
+    </header>
+
+    @if (erro(); as kind) {
+      <app-load-error [kind]="kind" (retry)="recarregar()" />
+    } @else {
+      <div class="grade" [class.is-stale]="estado().status === 'loading'">
+        <div class="grade__semana" aria-hidden="true">
+          @for (s of semana; track s) { <span class="grade__dia-semana">{{ s }}</span> }
+        </div>
+        <div class="grade__dias">
+          @for (c of celulas(); track c.data; let i = $index) {
+            <div
+              class="celula"
+              role="button"
+              [id]="'dia-' + c.data"
+              [class.is-fora]="c.foraDoMes"
+              [class.is-hoje]="c.data === hoje"
+              [class.is-selecionada]="c.data === diaSelecionado()"
+              [attr.aria-pressed]="c.data === diaSelecionado()"
+              [attr.aria-label]="rotuloCelula(c)"
+              [attr.tabindex]="c.data === diaSelecionado() ? 0 : -1"
+              (click)="selecionar(c.data)"
+              (dblclick)="novo(c.data)"
+              (keydown)="teclado($event, i)"
+            >
+              <span class="celula__numero">{{ c.numero }}</span>
+              <ul class="celula__itens" aria-hidden="true">
+                @for (it of c.itens.slice(0, max); track it.id) {
+                  <li class="chip" [class.chip--dia]="it.diaInteiro" [style.--cor]="cor(it.cor)">
+                    @if (!it.diaInteiro) { <span class="chip__hora">{{ it.inicio.slice(11, 16) }}</span> }
+                    <span class="chip__titulo">{{ it.titulo }}</span>
+                  </li>
+                }
+                @if (c.mais) { <li class="mais">+{{ c.mais }}</li> }
+              </ul>
+              @if (c.itens.length) { <span class="celula__pontos" aria-hidden="true">@for (it of c.itens.slice(0, 4); track it.id) { <i [style.background]="cor(it.cor)"></i> }</span> }
+            </div>
+          }
+        </div>
+      </div>
+      <p class="dica">Clique num dia para ver os compromissos; duplo clique cria um novo. No teclado, use as setas.</p>
+    }
+  </section>
+
+  <section class="card dia" aria-labelledby="t-dia">
+    <header class="dia__cab">
+      <h2 class="dia__titulo" id="t-dia">{{ tituloDia() }}</h2>
+      <button type="button" class="btn btn--secondary btn--sm" (click)="novo(diaSelecionado())"><app-icon name="plus" /> Adicionar</button>
+    </header>
+    @if (doDia().length === 0) {
+      <p class="vazio">Nenhum compromisso neste dia.</p>
+    } @else {
+      <ol class="lista">
+        @for (c of doDia(); track c.id) {
+          <li>
+            <button type="button" class="item" [style.--cor]="cor(c.cor)" (click)="abrir(c)" [attr.aria-label]="'Editar ' + c.titulo">
+              <span class="item__hora">{{ horario(c) }}</span>
+              <span class="item__titulo">{{ c.titulo }}</span>
+              @if (c.local) { <span class="item__sub"><app-icon name="map-pin" /> {{ c.local }}</span> }
+              @if (c.descricao) { <span class="item__desc">{{ c.descricao }}</span> }
+              @if (c.lembreteMinutos !== null && !c.diaInteiro) { <span class="item__sub"><app-icon name="bell" /> Lembrete {{ c.lembreteMinutos === 0 ? 'na hora' : c.lembreteMinutos >= 1440 ? '1 dia antes' : c.lembreteMinutos >= 60 ? c.lembreteMinutos / 60 + 'h antes' : c.lembreteMinutos + ' min antes' }}</span> }
+            </button>
+          </li>
+        }
+      </ol>
+    }
+  </section>
+</div>
+
+<app-compromisso-dialog [open]="dialogAberto()" [compromisso]="editando()" [dataInicial]="dataNova()" (salvo)="salvo($event)" (closed)="dialogAberto.set(false)" />

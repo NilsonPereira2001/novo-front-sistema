@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   computed,
   inject,
@@ -12,6 +13,7 @@ import { NavigationEnd, Router } from '@angular/router';
 import { filter, map } from 'rxjs';
 
 import { AuthService } from '../../../core/auth/services/auth.service';
+import { AvisosService } from '../../../features/avisos/data/avisos.service';
 import { findNavEntry } from '../../../core/navigation/navigation';
 import { RouterLink } from '@angular/router';
 import { Icon } from '../../../shared/components/icon/icon';
@@ -35,6 +37,20 @@ export class Topbar {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly menuClick = output<void>();
+
+  private readonly avisos = inject(AvisosService);
+  protected readonly naoLidos = computed(() => this.avisos.resumo()?.naoLidos ?? 0);
+  protected readonly rotuloAvisos = computed(() => {
+    const n = this.naoLidos();
+    return n === 0 ? 'Quadro de avisos' : `Quadro de avisos: ${n} ${n === 1 ? 'aviso não lido' : 'avisos não lidos'}`;
+  });
+
+  constructor() {
+    // Contador do sino: ao abrir e a cada 5 minutos.
+    this.avisos.atualizarResumo();
+    const timer = setInterval(() => this.avisos.atualizarResumo(), 5 * 60 * 1000);
+    inject(DestroyRef).onDestroy(() => clearInterval(timer));
+  }
 
   protected readonly user = this.auth.user;
   protected readonly userMenuOpen = signal(false);

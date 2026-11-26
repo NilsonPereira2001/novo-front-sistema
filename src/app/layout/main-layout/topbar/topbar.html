@@ -22,6 +22,10 @@
   </div>
 
   <div class="topbar__end">
+    <a class="topbar__icon-btn topbar__avisos" routerLink="/avisos" [attr.aria-label]="rotuloAvisos()" [title]="rotuloAvisos()">
+      <app-icon name="bell" />
+      @if (naoLidos() > 0) { <span class="topbar__badge" aria-hidden="true">{{ naoLidos() > 9 ? '9+' : naoLidos() }}</span> }
+    </a>
     <div class="user-menu">
       <button
         type="button"

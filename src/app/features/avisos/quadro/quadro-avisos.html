@@ -1,0 +1,122 @@
+<header class="page-header">
+  <div class="page-header__text">
+    <h1 class="page-title">Quadro de avisos</h1>
+    <p class="page-subtitle">Comunicados para toda a equipe.</p>
+  </div>
+  <div class="page-header__actions">
+    @if ((resumo()?.naoLidos ?? 0) > 0) {
+      <button type="button" class="btn btn--secondary" (click)="marcarTodos()"><app-icon name="check-circle" /> Marcar todos como lidos</button>
+    }
+    @if (resumo()?.podePublicar) {
+      <button type="button" class="btn btn--primary" (click)="novo()"><app-icon name="plus" /> Novo aviso</button>
+    }
+  </div>
+</header>
+
+@if (aviso(); as a) {
+  <div class="aviso-acao"><app-alert [tone]="a.tom">{{ a.texto }}</app-alert><button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
+}
+
+<div class="barra">
+  <div class="segmented" role="group" aria-label="Quais avisos">
+    @for (v of visoes; track v.key) {
+      <button type="button" class="segmented__item" [class.is-active]="visao() === v.key" [attr.aria-pressed]="visao() === v.key" (click)="setVisao(v.key)">
+        {{ v.rotulo }}
+        @if (v.key === 'nao-lidos' && (resumo()?.naoLidos ?? 0) > 0) { <span class="contador">{{ resumo()?.naoLidos }}</span> }
+      </button>
+    }
+  </div>
+  <app-search-field label="Pesquisar avisos" placeholder="Título ou texto" [value]="url.searchText()" (valueChange)="url.search($event)" (clear)="url.clearSearch()" />
+</div>
+
+@if (erro(); as kind) {
+  <section class="card"><app-load-error [kind]="kind" (retry)="recarregar()" /></section>
+} @else if (pagina(); as pg) {
+  @if (pg.content.length === 0) {
+    <section class="card vazio">
+      <span class="vazio__icone"><app-icon name="megaphone" /></span>
+      <p class="vazio__titulo">
+        @switch (visao()) {
+          @case ('nao-lidos') { Você está em dia: nenhum aviso não lido. }
+          @case ('encerrados') { Nenhum aviso encerrado. }
+          @default { Nenhum aviso no quadro. }
+        }
+      </p>
+      @if (resumo()?.podePublicar && visao() === 'vigentes' && !url.termo()) {
+        <button type="button" class="btn btn--primary btn--sm" (click)="novo()"><app-icon name="plus" /> Publicar o primeiro aviso</button>
+      }
+    </section>
+  } @else {
+    <ol class="avisos" [class.is-stale]="carregando()" [attr.aria-busy]="carregando()">
+      @for (a of pg.content; track a.id) {
+        <li>
+          <article class="card aviso" [attr.data-prioridade]="a.prioridade" [class.is-nao-lido]="!lido(a)" [attr.aria-labelledby]="'aviso-' + a.id">
+            <header class="aviso__cab">
+              <div class="aviso__titulos">
+                <p class="aviso__selos">
+                  @if (a.fixado) { <span class="selo selo--fixado"><app-icon name="pin" /> Fixado</span> }
+                  @if (a.prioridade !== 'NORMAL') { <span class="selo" [attr.data-prioridade]="a.prioridade">{{ a.prioridade === 'URGENTE' ? 'Urgente' : 'Importante' }}</span> }
+                  @if (!lido(a)) { <span class="selo selo--novo">Novo</span> }
+                </p>
+                <h2 class="aviso__titulo" [id]="'aviso-' + a.id">{{ a.titulo }}</h2>
+                <p class="aviso__meta">
+                  {{ a.autor ?? 'Sistema' }} · {{ quando(a.dataPublicacao) }}
+                  @if (a.dataEdicao) { · editado }
+                  @if (a.dataExpiracao) { · no quadro até {{ a.dataExpiracao.slice(8, 10) }}/{{ a.dataExpiracao.slice(5, 7) }} }
+                  @if (a.podeEditar) { · lido por {{ a.leituras }} }
+                </p>
+              </div>
+              @if (a.podeEditar) {
+                <div class="aviso__acoes">
+                  <button type="button" class="icon-btn" (click)="editar(a)" [attr.aria-label]="'Editar ' + a.titulo"><app-icon name="pencil" /></button>
+                  <button type="button" class="icon-btn" (click)="removerDe.set(a)" [attr.aria-label]="'Remover ' + a.titulo"><app-icon name="trash" /></button>
+                </div>
+              }
+            </header>
+            <p class="aviso__texto">{{ texto(a) }}</p>
+            <footer class="aviso__rodape">
+              @if (longo(a) && !abertos().has(a.id)) {
+                <button type="button" class="link-button" (click)="lerMais(a)">Ler mais</button>
+              }
+              @if (!lido(a)) {
+                <button type="button" class="link-button" (click)="marcarLido(a)"><app-icon name="check-circle" /> Marcar como lido</button>
+              }
+            </footer>
+          </article>
+        </li>
+      }
+    </ol>
+    <app-pagination
+      [page]="pg.number"
+      [size]="pg.size"
+      [total]="pg.totalElements"
+      [totalPages]="pg.totalPages"
+      [first]="pg.first"
+      [last]="pg.last"
+      [sizeOptions]="url.sizeOptions"
+      itemLabel="avisos"
+      (pageChange)="url.setPage($event)"
+      (sizeChange)="url.setSize($event)"
+    />
+  }
+} @else {
+  <div class="avisos" aria-busy="true">
+    @for (i of [0, 1, 2]; track i) {
+      <div class="card aviso"><span class="skeleton" style="width: 40%; height: 1.25rem"></span><span class="skeleton" style="width: 100%"></span><span class="skeleton" style="width: 85%"></span></div>
+    }
+  </div>
+}
+
+<app-aviso-form-dialog [open]="formAberto()" [aviso]="editando()" (salvo)="salvo()" (closed)="formAberto.set(false)" />
+
+<app-dialog titulo="Remover aviso" [open]="removerDe() !== null" (closed)="removerDe.set(null)">
+  <div class="dlg">
+    <p>Remover <strong>{{ removerDe()?.titulo }}</strong> do quadro? Ele deixa de aparecer para todos.</p>
+  </div>
+  <div dialog-actions>
+    <button type="button" class="btn btn--secondary btn--sm" (click)="removerDe.set(null)" [disabled]="removendo()">Cancelar</button>
+    <button type="button" class="btn btn--danger btn--sm" (click)="confirmarRemocao()" [disabled]="removendo()">
+      @if (removendo()) { <span class="spinner" aria-hidden="true"></span> Removendo… } @else { Remover }
+    </button>
+  </div>
+</app-dialog>

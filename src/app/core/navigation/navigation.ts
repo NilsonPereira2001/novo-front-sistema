@@ -42,6 +42,20 @@ export const NAVIGATION: readonly NavGroup[] = [
         available: true,
       },
       {
+        label: 'Quadro de avisos',
+        path: 'avisos',
+        icon: 'megaphone',
+        description: 'Comunicados para toda a equipe',
+        available: true,
+      },
+      {
+        label: 'Minha agenda',
+        path: 'agenda',
+        icon: 'calendar',
+        description: 'Seus compromissos (só você vê)',
+        available: true,
+      },
+      {
         label: 'Painel',
         path: 'painel',
         icon: 'bar-chart',

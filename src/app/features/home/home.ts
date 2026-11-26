@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { BRANDING } from '../../core/config/branding';
@@ -7,6 +7,11 @@ import { TERMOS } from '../../core/config/terminologia';
 import { AuthService } from '../../core/auth/services/auth.service';
 import { NAVIGATION, NAV_ITEMS, NavItem } from '../../core/navigation/navigation';
 import { Icon } from '../../shared/components/icon/icon';
+import { loadFrom } from '../../shared/data/load-state';
+import { cssDaCor, horario } from '../agenda/data/agenda-api';
+import { AgendaService } from '../agenda/data/agenda.service';
+import { quando } from '../avisos/data/avisos-api';
+import { AvisosService } from '../avisos/data/avisos.service';
 
 /** Atalhos em destaque no topo da tela Início. */
 const QUICK_ACCESS_PATHS = [
@@ -34,6 +39,14 @@ const QUICK_ACCESS_PATHS = [
 })
 export class Home {
   private readonly auth = inject(AuthService);
+  private readonly avisosService = inject(AvisosService);
+  private readonly agendaService = inject(AgendaService);
+  protected readonly quando = quando;
+  protected readonly horario = horario;
+  protected readonly cor = cssDaCor;
+  protected readonly avisosResumo = this.avisosService.resumo;
+  protected readonly avisos = loadFrom(signal(0), () => this.avisosService.listar('vigentes', '', 0, 4), signal(0));
+  protected readonly compromissos = loadFrom(signal(0), () => this.agendaService.proximos(4), signal(0));
   protected readonly branding = inject(BRANDING);
 
   protected readonly termos = TERMOS;

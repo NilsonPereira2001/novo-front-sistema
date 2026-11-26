@@ -94,15 +94,63 @@
     </section>
 
     <!-- Indicadores -->
-    <section class="card indicators" aria-labelledby="titulo-indicadores">
-      <div class="card__body">
-        <span class="indicators__icon"><app-icon name="bar-chart" /></span>
-        <h2 id="titulo-indicadores" class="card__title">Indicadores</h2>
-        <p class="indicators__text">
-          Os números de {{ termos.membrosMin }}, financeiro e jurídico aparecerão aqui assim que os módulos
-          forem integrados ao sistema.
-        </p>
+    <!-- Quadro de avisos -->
+    <section class="card mural" aria-labelledby="titulo-avisos">
+      <div class="card__header">
+        <h2 id="titulo-avisos" class="card__title">Quadro de avisos</h2>
+        @if ((avisosResumo()?.naoLidos ?? 0) > 0) {
+          <span class="tag tag--primary">{{ avisosResumo()?.naoLidos }} não {{ avisosResumo()?.naoLidos === 1 ? 'lido' : 'lidos' }}</span>
+        }
       </div>
+      @let av = avisos();
+      @if (av.status === 'ready') {
+        @if (av.data.content.length === 0) {
+          <p class="mural__vazio">Nenhum aviso no quadro.</p>
+        } @else {
+          <ul class="mural__lista">
+            @for (a of av.data.content; track a.id) {
+              <li [class.is-nao-lido]="!a.lido">
+                <a routerLink="/avisos" class="mural__link">
+                  @if (a.prioridade === 'URGENTE') { <span class="mural__urgente">Urgente</span> }
+                  {{ a.titulo }}
+                </a>
+                <span class="mural__sub">{{ quando(a.dataPublicacao) }}</span>
+              </li>
+            }
+          </ul>
+        }
+      } @else if (av.status === 'loading') {
+        <span class="skeleton" style="width: 100%"></span><span class="skeleton" style="width: 70%"></span>
+      }
+      <a class="link-button" routerLink="/avisos">Ver quadro de avisos</a>
+    </section>
+
+    <!-- Agenda pessoal -->
+    <section class="card mural" aria-labelledby="titulo-agenda">
+      <div class="card__header">
+        <h2 id="titulo-agenda" class="card__title">Próximos compromissos</h2>
+        <app-icon name="lock" />
+      </div>
+      @let cp = compromissos();
+      @if (cp.status === 'ready') {
+        @if (cp.data.length === 0) {
+          <p class="mural__vazio">Nenhum compromisso pela frente.</p>
+        } @else {
+          <ul class="mural__lista">
+            @for (c of cp.data; track c.id) {
+              <li>
+                <a class="mural__link" routerLink="/agenda" [queryParams]="{ mes: c.inicio.slice(0, 7), dia: c.inicio.slice(0, 10) }">
+                  <span class="mural__cor" [style.background]="cor(c.cor)" aria-hidden="true"></span>{{ c.titulo }}
+                </a>
+                <span class="mural__sub">{{ c.inicio | date: 'dd/MM' }} · {{ horario(c) }}</span>
+              </li>
+            }
+          </ul>
+        }
+      } @else if (cp.status === 'loading') {
+        <span class="skeleton" style="width: 100%"></span>
+      }
+      <a class="link-button" routerLink="/agenda">Abrir minha agenda</a>
     </section>
   </aside>
 </div>

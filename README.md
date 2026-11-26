@@ -97,6 +97,25 @@ Em produção, o servidor web precisa encaminhar `/backend/*` ao Spring Boot rem
 - A expiração do JWT (`exp`) é respeitada: ao expirar, ou se a API responder 401, o usuário volta ao login com o aviso "sessão expirada".
 - Os guards só controlam a navegação. **Toda permissão precisa ser validada também no backend.**
 
+### Quadro de avisos (`/avisos`)
+
+Código em `features/avisos/`. Endpoints do `MuralController` (PR #8). Todo usuário logado lê.
+
+- **Publicar:** quem tem a permissão `PUBLICAR_AVISOS` (criada automaticamente na subida do back) ou perfil ADMINISTRADOR. O autor edita e remove os próprios avisos.
+- **Aviso:** título, texto (quebras de linha mantidas), prioridade (normal, importante, urgente), fixar no topo e data para sair do quadro.
+- **Leitura:** "Novo" nos não lidos; "Ler mais" ou "Marcar como lido"; "Marcar todos como lidos". Quem pode editar vê quantas pessoas leram.
+- **Visões:** No quadro, Não lidos, Encerrados (expirados); busca por título ou texto.
+- **Sino no topo** com o número de não lidos (atualiza ao abrir e a cada 5 minutos) e resumo na tela Início.
+
+### Minha agenda (`/agenda`)
+
+Código em `features/agenda/`. Compromissos **privados**: o back só devolve os do usuário logado (de outro usuário responde 404).
+
+- Calendário do mês (segunda a domingo) com os compromissos de cada dia e a lista do dia escolhido ao lado. Navegação por mês, "Hoje", setas do teclado; duplo clique cria no dia. No celular, a grade mostra pontos e a lista fica abaixo.
+- Compromisso: título, data, início/término ou dia inteiro (pode ocupar vários dias), local, observações, cor e lembrete.
+- Próximos compromissos na tela Início.
+- Estado na URL (`?mes=AAAA-MM&dia=AAAA-MM-DD`).
+
 ### Administração › Usuários e permissões (`/administracao/usuarios`)
 
 Código em `features/usuarios/`. Endpoints do `UsuarioSistemaController` (PR #8), permissão `CREDENCIAL_SISTEMA`.

@@ -95,6 +95,16 @@ export const routes: Routes = [
         loadComponent: () => import('./features/juridico/processos/detalhe/processo-detalhe').then((m) => m.ProcessoDetalhePage),
       },
       {
+        path: 'avisos',
+        title: pageTitle('Quadro de avisos'),
+        loadComponent: () => import('./features/avisos/quadro/quadro-avisos').then((m) => m.QuadroAvisos),
+      },
+      {
+        path: 'agenda',
+        title: pageTitle('Minha agenda'),
+        loadComponent: () => import('./features/agenda/calendario/minha-agenda').then((m) => m.MinhaAgenda),
+      },
+      {
         path: 'administracao/usuarios',
         title: pageTitle('Usuários e permissões'),
         loadComponent: () => import('./features/usuarios/lista/usuarios-lista').then((m) => m.UsuariosLista),
