@@ -1,0 +1,178 @@
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">Administração</p>
+    <h1 class="page-title">Dados da empresa</h1>
+    <p class="page-subtitle">Identificação, imagens usadas nos relatórios e e-mails, sedes e os termos impressos nos requerimentos.</p>
+  </div>
+</header>
+
+@if (aviso(); as a) {
+  <div class="aviso" role="status"><app-icon name="check-circle" /> {{ a }} <button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
+}
+
+@if (erroCarga(); as kind) {
+  <section class="card"><app-load-error [kind]="kind" (retry)="recarregar()" /></section>
+} @else if (d(); as d) {
+  <div class="grade">
+    <div class="coluna">
+      <!-- Identificação -->
+      <section class="card bloco" aria-labelledby="t-ident">
+        <header class="bloco__cab">
+          <h2 class="bloco__titulo" id="t-ident"><app-icon name="building" /> Identificação</h2>
+          @if (!editandoDados()) {
+            <button type="button" class="btn btn--secondary btn--sm" (click)="editarDados(d)"><app-icon name="pencil" /> Editar</button>
+          }
+        </header>
+        @if (!editandoDados()) {
+          <p class="nome">{{ d.nome || 'Nome não informado' }}@if (d.sigla) { <span class="sigla">{{ d.sigla }}</span> }</p>
+          <dl class="dados">
+            <div><dt>CNPJ</dt><dd class="cell-mono">{{ d.cnpj ? cnpj(d.cnpj) : '—' }}</dd></div>
+            <div><dt>Fundação</dt><dd>{{ (d.dataFundacao | date: 'dd/MM/yyyy') ?? '—' }}</dd></div>
+            <div><dt>Telefone</dt><dd>{{ d.telefone ? (d.telefone | telefone) : '—' }}</dd></div>
+            <div><dt>E-mail</dt><dd>@if (d.email) { <a [href]="'mailto:' + d.email">{{ d.email }}</a> } @else { — }</dd></div>
+            <div class="dados__largo">
+              <dt>Site</dt>
+              <dd>@if (linkSite(d.site); as url) { <a [href]="url" target="_blank" rel="noopener noreferrer">{{ d.site }}</a> } @else { — }</dd>
+            </div>
+          </dl>
+        } @else {
+          <form class="form-grid" [formGroup]="form" (ngSubmit)="salvarDados()" novalidate>
+            <app-text-field class="span-9" label="Nome / razão social" [control]="form.controls.nome" [required]="true" [maxlength]="255" />
+            <app-text-field class="span-3" label="Sigla" [control]="form.controls.sigla" [maxlength]="siglaMax" hint="Vai no arquivo de remessa do banco." />
+            <app-text-field class="span-6" label="CNPJ" [control]="form.controls.cnpj" mask="documento" placeholder="00.000.000/0000-00" />
+            <app-text-field class="span-6" label="Data de fundação" type="date" [control]="form.controls.dataFundacao" />
+            <app-text-field class="span-6" label="Telefone" [control]="form.controls.telefone" mask="telefone" placeholder="(00) 0000-0000" />
+            <app-text-field class="span-6" label="E-mail" type="email" [control]="form.controls.email" [maxlength]="255" autocomplete="email" />
+            <app-text-field class="span-12" label="Site" [control]="form.controls.site" [maxlength]="255" [maiusculas]="false" placeholder="www.suaentidade.org.br" />
+            @if (erroDados()) {
+              <app-alert class="span-12" tone="danger">{{ erroDados() }}</app-alert>
+            }
+            <div class="span-12 acoes">
+              <button type="button" class="btn btn--secondary btn--sm" (click)="editandoDados.set(false)" [disabled]="salvandoDados()">Cancelar</button>
+              <button type="submit" class="btn btn--primary btn--sm" [disabled]="salvandoDados()">
+                @if (salvandoDados()) { <span class="spinner" aria-hidden="true"></span> Salvando… } @else { Salvar }
+              </button>
+            </div>
+          </form>
+        }
+      </section>
+
+      <!-- Sedes -->
+      <section class="card bloco" aria-labelledby="t-sedes">
+        <header class="bloco__cab">
+          <h2 class="bloco__titulo" id="t-sedes"><app-icon name="map-pin" /> Sedes</h2>
+          <button type="button" class="btn btn--secondary btn--sm" (click)="abrirSede(null)"><app-icon name="plus" /> Nova sede</button>
+        </header>
+        @if (d.sedes.length === 0) {
+          <p class="vazio">Nenhuma sede cadastrada. A primeira cadastrada vira a principal.</p>
+        } @else {
+          <ul class="sedes">
+            @for (s of d.sedes; track s.id) {
+              <li class="sede" [class.sede--principal]="s.principal">
+                <div class="sede__info">
+                  <p class="sede__nome">{{ s.nome }} @if (s.principal) { <span class="selo">Principal</span> }</p>
+                  <p class="sub">{{ endereco(s) }}</p>
+                  @if (s.telefone1 || s.telefone2) {
+                    <p class="sub">{{ s.telefone1 | telefone }}@if (s.telefone1 && s.telefone2) { · }{{ s.telefone2 | telefone }}</p>
+                  }
+                </div>
+                <div class="sede__acoes">
+                  <button type="button" class="btn btn--secondary btn--sm" (click)="abrirSede(s)" [attr.aria-label]="'Editar ' + s.nome"><app-icon name="pencil" /></button>
+                  @if (!s.principal) {
+                    <button type="button" class="btn btn--secondary btn--sm" (click)="tornarPrincipal(s)" [disabled]="acaoSede() !== null">
+                      @if (acaoSede() === s.id && !removendo()) { <span class="spinner" aria-hidden="true"></span> } Tornar principal
+                    </button>
+                    <button type="button" class="btn btn--danger-outline btn--sm" (click)="pedirRemocao(s)" [attr.aria-label]="'Remover ' + s.nome"><app-icon name="trash" /></button>
+                  }
+                </div>
+              </li>
+            }
+          </ul>
+        }
+        @if (erroSede() && !removendo()) { <app-alert tone="danger">{{ erroSede() }}</app-alert> }
+      </section>
+    </div>
+
+    <div class="coluna">
+      <!-- Imagens -->
+      <section class="card bloco" aria-labelledby="t-img">
+        <h2 class="bloco__titulo" id="t-img"><app-icon name="sliders" /> Imagens</h2>
+        @for (img of imagens(); track img.tipo) {
+          @let tipo = img.tipo;
+          <div class="imagem">
+            <div class="imagem__cab">
+              <div>
+                <p class="imagem__titulo">{{ img.titulo }}</p>
+                <p class="sub">{{ img.uso }}</p>
+              </div>
+              <label class="btn btn--secondary btn--sm imagem__trocar" [class.is-disabled]="enviandoImagem() !== null">
+                @if (enviandoImagem() === tipo) { <span class="spinner" aria-hidden="true"></span> Enviando… } @else { <app-icon name="upload" /> {{ img.src ? 'Trocar' : 'Enviar' }} }
+                <input type="file" class="sr-only" accept="image/png,image/jpeg" [disabled]="enviandoImagem() !== null" (change)="escolherImagem(tipo, $event)" />
+              </label>
+            </div>
+            <div class="imagem__quadro" [class.imagem__quadro--largo]="img.tipo === 'cabecalho'">
+              @if (img.src) {
+                <img [src]="img.src" [alt]="img.titulo + ' da empresa'" />
+              } @else {
+                <span class="sub">Nenhuma imagem</span>
+              }
+            </div>
+            @if (erroImagem()?.tipo === img.tipo) { <app-alert tone="danger">{{ erroImagem()?.texto }}</app-alert> }
+          </div>
+        }
+        <p class="nota">PNG ou JPEG, até 1 MB. Para o cabeçalho, use uma imagem larga (ex.: 2000 × 300 px).</p>
+      </section>
+
+      <!-- Gestão -->
+      <section class="card bloco" aria-labelledby="t-gestao">
+        <h2 class="bloco__titulo" id="t-gestao"><app-icon name="award" /> Gestão atual</h2>
+        @if (d.gestao; as g) {
+          <p class="nome nome--menor">{{ g.nome || 'Gestão sem nome' }}</p>
+          <dl class="dados">
+            <div><dt>Início</dt><dd>{{ (g.inicio | date: 'dd/MM/yyyy') ?? '—' }}</dd></div>
+            <div><dt>Fim</dt><dd>{{ (g.fim | date: 'dd/MM/yyyy') ?? '—' }}</dd></div>
+            <div><dt>Presidente</dt><dd>{{ g.presidente ?? '—' }}</dd></div>
+            <div><dt>Vice-presidente</dt><dd>{{ g.vicePresidente ?? '—' }}</dd></div>
+          </dl>
+        } @else {
+          <p class="vazio">Nenhuma gestão definida.</p>
+        }
+        <p class="nota">A gestão é definida no módulo da diretoria.</p>
+      </section>
+    </div>
+  </div>
+
+  <!-- Termos -->
+  <section class="card bloco" aria-labelledby="t-termos">
+    <header class="bloco__cab">
+      <h2 class="bloco__titulo" id="t-termos"><app-icon name="file-text" /> Termos dos requerimentos</h2>
+      <div class="segmented" role="group" aria-label="Qual termo">
+        <button type="button" class="segmented__item" [class.is-active]="termo() === 'adesao'" (click)="termo.set('adesao')">Adesão</button>
+        <button type="button" class="segmented__item" [class.is-active]="termo() === 'desligamento'" (click)="termo.set('desligamento')">Desligamento</button>
+      </div>
+    </header>
+    <p class="nota">Texto impresso no requerimento de {{ termo() === 'adesao' ? 'adesão' : 'desligamento' }} do associado.</p>
+    @if (termo() === 'adesao') {
+      <app-termo-editor tipo="adesao" titulo="Termo de adesão" [conteudo]="d.termoAdesao" (salvo)="termoSalvo($event)" />
+    } @else {
+      <app-termo-editor tipo="desligamento" titulo="Termo de desligamento" [conteudo]="d.termoDesligamento" (salvo)="termoSalvo($event)" />
+    }
+  </section>
+
+  <app-sede-dialog [open]="sedeAberta()" [sede]="sedeEditada()" [estados]="estados()" (salvo)="sedeSalva($event)" (closed)="sedeAberta.set(false)" (retry)="recarregar()" />
+
+  <app-dialog titulo="Remover sede" [open]="removendo() !== null" (closed)="removendo.set(null)">
+    <div class="dlg">
+      <p>Remover a sede <strong>{{ removendo()?.nome }}</strong>?</p>
+      @if (erroSede()) { <app-alert tone="danger">{{ erroSede() }}</app-alert> }
+    </div>
+    <div dialog-actions>
+      <button type="button" class="btn btn--secondary btn--sm" (click)="removendo.set(null)" [disabled]="acaoSede() !== null">Cancelar</button>
+      <button type="button" class="btn btn--danger btn--sm" (click)="remover()" [disabled]="acaoSede() !== null">
+        @if (acaoSede() !== null) { <span class="spinner" aria-hidden="true"></span> Removendo… } @else { Remover }
+      </button>
+    </div>
+  </app-dialog>
+} @else {
+  <section class="card bloco" aria-busy="true"><span class="skeleton" style="width: 16rem"></span><span class="skeleton" style="width: 100%"></span></section>
+}

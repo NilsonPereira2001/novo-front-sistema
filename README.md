@@ -116,6 +116,16 @@ Código em `features/agenda/`. Compromissos **privados**: o back só devolve os 
 - Próximos compromissos na tela Início.
 - Estado na URL (`?mes=AAAA-MM&dia=AAAA-MM-DD`).
 
+### Administração › Dados da empresa (`/administracao/empresa`)
+
+Código em `features/empresa/`. Endpoints do `EmpresaDadosController` (PR #8), permissão `DADOS_EMPRESA`. Usa a empresa 3, a mesma que relatórios, e-mails e remessa já usam no back.
+
+- **Identificação:** nome, sigla (até 20 caracteres, vai na remessa bancária), CNPJ com dígito verificador, fundação, telefone, e-mail e site.
+- **Imagens:** logo (e-mails) e cabeçalho dos relatórios em PDF. PNG ou JPEG até 1 MB; o back confere pelos bytes e guarda como data URL (formato que os relatórios e e-mails já leem).
+- **Sedes:** cadastrar, editar, tornar principal e remover (a principal não pode ser removida).
+- **Termos de adesão e desligamento:** HTML simples impresso nos requerimentos; editor com negrito, itálico, sublinhado, parágrafo, quebra e lista, com pré-visualização.
+- **Gestão atual:** só leitura (definida no módulo da diretoria).
+
 ### Administração › Usuários e permissões (`/administracao/usuarios`)
 
 Código em `features/usuarios/`. Endpoints do `UsuarioSistemaController` (PR #8), permissão `CREDENCIAL_SISTEMA`.

@@ -211,6 +211,13 @@ export const NAVIGATION: readonly NavGroup[] = [
         available: true,
       },
       {
+        label: 'Dados da empresa',
+        path: 'administracao/empresa',
+        icon: 'building',
+        description: 'Identificação, imagens, sedes e termos',
+        available: true,
+      },
+      {
         label: 'Configurações',
         path: 'administracao/configuracoes',
         icon: 'sliders',

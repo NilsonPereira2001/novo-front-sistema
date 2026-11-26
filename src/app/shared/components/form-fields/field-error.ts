@@ -16,6 +16,7 @@ const MENSAGENS: Readonly<Record<string, string>> = {
   dataHora: 'Data e hora inválidas.',
   dataPassada: 'Escolha uma data e hora futuras.',
   documento: 'CPF ou CNPJ inválido.',
+  cnpj: 'CNPJ inválido. Confira os números digitados.',
   valorPositivo: 'Informe um valor maior que zero.',
 };
 

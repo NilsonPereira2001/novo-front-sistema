@@ -105,6 +105,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/agenda/calendario/minha-agenda').then((m) => m.MinhaAgenda),
       },
       {
+        path: 'administracao/empresa',
+        title: pageTitle('Dados da empresa'),
+        loadComponent: () => import('./features/empresa/dados-empresa').then((m) => m.DadosEmpresaPage),
+      },
+      {
         path: 'administracao/usuarios',
         title: pageTitle('Usuários e permissões'),
         loadComponent: () => import('./features/usuarios/lista/usuarios-lista').then((m) => m.UsuariosLista),
