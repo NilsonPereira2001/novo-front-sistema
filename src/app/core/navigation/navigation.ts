@@ -91,6 +91,13 @@ export const NAVIGATION: readonly NavGroup[] = [
         available: true,
       },
       {
+        label: 'Convênios',
+        path: 'financeiro/convenios',
+        icon: 'badge-check',
+        description: 'Convênios, nativos e aderentes',
+        available: true,
+      },
+      {
         label: 'Lançamentos',
         path: 'financeiro/lancamentos',
         icon: 'receipt',
@@ -156,13 +163,6 @@ export const NAVIGATION: readonly NavGroup[] = [
   {
     label: 'Complementares',
     items: [
-      {
-        label: 'Convênios',
-        path: 'convenios',
-        icon: 'badge-check',
-        description: 'Convênios e parcerias oferecidos',
-        available: false,
-      },
       {
         label: 'Indicações',
         path: 'indicacoes',

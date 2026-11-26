@@ -234,6 +234,17 @@ Código em `features/financeiro/dashboard/`. Endpoint `GET financeiro/dashboard?
 - **Gráficos:** as barras e as cores das séries (`--viz-serie-1..4`, validadas para daltonismo) ficam em `shared/components/charts/`.
 - **Testes:** `dashboard-api.spec.ts`.
 
+### Financeiro › Convênios (`/financeiro/convenios`)
+
+Código em `features/financeiro/convenios/`. Endpoints do `ConvenioAdminController` (PR #8), permissão `FINANCEIRO_CONVENIOS`.
+
+- **Classes:** *nativo* = obrigatório (sempre fixo, entra sozinho na adesão de todo associado do público); *fixo* = cobrado todo mês de quem aderiu; *avulso* = sem cobrança mensal. Nativo e fixo exigem valor maior que zero (front e back validam).
+- **Associados antigos:** só para nativo e só na criação — cria a adesão para quem já é associado (ativo ou em adesão) do público. Depois, a ficha mostra quantos ainda estão sem o obrigatório e oferece **Aplicar a esses associados**.
+- **Lista:** totais, filtro por classe e situação (padrão: ativos), busca por nome/fantasia/documento.
+- **Ficha:** dados, cobrança mensal prevista, valor a receber (em aberto + não debitado), débitos por situação, últimos lançamentos e aderentes (ativas/encerradas, busca). Ações: editar, desativar (com opção de encerrar as adesões), reativar.
+- **Formulário:** CPF ou CNPJ com dígito verificador (duplicado entre convênios ativos → 409), público (vazio = todos os vínculos), endereço opcional, texto em maiúsculas.
+- No back, o lançamento mensal passou a cobrar só convênio **ativo, fixo e com valor**, e o cadastro de associado inclui os nativos ativos do vínculo.
+
 ### Financeiro › Associados (`/financeiro/associados`)
 
 Código em `features/financeiro/associados/`. Usa o `FinanceiroAssociadoController`, novo no PR #8 do `back-novo`.

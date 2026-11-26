@@ -1,0 +1,183 @@
+<a class="back-link" routerLink="/financeiro/convenios"><app-icon name="arrow-left" /> Convênios</a>
+
+@if (erro(); as kind) {
+  <section class="card"><app-load-error [kind]="kind" (retry)="recarregar()" /></section>
+} @else if (f(); as f) {
+  @let c = f.convenio;
+  @let ativo = c.status === 'ATIVO';
+  <header class="cabecalho card">
+    <div>
+      <p class="page-eyebrow">Financeiro › Convênio</p>
+      <h1 class="page-title">{{ c.nome }}</h1>
+      <p class="cabecalho__meta">
+        <span class="classe" [attr.data-classe]="c.classe">{{ rotuloClasse[c.classe] }}@if (c.nativo) { · obrigatório }</span>
+        <span class="situacao" [class.is-off]="!ativo">{{ ativo ? 'Ativo' : 'Desligado' }}</span>
+        @if (c.nomeFantasia) { <span>{{ c.nomeFantasia }}</span> }
+      </p>
+    </div>
+    <div class="cabecalho__acoes">
+      <a class="btn btn--secondary" [routerLink]="['/financeiro/convenios', c.id, 'editar']"><app-icon name="pencil" /> Editar</a>
+      @if (ativo) {
+        <button type="button" class="btn btn--danger-outline" (click)="pedir('desativar')"><app-icon name="power" /> Desativar</button>
+      } @else {
+        <button type="button" class="btn btn--primary" (click)="pedir('reativar')"><app-icon name="refresh-cw" /> Reativar</button>
+      }
+    </div>
+  </header>
+
+  @if (aviso(); as a) {
+    <div class="aviso"><app-alert tone="success">{{ a }}</app-alert><button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
+  }
+  @if (!ativo) {
+    <app-alert tone="warning">Convênio desligado em {{ c.dataExclusao | date: 'dd/MM/yyyy' }}: não entra nos lançamentos nem nas novas adesões.</app-alert>
+  }
+  @if (c.nativo && ativo && f.associadosSemAdesao > 0) {
+    <div class="pendencia card">
+      <app-icon name="alert-circle" />
+      <p><strong>{{ f.associadosSemAdesao }} {{ f.associadosSemAdesao === 1 ? 'associado' : 'associados' }}</strong> do público ainda sem este convênio obrigatório (cadastrados antes dele ou antes de virar nativo).</p>
+      <button type="button" class="btn btn--primary btn--sm" (click)="pedir('aplicar')">Aplicar a esses associados</button>
+    </div>
+  }
+
+  <section class="tiles" aria-label="Resumo">
+    <article class="tile card">
+      <p class="tile__rotulo">Aderentes ativos</p>
+      <p class="tile__valor">{{ f.aderentesAtivos }}</p>
+      <p class="tile__sub">{{ f.aderentesAssociadosAtivos }} de associados ativos · {{ f.aderentesDesligados }} encerradas</p>
+    </article>
+    <article class="tile card">
+      <p class="tile__rotulo">Cobrança mensal prevista</p>
+      <p class="tile__valor">{{ c.fixo ? (f.receitaMensalPrevista | currency: 'BRL') : '—' }}</p>
+      <p class="tile__sub">{{ c.fixo ? (c.valor | currency: 'BRL') + ' por associado ativo' : 'Avulso: sem cobrança mensal fixa' }}</p>
+    </article>
+    <article class="tile card">
+      <p class="tile__rotulo">A receber</p>
+      <p class="tile__valor" [class.tile__valor--debito]="aberto().valor > 0">{{ aberto().valor | currency: 'BRL' }}</p>
+      <p class="tile__sub">{{ aberto().quantidade }} débitos em aberto ou não debitados</p>
+    </article>
+  </section>
+
+  <div class="grade">
+    <section class="card bloco" aria-labelledby="t-dados">
+      <h2 class="bloco__titulo" id="t-dados">Dados</h2>
+      <dl class="dados">
+        <div><dt>Classe</dt><dd>{{ c.nativo ? 'Nativo (obrigatório)' : c.fixo ? 'Fixo' : 'Avulso' }}</dd></div>
+        <div><dt>Valor mensal</dt><dd>{{ c.valor !== null ? (c.valor | currency: 'BRL') : '—' }}</dd></div>
+        <div><dt>Público</dt><dd>{{ c.publico?.tipo ?? 'Todos os vínculos' }}</dd></div>
+        <div><dt>Débito não pago</dt><dd>{{ c.relancaPendencia ? 'Volta no próximo lançamento' : 'Não é relançado' }}</dd></div>
+        <div><dt>Pessoa</dt><dd>{{ c.tipo ?? '—' }}</dd></div>
+        <div><dt>CPF/CNPJ</dt><dd class="cell-mono">{{ doc(c.cpfcnpj) }}</dd></div>
+        <div><dt>Criado em</dt><dd>{{ (c.dataCriacao | date: 'dd/MM/yyyy') ?? '—' }}</dd></div>
+        <div><dt>Aplicado aos antigos</dt><dd>{{ c.associadosAntigos ? 'Sim, na criação' : 'Não' }}</dd></div>
+        <div class="dados__largo"><dt>Endereço</dt><dd>{{ endereco(f) }}</dd></div>
+      </dl>
+    </section>
+
+    <section class="card bloco" aria-labelledby="t-lanc">
+      <h2 class="bloco__titulo" id="t-lanc">Últimos lançamentos</h2>
+      @if (f.lancamentos.length === 0) {
+        <p class="vazio">Ainda não entrou em nenhum lançamento.</p>
+      } @else {
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th scope="col">Lançamento</th><th scope="col" class="num">Débitos</th><th scope="col" class="num">Valor</th><th scope="col" class="num">Pago</th></tr></thead>
+            <tbody>
+              @for (l of f.lancamentos; track l.idLancamento) {
+                <tr>
+                  <td>NSA {{ l.nsa }}<span class="sub">{{ l.dataGeracao | date: 'dd/MM/yyyy' }}</span></td>
+                  <td class="num">{{ l.debitos }}</td>
+                  <td class="num">{{ l.valor | currency: 'BRL' }}</td>
+                  <td class="num">{{ l.pago | currency: 'BRL' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+      @if (f.debitos.length) {
+        <h3 class="bloco__sub">Débitos por situação</h3>
+        <ul class="debitos">
+          @for (d of f.debitos; track d.status) {
+            <li><span>{{ d.status }}</span><span class="num">{{ d.quantidade }} · {{ d.valor | currency: 'BRL' }}</span></li>
+          }
+        </ul>
+      }
+    </section>
+  </div>
+
+  <section class="card bloco" aria-labelledby="t-aderentes">
+    <header class="bloco__cab">
+      <h2 class="bloco__titulo" id="t-aderentes">Aderentes</h2>
+      <div class="filtros">
+        <div class="segmented" role="group" aria-label="Situação da adesão">
+          <button type="button" class="segmented__item" [class.is-active]="filtroAderentes() === 'ATIVO'" (click)="setFiltro('ATIVO')">Ativas</button>
+          <button type="button" class="segmented__item" [class.is-active]="filtroAderentes() === 'DESLIGADO'" (click)="setFiltro('DESLIGADO')">Encerradas</button>
+          <button type="button" class="segmented__item" [class.is-active]="filtroAderentes() === ''" (click)="setFiltro('')">Todas</button>
+        </div>
+        <label class="sr-only" for="ad-busca">Buscar aderente</label>
+        <input id="ad-busca" class="field__input" type="search" placeholder="Nome, CPF ou matrícula" (input)="buscar($event)" />
+      </div>
+    </header>
+    @if (paginaAd(); as pg) {
+      @if (pg.content.length === 0) {
+        <p class="vazio">Nenhum aderente {{ filtroAderentes() === 'DESLIGADO' ? 'encerrado' : filtroAderentes() === 'ATIVO' ? 'ativo' : '' }}{{ buscaAderentes() ? ' para "' + buscaAderentes() + '"' : '' }}.</p>
+      } @else {
+        <div class="table-scroll">
+          <table class="data-table" [class.is-stale]="aderentes().status === 'loading'">
+            <thead>
+              <tr><th scope="col">Associado</th><th scope="col">Vínculo</th><th scope="col">Situação do associado</th><th scope="col">Adesão</th><th scope="col">Encerramento</th></tr>
+            </thead>
+            <tbody>
+              @for (a of pg.content; track a.idAdesao) {
+                <tr>
+                  <td>
+                    <a class="nome" [routerLink]="['/financeiro/associados', a.idAssociado]">{{ a.nome }}</a>
+                    <span class="sub cell-mono">{{ a.cpf | cpf }}@if (a.matricula) { · mat. {{ a.matricula }} }</span>
+                  </td>
+                  <td>{{ a.vinculo ?? '—' }}</td>
+                  <td>{{ a.statusAssociado ?? '—' }}</td>
+                  <td class="cell-mono">{{ (a.dataAdesao | date: 'dd/MM/yyyy') ?? '—' }}</td>
+                  <td class="cell-mono">{{ a.status === 'ATIVO' ? '—' : ((a.dataExclusao | date: 'dd/MM/yyyy') ?? 'Encerrada') }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <app-pagination [page]="pg.number" [size]="pg.size" [total]="pg.totalElements" [totalPages]="pg.totalPages" [first]="pg.first" [last]="pg.last" [sizeOptions]="[15]" itemLabel="aderentes" (pageChange)="paginaAderentes.set($event)" />
+      }
+    } @else if (aderentes().status === 'error') {
+      <p class="vazio">Não foi possível carregar os aderentes.</p>
+    } @else {
+      <span class="skeleton" style="width: 100%"></span><span class="skeleton" style="width: 90%"></span>
+    }
+  </section>
+
+  <app-dialog [titulo]="confirmar() === 'aplicar' ? 'Aplicar convênio obrigatório' : confirmar() === 'desativar' ? 'Desativar convênio' : 'Reativar convênio'" [open]="confirmar() !== null" (closed)="confirmar.set(null)">
+    <div class="dlg">
+      @switch (confirmar()) {
+        @case ('aplicar') {
+          <p>Criar a adesão de <strong>{{ c.nome }}</strong> para {{ f.associadosSemAdesao }} {{ f.associadosSemAdesao === 1 ? 'associado' : 'associados' }} ({{ c.publico?.tipo ?? 'todos os vínculos' }}, ativos e em adesão) que ainda não têm. A cobrança começa no próximo lançamento.</p>
+        }
+        @case ('desativar') {
+          <p><strong>{{ c.nome }}</strong> deixa de entrar nos lançamentos mensais e nas novas adesões. O histórico é mantido.</p>
+          <label class="check">
+            <input type="checkbox" [checked]="desligarAdesoes()" (change)="desligarAdesoes.set(!desligarAdesoes())" />
+            <span>Encerrar também as {{ f.aderentesAtivos }} adesões ativas <small>Sem marcar, elas voltam a valer se o convênio for reativado.</small></span>
+          </label>
+        }
+        @case ('reativar') {
+          <p><strong>{{ c.nome }}</strong> volta a entrar nos lançamentos para quem tem adesão ativa.@if (c.nativo) { Associados novos do público passam a recebê-lo na adesão. }</p>
+        }
+      }
+      @if (erroAcao()) { <app-alert tone="danger">{{ erroAcao() }}</app-alert> }
+    </div>
+    <div dialog-actions>
+      <button type="button" class="btn btn--secondary btn--sm" (click)="confirmar.set(null)" [disabled]="executando()">Cancelar</button>
+      <button type="button" class="btn btn--sm" [class.btn--danger]="confirmar() === 'desativar'" [class.btn--primary]="confirmar() !== 'desativar'" (click)="executar(f)" [disabled]="executando()">
+        @if (executando()) { <span class="spinner" aria-hidden="true"></span> Aguarde… } @else { {{ confirmar() === 'aplicar' ? 'Aplicar' : confirmar() === 'desativar' ? 'Desativar' : 'Reativar' }} }
+      </button>
+    </div>
+  </app-dialog>
+} @else {
+  <section class="cabecalho card" aria-busy="true"><span class="skeleton" style="width: 18rem; height: 1.75rem"></span></section>
+}

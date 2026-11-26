@@ -15,6 +15,8 @@ const MENSAGENS: Readonly<Record<string, string>> = {
   valor: 'Valor inválido. Use o formato 1.234,56.',
   dataHora: 'Data e hora inválidas.',
   dataPassada: 'Escolha uma data e hora futuras.',
+  documento: 'CPF ou CNPJ inválido.',
+  valorPositivo: 'Informe um valor maior que zero.',
 };
 
 /** Mensagem de erro de um campo, exibida depois que o usuário o tocou. */

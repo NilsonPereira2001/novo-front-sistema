@@ -162,6 +162,26 @@ export const routes: Routes = [
           import('./features/financeiro/associados/lista/fin-associados-lista').then((m) => m.FinAssociadosLista),
       },
       {
+        path: 'financeiro/convenios',
+        title: pageTitle('Convênios'),
+        loadComponent: () => import('./features/financeiro/convenios/lista/convenios-lista').then((m) => m.ConveniosLista),
+      },
+      {
+        path: 'financeiro/convenios/novo',
+        title: pageTitle('Novo convênio'),
+        loadComponent: () => import('./features/financeiro/convenios/form/convenio-form').then((m) => m.ConvenioFormPage),
+      },
+      {
+        path: 'financeiro/convenios/:id/editar',
+        title: pageTitle('Editar convênio'),
+        loadComponent: () => import('./features/financeiro/convenios/form/convenio-form').then((m) => m.ConvenioFormPage),
+      },
+      {
+        path: 'financeiro/convenios/:id',
+        title: pageTitle('Convênio'),
+        loadComponent: () => import('./features/financeiro/convenios/ficha/convenio-ficha').then((m) => m.ConvenioFicha),
+      },
+      {
         path: 'financeiro/associados/:id',
         title: pageTitle('Financeiro'),
         loadComponent: () => import('./features/financeiro/associados/ficha/ficha').then((m) => m.FinFicha),

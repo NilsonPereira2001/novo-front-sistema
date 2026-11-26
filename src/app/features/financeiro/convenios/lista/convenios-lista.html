@@ -1,0 +1,136 @@
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">Financeiro</p>
+    <h1 class="page-title">Convênios</h1>
+    <p class="page-subtitle">Nativos (obrigatórios), fixos (cobrados todo mês) e avulsos. Abra a ficha para ver quem aderiu e o que foi cobrado.</p>
+  </div>
+  <div class="page-header__actions">
+    <a class="btn btn--primary" routerLink="/financeiro/convenios/novo"><app-icon name="plus" /> Novo convênio</a>
+  </div>
+</header>
+
+@if (aviso(); as a) {
+  <div class="aviso" role="status"><app-icon name="check-circle" /> {{ a }} <button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
+}
+
+<section class="tiles" aria-label="Resumo">
+  @let r = resumo();
+  @if (r.status === 'ready') {
+    <article class="tile card">
+      <p class="tile__rotulo">Convênios ativos</p>
+      <p class="tile__valor">{{ r.data.ativos }}</p>
+      <p class="tile__sub">{{ r.data.nativos }} nativos · {{ r.data.fixos }} fixos · {{ r.data.avulsos }} avulsos</p>
+    </article>
+    <article class="tile card">
+      <p class="tile__rotulo">Adesões ativas</p>
+      <p class="tile__valor">{{ r.data.adesoesAtivas }}</p>
+      <p class="tile__sub">Em convênios ativos</p>
+    </article>
+    <article class="tile card">
+      <p class="tile__rotulo">Cobrança mensal fixa</p>
+      <p class="tile__valor">{{ r.data.receitaMensalFixa | currency: 'BRL' }}</p>
+      <p class="tile__sub">Convênios fixos de associados ativos, por mês</p>
+    </article>
+  } @else if (r.status === 'error') {
+    <p class="tiles__erro">Não foi possível carregar o resumo.</p>
+  } @else {
+    @for (i of [0, 1, 2]; track i) {
+      <div class="tile card"><span class="skeleton" style="width: 8rem"></span><span class="skeleton" style="width: 6rem; height: 1.5rem"></span></div>
+    }
+  }
+</section>
+
+<section class="card table-card" aria-labelledby="titulo-convenios">
+  <h2 id="titulo-convenios" class="sr-only">Lista de convênios</h2>
+  <div class="chips" role="group" aria-label="Filtrar por classe">
+    @for (c of classes; track c.key) {
+      <button type="button" class="chip" [class.is-active]="classe() === c.key" [attr.aria-pressed]="classe() === c.key" (click)="setClasse(c.key)">{{ c.rotulo }}</button>
+    }
+  </div>
+  <div class="toolbar">
+    <app-search-field label="Pesquisar convênios" placeholder="Nome, nome fantasia ou CPF/CNPJ" [value]="url.searchText()" (valueChange)="url.search($event)" (clear)="url.clearSearch()" />
+    <label class="sr-only" for="f-status">Situação</label>
+    <select id="f-status" class="field__input filtro-status" (change)="onStatus($event)">
+      <option value="ATIVO" [selected]="status() === 'ATIVO'">Ativos</option>
+      <option value="DESLIGADO" [selected]="status() === 'DESLIGADO'">Desligados</option>
+      <option value="TODOS" [selected]="status() === ''">Todos</option>
+    </select>
+  </div>
+
+  @if (carregando() && pagina()) {
+    <div class="loading-bar" role="progressbar" aria-label="Carregando"></div>
+  }
+
+  @if (erro(); as kind) {
+    <app-load-error [kind]="kind" (retry)="recarregar()" />
+  } @else if (!carregando() && pagina()?.empty) {
+    <div class="state">
+      <span class="state__icon"><app-icon name="badge-check" /></span>
+      <p class="state__title">Nenhum convênio encontrado</p>
+      @if (temFiltros()) {
+        <button type="button" class="btn btn--secondary" (click)="limpar()">Limpar filtros</button>
+      } @else {
+        <a class="btn btn--primary" routerLink="/financeiro/convenios/novo"><app-icon name="plus" /> Cadastrar convênio</a>
+      }
+    </div>
+  } @else {
+    <div class="table-scroll">
+      <table class="data-table" [class.is-stale]="carregando() && !!pagina()" [attr.aria-busy]="carregando()">
+        <thead>
+          <tr>
+            <th scope="col">Convênio</th>
+            <th scope="col">Classe</th>
+            <th scope="col">Público</th>
+            <th scope="col" class="num">Valor mensal</th>
+            <th scope="col" class="num">Aderentes</th>
+            <th scope="col">Situação</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (pagina(); as pg) {
+            @for (c of pg.content; track c.id) {
+              <tr>
+                <td class="conv">
+                  <a class="conv__nome" [routerLink]="['/financeiro/convenios', c.id]">{{ c.nome }}</a>
+                  @if (c.nomeFantasia || c.cpfcnpj) {
+                    <span class="sub">{{ c.nomeFantasia }}@if (c.nomeFantasia && c.cpfcnpj) { · }<span class="cell-mono">{{ doc(c.cpfcnpj) }}</span></span>
+                  }
+                </td>
+                <td><span class="classe" [attr.data-classe]="c.classe">{{ rotuloClasse[c.classe] }}</span></td>
+                <td>{{ c.publico?.tipo ?? (c.nativo ? 'Todos' : '—') }}</td>
+                <td class="num">{{ c.fixo && c.valor !== null ? (c.valor | currency: 'BRL') : '—' }}</td>
+                <td class="num">{{ c.aderentes }}</td>
+                <td><span class="situacao" [class.is-off]="c.status !== 'ATIVO'">{{ c.status === 'ATIVO' ? 'Ativo' : 'Desligado' }}</span></td>
+              </tr>
+            }
+          } @else {
+            @for (r of skeleton; track r) {
+              <tr aria-hidden="true">
+                <td><span class="skeleton" style="width: 14rem"></span></td>
+                <td><span class="skeleton" style="width: 4rem"></span></td>
+                <td><span class="skeleton" style="width: 5rem"></span></td>
+                <td><span class="skeleton" style="width: 5rem"></span></td>
+                <td><span class="skeleton" style="width: 3rem"></span></td>
+                <td><span class="skeleton" style="width: 4rem"></span></td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (pagina(); as pg) {
+      <app-pagination
+        [page]="pg.number"
+        [size]="pg.size"
+        [total]="pg.totalElements"
+        [totalPages]="pg.totalPages"
+        [first]="pg.first"
+        [last]="pg.last"
+        [sizeOptions]="url.sizeOptions"
+        itemLabel="convênios"
+        (pageChange)="url.setPage($event)"
+        (sizeChange)="url.setSize($event)"
+      />
+    }
+  }
+</section>

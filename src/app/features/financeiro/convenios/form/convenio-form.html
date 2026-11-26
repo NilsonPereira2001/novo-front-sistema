@@ -1,0 +1,120 @@
+<a class="back-link" [routerLink]="idNumero() ? ['/financeiro/convenios', idNumero()] : ['/financeiro/convenios']"><app-icon name="arrow-left" /> {{ idNumero() ? 'Ficha do convênio' : 'Convênios' }}</a>
+
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">Financeiro › Convênios</p>
+    <h1 class="page-title">{{ editando() ? 'Editar convênio' : 'Novo convênio' }}</h1>
+    <p class="page-subtitle">Campos com <span class="field__req">*</span> são obrigatórios. Os textos são gravados em maiúsculas.</p>
+  </div>
+</header>
+
+@switch (carga()) {
+  @case ('carregando') {
+    <section class="card secao" aria-busy="true"><span class="skeleton" style="width: 14rem"></span><span class="skeleton" style="width: 100%"></span></section>
+  }
+  @case ('nao-encontrado') {
+    <section class="card"><div class="state"><p class="state__title">Convênio não encontrado</p><a class="btn btn--secondary btn--sm" routerLink="/financeiro/convenios">Voltar</a></div></section>
+  }
+  @case ('erro') {
+    <section class="card"><div class="state"><p class="state__title">Não foi possível carregar o convênio.</p><a class="btn btn--secondary btn--sm" routerLink="/financeiro/convenios">Voltar</a></div></section>
+  }
+  @default {
+    <form class="form" [formGroup]="form" (ngSubmit)="salvar()" novalidate>
+      <section class="card secao" aria-labelledby="s-cobranca">
+        <h2 class="secao__titulo" id="s-cobranca">Tipo de convênio e cobrança</h2>
+        <div class="classes" role="radiogroup" aria-label="Classe do convênio">
+          @for (c of classes; track c.key) {
+            <label class="classe" [class.is-ativa]="classe() === c.key">
+              <input type="radio" name="classe" class="sr-only" [checked]="classe() === c.key" (change)="escolherClasse(c.key)" />
+              <span class="classe__titulo">{{ c.rotulo }}</span>
+              <span class="classe__desc">{{ c.descricao }}</span>
+            </label>
+          }
+        </div>
+        @if (editando() && classeOriginal() && classeOriginal() !== classe()) {
+          <app-alert tone="warning">
+            @if (classe() === 'NATIVO') {
+              Ao virar nativo, ele passa a entrar sozinho nas próximas adesões. Para os associados que já existem, use "Aplicar aos associados" na ficha.
+            } @else if (classeOriginal() === 'NATIVO') {
+              Deixando de ser nativo, ele não entra mais sozinho nas novas adesões. Quem já aderiu continua com o convênio.
+            } @else {
+              A mudança vale a partir do próximo lançamento mensal.
+            }
+          </app-alert>
+        }
+
+        <div class="form-grid">
+          @let v = form.controls.valor;
+          <div class="field span-4" [class.field--invalid]="v.invalid && v.touched">
+            <label class="field__label" for="cv-valor">Valor mensal @if (exigeValor()) { <span class="field__req" aria-hidden="true">*</span> }</label>
+            <div class="valor">
+              <span class="valor__prefixo" aria-hidden="true">R$</span>
+              <input id="cv-valor" class="field__input" type="text" inputmode="decimal" placeholder="0,00" [formControl]="v" aria-describedby="cv-valor-erro cv-valor-dica" [attr.aria-invalid]="v.invalid && v.touched" />
+            </div>
+            <p class="field__hint" id="cv-valor-dica">{{ exigeValor() ? 'Obrigatório: é o valor cobrado no lançamento mensal.' : 'Opcional: referência, não é cobrado todo mês.' }}</p>
+            <app-field-error [control]="v" errorId="cv-valor-erro" />
+          </div>
+          <app-select-field class="span-4" label="Público" [control]="form.controls.idPublico" [state]="publicos()" placeholder="Todos os vínculos" (retry)="tentarLookups()" />
+          <div class="span-4 checks">
+            <label class="check"><input type="checkbox" [formControl]="form.controls.relancaPendencia" /> Relançar débito não pago no mês seguinte</label>
+          </div>
+          @if (classe() === 'NATIVO' && !editando()) {
+            <div class="span-12 antigos">
+              <label class="check check--destaque">
+                <input type="checkbox" [formControl]="form.controls.associadosAntigos" />
+                <span>
+                  <strong>Aplicar também a quem já é associado</strong>
+                  <small>Cria a adesão para todos os associados ativos e em adesão do público escolhido, cadastrados antes deste convênio. Sem marcar, vale só para as novas adesões.</small>
+                </span>
+              </label>
+            </div>
+          }
+        </div>
+      </section>
+
+      <section class="card secao" aria-labelledby="s-ident">
+        <h2 class="secao__titulo" id="s-ident">Identificação</h2>
+        <div class="form-grid">
+          <app-text-field class="span-6" label="Nome do convênio" [control]="form.controls.nome" [required]="true" [maxlength]="255" placeholder="Ex.: MENSALIDADE, SEGURO DE VIDA" />
+          <app-text-field class="span-6" label="Nome fantasia / parceiro" [control]="form.controls.nomeFantasia" [maxlength]="255" />
+          <div class="field span-3">
+            <label class="field__label" for="cv-tipo">Pessoa</label>
+            <select id="cv-tipo" class="field__input" [formControl]="form.controls.tipo">
+              <option value="">Não informado</option>
+              <option value="JURIDICA">Jurídica</option>
+              <option value="FISICA">Física</option>
+              @if (form.controls.tipo.value && form.controls.tipo.value !== 'JURIDICA' && form.controls.tipo.value !== 'FISICA') {
+                <option [value]="form.controls.tipo.value">{{ form.controls.tipo.value }}</option>
+              }
+            </select>
+          </div>
+          <app-text-field class="span-4" label="CPF/CNPJ" [control]="form.controls.cpfcnpj" mask="documento" placeholder="00.000.000/0000-00" />
+        </div>
+      </section>
+
+      <section class="card secao" aria-labelledby="s-end">
+        <h2 class="secao__titulo" id="s-end">Endereço do parceiro <small>(opcional)</small></h2>
+        <div class="form-grid">
+          <app-text-field class="span-3" label="CEP" [control]="form.controls.cep" mask="cep" placeholder="00000-000" />
+          <app-text-field class="span-7" label="Logradouro" [control]="form.controls.logradouro" [maxlength]="255" />
+          <app-text-field class="span-2" label="Número" [control]="form.controls.numero" [maxlength]="20" />
+          <app-text-field class="span-4" label="Complemento" [control]="form.controls.complemento" [maxlength]="255" />
+          <app-text-field class="span-3" label="Bairro" [control]="form.controls.bairro" [maxlength]="255" />
+          <app-text-field class="span-3" label="Cidade" [control]="form.controls.cidade" [maxlength]="255" />
+          <app-select-field class="span-2" label="UF" [control]="form.controls.idEstado" [state]="estados()" placeholder="UF" (retry)="tentarLookups()" />
+        </div>
+      </section>
+
+      @if (erro()) {
+        <app-alert tone="danger" heading="Não foi possível salvar">{{ erro() }}</app-alert>
+      }
+
+      <div class="acoes">
+        <a class="btn btn--secondary" [routerLink]="idNumero() ? ['/financeiro/convenios', idNumero()] : ['/financeiro/convenios']">Cancelar</a>
+        <button type="submit" class="btn btn--primary" [disabled]="enviando()">
+          @if (enviando()) { <span class="spinner" aria-hidden="true"></span> Salvando… } @else { <app-icon name="check-circle" /> {{ editando() ? 'Salvar alterações' : 'Cadastrar convênio' }} }
+        </button>
+      </div>
+    </form>
+  }
+}
