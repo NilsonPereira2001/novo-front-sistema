@@ -1,6 +1,6 @@
 <a class="back-link" routerLink="/pessoas">
   <app-icon name="arrow-left" />
-  Pessoas
+  Voltar à lista
 </a>
 
 @if (detalhe()?.origem === 'api') {
@@ -24,7 +24,7 @@
         <span class="state__icon"><app-icon name="search" /></span>
         <p class="state__title">Cadastro não encontrado</p>
         <p class="state__text">Não há cadastro para esta pessoa no servidor. Volte à lista e confira o registro.</p>
-        <a class="btn btn--secondary btn--sm" routerLink="/pessoas">Voltar para Pessoas</a>
+        <a class="btn btn--secondary btn--sm" routerLink="/pessoas">Voltar à lista</a>
       </div>
     } @else {
       <app-load-error [kind]="kind" (retry)="tentarDeNovo()" />

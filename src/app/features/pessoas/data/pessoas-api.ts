@@ -4,6 +4,9 @@
  * Endpoints:
  *   GET /pessoas/listar/filtradas/paginada?filtro=&idTipoPessoa=&page=&size=
  *     Resposta: ResponseEntity<Page<PessoaDTO>> · padrão @PageableDefault(size = 7)
+ *   GET /pessoas/membros?filtro=&vinculo=&page=&size=
+ *     Só associados e dependentes (sem colaboradores). `vinculo` = ASSOCIADO | DEPENDENTE;
+ *     sem ele, ambos. O `tipo` de cada item é o vínculo real (ASSOCIADO ou DEPENDENTE).
  *   GET /tipo/pessoas/listar   (TipoPessoaController)
  *     Resposta: ResponseEntity<List<TipoPessoa>> · campos `id` e `nome`
  */
@@ -11,12 +14,14 @@
 import { HttpParams } from '@angular/common/http';
 
 import { JsonRecord, isRecord, readNumber, readString } from '../../../shared/utils/json-read';
-import { PessoaDTO, PessoasFiltro } from '../models/pessoa.dto';
+import { TERMOS } from '../../../core/config/terminologia';
+import { MembrosFiltro, PessoaDTO, PessoasFiltro, VinculoMembro } from '../models/pessoa.dto';
 import { TipoPessoa } from '../models/tipo-pessoa.model';
 
 export const PESSOAS_API = {
   listarPaginada: '/pessoas/listar/filtradas/paginada',
   listarTipos: '/tipo/pessoas/listar',
+  listarMembros: '/pessoas/membros',
 } as const;
 
 /** Mesmo tamanho de página do `@PageableDefault(size = 7)` do backend. */
@@ -107,4 +112,31 @@ export function toTipoPessoa(raw: JsonRecord): TipoPessoa | null {
   const id = readNumber(raw, ['id']);
   const nome = readString(raw, ['nome']);
   return id !== null && isIdValido(id) && nome ? { id, nome } : null;
+}
+
+/** `?vinculo=` da URL → filtro. Qualquer outro valor vira "ambos". */
+export function toVinculo(value: string | null | undefined): VinculoMembro | undefined {
+  const v = value?.trim().toUpperCase();
+  return v === 'ASSOCIADO' || v === 'DEPENDENTE' ? v : undefined;
+}
+
+/** Parâmetros de `GET /pessoas/membros`; `filtro` e `vinculo` só quando preenchidos. */
+export function toMembrosParams(f: MembrosFiltro): HttpParams {
+  let params = new HttpParams().set('page', f.page).set('size', f.size);
+  const texto = f.filtro?.trim();
+  if (texto) {
+    params = params.set('filtro', texto);
+  }
+  if (f.vinculo) {
+    params = params.set('vinculo', f.vinculo);
+  }
+  return params;
+}
+
+/** Rótulo do vínculo na tabela, com a nomenclatura da empresa (Associado/Afiliado). */
+export function rotuloVinculo(tipo: string | null): string | null {
+  const t = tipo?.trim().toUpperCase();
+  if (t === 'ASSOCIADO') return TERMOS.membro;
+  if (t === 'DEPENDENTE') return 'Dependente';
+  return tipo;
 }

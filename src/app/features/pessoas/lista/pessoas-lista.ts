@@ -2,12 +2,10 @@ import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  ElementRef,
   computed,
   inject,
   linkedSignal,
   signal,
-  viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
@@ -23,15 +21,14 @@ import { CpfPipe } from '../../../shared/pipes/cpf.pipe';
 import { DisplayValuePipe } from '../../../shared/pipes/display-value.pipe';
 import { TelefonePipe } from '../../../shared/pipes/telefone.pipe';
 import { initials } from '../../../shared/utils/text';
-import { PESSOAS_PAGE_SIZE_PADRAO, toIdTipoPessoa } from '../data/pessoas-api';
+import { PESSOAS_PAGE_SIZE_PADRAO, rotuloVinculo, toVinculo } from '../data/pessoas-api';
 import { PessoaService } from '../data/pessoas.service';
-import { TiposPessoaService } from '../data/tipos-pessoa.service';
-import { PessoaDTO, PessoasFiltro } from '../models/pessoa.dto';
+import { MembrosFiltro, PessoaDTO, VinculoMembro } from '../models/pessoa.dto';
 
 /**
- * Listagem de pessoas integrada a GET /pessoas/listar/filtradas/paginada.
- * Pesquisa, filtro por tipo e paginação são feitos pelo backend; o estado
- * fica na URL (?busca=&tipo=&pagina=&tamanho=).
+ * Associados e dependentes (GET /pessoas/membros). Colaboradores ficam em
+ * /colaboradores. Pesquisa, filtro por vínculo e paginação são feitos pelo
+ * backend; o estado fica na URL (?busca=&vinculo=&pagina=&tamanho=).
  */
 @Component({
   selector: 'app-pessoas-lista',
@@ -49,15 +46,9 @@ import { PessoaDTO, PessoasFiltro } from '../models/pessoa.dto';
   templateUrl: './pessoas-lista.html',
   styleUrl: './pessoas-lista.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: {
-    '(document:click)': 'onDocumentClick($event)',
-    '(document:keydown.escape)': 'closeNewMenu()',
-  },
 })
 export class PessoasLista {
   private readonly pessoas = inject(PessoaService);
-  private readonly tiposService = inject(TiposPessoaService);
-  private readonly newMenuRef = viewChild<ElementRef<HTMLElement>>('newMenu');
 
   protected readonly url = injectListUrlState({
     defaultSize: PESSOAS_PAGE_SIZE_PADRAO,
@@ -67,44 +58,26 @@ export class PessoasLista {
   protected readonly initials = initials;
   protected readonly termos = TERMOS;
 
-  // --- Tipos de pessoa (opções do filtro, vindas de GET /tipo/pessoas/listar) --
-  private readonly tiposAttempt = signal(0);
-  private readonly tiposState = loadFrom(
-    signal(null),
-    () => this.tiposService.listar(),
-    this.tiposAttempt,
-  );
-  protected readonly tiposLoading = computed(() => this.tiposState().status === 'loading');
-  protected readonly tiposErro = computed(() => this.tiposState().status === 'error');
-  protected readonly tipos = computed(() => {
-    const s = this.tiposState();
-    return s.status === 'ready' ? s.data : [];
-  });
-
-  /**
-   * `?tipo=3` → 3. Valores inválidos são ignorados (nunca vira NaN ou "null").
-   * Se os tipos já carregaram e o id não existe entre eles (URL editada à mão,
-   * tipo removido), o filtro é descartado para não ficar invisível na tela.
-   */
-  protected readonly idTipoPessoa = computed(() => {
-    const id = toIdTipoPessoa(this.url.params().get('tipo'));
-    const s = this.tiposState();
-    if (id !== undefined && s.status === 'ready' && !s.data.some((t) => t.id === id)) {
-      return undefined;
-    }
-    return id;
-  });
+  // --- Vínculo (associados, dependentes ou ambos) ----------------------------
+  protected readonly vinculos: readonly { valor: VinculoMembro | undefined; rotulo: string }[] = [
+    { valor: undefined, rotulo: 'Todos' },
+    { valor: 'ASSOCIADO', rotulo: TERMOS.membros },
+    { valor: 'DEPENDENTE', rotulo: 'Dependentes' },
+  ];
+  /** `?vinculo=ASSOCIADO|DEPENDENTE`; qualquer outro valor = ambos. */
+  protected readonly vinculo = computed(() => toVinculo(this.url.params().get('vinculo')));
+  protected readonly rotuloVinculo = rotuloVinculo;
 
   protected readonly hasFilters = computed(
-    () => this.url.termo() !== '' || this.idTipoPessoa() !== undefined,
+    () => this.url.termo() !== '' || this.vinculo() !== undefined,
   );
 
   // --- Consulta ---------------------------------------------------------------
   /** Só muda quando algum valor muda de fato, evitando consultas repetidas. */
-  private readonly filtro = computed<PessoasFiltro>(
+  private readonly filtro = computed<MembrosFiltro>(
     () => ({
       filtro: this.url.termo() || undefined,
-      idTipoPessoa: this.idTipoPessoa(),
+      vinculo: this.vinculo(),
       page: this.url.page(),
       size: this.url.size(),
     }),
@@ -113,7 +86,7 @@ export class PessoasLista {
   private readonly attempt = signal(0);
   private readonly state = loadFrom(
     this.filtro,
-    (f) => this.pessoas.listarFiltradasPaginada(f),
+    (f) => this.pessoas.listarMembros(f),
     this.attempt,
   );
 
@@ -140,46 +113,24 @@ export class PessoasLista {
   protected readonly isEmpty = computed(() => !this.loading() && this.page()?.empty === true);
 
   // --- Ações ------------------------------------------------------------------
-  protected readonly newMenuOpen = signal(false);
-
-  /** Troca o tipo mantendo a pesquisa; "Todos os tipos" remove o parâmetro. */
-  protected onTipoChange(event: Event): void {
-    const id = toIdTipoPessoa((event.target as HTMLSelectElement).value);
-    this.url.setFilters({ tipo: id ?? null });
-  }
-
-  protected retryTipos(): void {
-    this.tiposAttempt.update((n) => n + 1);
+  /** Troca o vínculo mantendo a pesquisa; "Todos" remove o parâmetro. */
+  protected setVinculo(v: VinculoMembro | undefined): void {
+    this.url.setFilters({ vinculo: v ?? null });
   }
 
   protected clearFilters(): void {
-    this.url.setFilters({ tipo: null, busca: null });
+    this.url.setFilters({ vinculo: null, busca: null });
   }
 
   protected retry(): void {
     this.attempt.update((n) => n + 1);
   }
-
-  protected toggleNewMenu(): void {
-    this.newMenuOpen.update((open) => !open);
-  }
-
-  closeNewMenu(): void {
-    this.newMenuOpen.set(false);
-  }
-
-  onDocumentClick(event: MouseEvent): void {
-    const menu = this.newMenuRef()?.nativeElement;
-    if (this.newMenuOpen() && menu && !menu.contains(event.target as Node)) {
-      this.closeNewMenu();
-    }
-  }
 }
 
-function mesmoFiltro(a: PessoasFiltro, b: PessoasFiltro): boolean {
+function mesmoFiltro(a: MembrosFiltro, b: MembrosFiltro): boolean {
   return (
     a.filtro === b.filtro &&
-    a.idTipoPessoa === b.idTipoPessoa &&
+    a.vinculo === b.vinculo &&
     a.page === b.page &&
     a.size === b.size
   );

@@ -29,3 +29,14 @@ export interface PessoasFiltro {
   readonly page: number;
   readonly size: number;
 }
+
+export type VinculoMembro = 'ASSOCIADO' | 'DEPENDENTE';
+
+/** Parâmetros de `GET /pessoas/membros` (tela de associados e dependentes). */
+export interface MembrosFiltro {
+  readonly filtro?: string;
+  /** Sem valor: associados e dependentes. */
+  readonly vinculo?: VinculoMembro;
+  readonly page: number;
+  readonly size: number;
+}

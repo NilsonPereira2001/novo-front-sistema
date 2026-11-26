@@ -1,7 +1,10 @@
 import { toPage } from '../../../shared/data/page.model';
 import {
   PESSOAS_PAGE_SIZE_PADRAO,
+  rotuloVinculo,
   toIdTipoPessoa,
+  toMembrosParams,
+  toVinculo,
   toListarParams,
   toPessoaDTO,
   toTipoPessoa,
@@ -115,5 +118,28 @@ describe('tipos de pessoa', () => {
     expect(toListarParams({ idTipoPessoa: Number.NaN, page: 0, size: 7 }).has('idTipoPessoa')).toBe(
       false,
     );
+  });
+});
+
+describe('associados e dependentes', () => {
+  it('lê o vínculo da URL e ignora valores desconhecidos', () => {
+    expect(toVinculo('associado')).toBe('ASSOCIADO');
+    expect(toVinculo(' DEPENDENTE ')).toBe('DEPENDENTE');
+    expect(toVinculo('FUNCIONARIO')).toBeUndefined();
+    expect(toVinculo('')).toBeUndefined();
+    expect(toVinculo(null)).toBeUndefined();
+  });
+
+  it('envia vínculo e filtro só quando preenchidos', () => {
+    expect(toMembrosParams({ page: 0, size: 7 }).toString()).toBe('page=0&size=7');
+    const p = toMembrosParams({ filtro: ' Ana ', vinculo: 'DEPENDENTE', page: 1, size: 15 });
+    expect(p.get('filtro')).toBe('Ana');
+    expect(p.get('vinculo')).toBe('DEPENDENTE');
+  });
+
+  it('rotula o vínculo', () => {
+    expect(rotuloVinculo('DEPENDENTE')).toBe('Dependente');
+    expect(rotuloVinculo('ASSOCIADO') === 'ASSOCIADO').toBe(false);
+    expect(rotuloVinculo(null)).toBeNull();
   });
 });

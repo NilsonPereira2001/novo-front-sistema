@@ -329,20 +329,17 @@ Indicadores dos associados, no menu logo abaixo de Início (e atalho na tela In�
 - **Cores:** azul da marca e laranja, validadas para daltonismo. O texto nunca usa a cor da série.
 - **Testes:** `painel-api.spec.ts`.
 
-### Pessoas
+### Associados e dependentes (`/pessoas`)
 
-Listagem integrada a `GET /pessoas/listar/filtradas/paginada` (`Page<PessoaDTO>`):
+Só associados e dependentes; funcionários ficam em **Colaboradores** (`/colaboradores`). A URL continua `/pessoas` para não quebrar links.
 
-- **Parâmetros:** `filtro` e `idTipoPessoa` são enviados só quando preenchidos; `page`, que começa em 0, e `size` vão sempre.
-- **Tamanho:** 7 por página, igual ao `@PageableDefault(size = 7)` do backend. Também há 15, 30 e 50.
-- **Comportamento:** a pesquisa tem debounce. Mudar a pesquisa, o tipo ou o tamanho da página volta para a primeira página.
+- **Endpoint:** `GET /pessoas/membros?filtro=&vinculo=&page=&size=` (`Page<PessoaDTO>`). Entra quem tem registro em `associados` ou em `dependentes_pessoas`, independentemente do tipo de pessoa; uma pessoa que é associado e colaborador aparece aqui e em Colaboradores.
+- **Filtro:** Todos / Associados / Dependentes (`?vinculo=ASSOCIADO|DEPENDENTE`), junto com a pesquisa por nome ou CPF. A coluna "Vínculo" mostra o vínculo real (o nome segue `TERMOS`).
+- **Tamanho:** 7 por página, também há 15, 30 e 50. Mudar pesquisa, vínculo ou tamanho volta para a primeira página.
 - **Resposta:** aceita `PageImpl` serializado ou `PagedModel`. Fora desse formato, a tela mostra "formato inesperado".
-- **Arquivos:** o contrato está em `src/app/features/pessoas/data/pessoas-api.ts` e os modelos em `features/pessoas/models/`.
-- **Testes:** `npm test` roda `pessoas-api.spec.ts`, que cobre os parâmetros e a leitura da resposta.
-
-**Filtro por tipo:** as opções vêm de `GET /tipo/pessoas/listar` (`TipoPessoaController`), com `id` e `nome`. O seletor mostra o `nome` e envia o `id` em `idTipoPessoa`, sem nenhuma lista fixa no frontend. Pesquisa e tipo funcionam juntos, e limpar um não apaga o outro. O seletor tem estado de carregamento e mensagem de erro com "Tentar novamente".
-
-Ainda são telas em construção: novo funcionário e edição de dependente e de funcionário.
+- O botão **Novo** abre o cadastro de associado; funcionário é cadastrado em Colaboradores.
+- `GET /pessoas/listar/filtradas/paginada` continua existindo e é usado na busca de pessoas do Jurídico.
+- **Testes:** `pessoas-api.spec.ts` cobre os parâmetros, o vínculo e a leitura da resposta.
 
 ### Aguardando deferimento (`/pessoas/aguardando-deferimento`)
 

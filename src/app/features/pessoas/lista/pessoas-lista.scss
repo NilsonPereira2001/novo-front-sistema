@@ -1,50 +1,3 @@
-// Filtro por tipo de pessoa
-.tipo-filter {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.tipo-filter__label {
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--color-gray-600);
-  white-space: nowrap;
-}
-
-.tipo-filter__select {
-  height: 2.75rem;
-  min-width: 12rem;
-  padding: 0 var(--space-3);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  font-size: var(--text-sm);
-  color: var(--color-text);
-  cursor: pointer;
-
-  &:focus-visible {
-    outline: none;
-    border-color: var(--color-primary);
-    box-shadow: var(--focus-ring);
-  }
-
-  &:disabled {
-    background: var(--color-gray-50);
-    color: var(--color-gray-400);
-    cursor: not-allowed;
-  }
-}
-
-.tipo-filter__error {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1) var(--space-2);
-  font-size: var(--text-xs);
-  color: var(--color-danger);
-}
-
 // Indicador de carregamento sobre a tabela já exibida
 .loading-bar {
   position: relative;
@@ -76,17 +29,5 @@
 
   &.is-stale {
     opacity: 0.55;
-  }
-}
-
-@media (max-width: 767px) {
-  .tipo-filter {
-    flex-wrap: wrap;
-    width: 100%;
-  }
-
-  .tipo-filter__select {
-    flex: 1;
-    min-width: 0;
   }
 }

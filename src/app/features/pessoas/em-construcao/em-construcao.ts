@@ -29,7 +29,7 @@ import { Icon } from '../../../shared/components/icon/icon';
       <p class="state__text">Esta tela será liberada em uma próxima etapa do sistema.</p>
       <a class="btn btn--secondary" routerLink="/pessoas">
         <app-icon name="arrow-left" />
-        Voltar para Pessoas
+        Voltar à lista
       </a>
     </section>
   `,

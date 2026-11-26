@@ -63,12 +63,11 @@ export const NAVIGATION: readonly NavGroup[] = [
         available: true,
       },
       {
-        label: 'Pessoas',
+        label: `${TERMOS.membros} e dependentes`,
         path: 'pessoas',
         icon: 'users',
-        // Cadastro único: membros, dependentes, funcionários e diretores ficam
-        // na mesma tela, separados por filtro de tipo, para buscar em um só lugar.
-        description: 'Cadastro único de todas as pessoas',
+        // Funcionários ficam em Colaboradores; aqui só associados e dependentes.
+        description: `Cadastro de ${TERMOS.membrosMin} e seus dependentes`,
         available: true,
       },
       {

@@ -10,13 +10,13 @@ const confirmarDescarte: CanDeactivateFn<{ podeSair(): boolean }> = (component) 
   component.podeSair();
 
 /**
- * Rotas do módulo Pessoas: listagem, cadastro de membro e detalhe.
- * Deferimento e cadastro de funcionário ainda abrem "em construção".
+ * Rotas do módulo Pessoas (tela "Associados e dependentes"): listagem, cadastro
+ * de membro, deferimento e detalhe. Funcionários ficam em /colaboradores.
  */
 const routes: Routes = [
   {
     path: '',
-    title: pageTitle('Pessoas'),
+    title: pageTitle(`${TERMOS.membros} e dependentes`),
     loadComponent: () => import('./lista/pessoas-lista').then((m) => m.PessoasLista),
   },
   {

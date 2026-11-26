@@ -1,94 +1,55 @@
 <header class="page-header">
   <div class="page-header__text">
-    <p class="page-eyebrow">Cadastro central</p>
-    <h1 class="page-title">Pessoas</h1>
-    <p class="page-subtitle">Consulte e gerencie as pessoas cadastradas no sistema.</p>
+    <p class="page-eyebrow">Cadastro</p>
+    <h1 class="page-title">{{ termos.membros }} e dependentes</h1>
+    <p class="page-subtitle">
+      Consulte e gerencie os {{ termos.membrosMin }} e seus dependentes. Funcionários ficam em
+      <a routerLink="/colaboradores">Colaboradores</a>.
+    </p>
   </div>
 
-  <!-- Ações futuras: por enquanto levam a páginas "em construção". -->
   <div class="page-header__actions">
     <a class="btn btn--secondary" routerLink="/pessoas/aguardando-deferimento">
       <app-icon name="clock" />
       Aguardando deferimento
     </a>
 
-    <div class="dropdown" #newMenu>
-      <button
-        type="button"
-        class="btn btn--primary"
-        (click)="toggleNewMenu()"
-        [attr.aria-expanded]="newMenuOpen()"
-        aria-controls="menu-nova-pessoa"
-      >
-        <app-icon name="plus" />
-        Nova pessoa
-        <app-icon name="chevron-down" />
-      </button>
-
-      @if (newMenuOpen()) {
-        <div class="dropdown__panel" id="menu-nova-pessoa">
-          <a class="dropdown__item" routerLink="/pessoas/novo/membro" (click)="closeNewMenu()">
-            <span class="dropdown__icon"><app-icon name="users" /></span>
-            <span class="dropdown__text">
-              <strong>{{ termos.membro }}</strong>
-              <span>Novo membro da instituição</span>
-            </span>
-          </a>
-          <a class="dropdown__item" routerLink="/pessoas/novo/funcionario" (click)="closeNewMenu()">
-            <span class="dropdown__icon"><app-icon name="briefcase" /></span>
-            <span class="dropdown__text">
-              <strong>Funcionário</strong>
-              <span>Integrante da equipe interna</span>
-            </span>
-          </a>
-        </div>
-      }
-    </div>
+    <a class="btn btn--primary" routerLink="/pessoas/novo/membro">
+      <app-icon name="plus" />
+      Novo {{ termos.membroMin }}
+    </a>
   </div>
 </header>
 
 <section class="card table-card" aria-labelledby="titulo-lista-pessoas">
-  <h2 id="titulo-lista-pessoas" class="sr-only">Lista de pessoas</h2>
+  <h2 id="titulo-lista-pessoas" class="sr-only">Lista de {{ termos.membrosMin }} e dependentes</h2>
 
   <div class="toolbar">
     <app-search-field
-      label="Pesquisar pessoas"
+      [label]="'Pesquisar ' + termos.membrosMin + ' e dependentes'"
       placeholder="Pesquisar por nome ou CPF"
       [value]="url.searchText()"
       (valueChange)="url.search($event)"
       (clear)="url.clearSearch()"
     />
 
-    <div class="tipo-filter">
-      <label class="tipo-filter__label" for="filtro-tipo-pessoa">Tipo de pessoa</label>
-      <select
-        id="filtro-tipo-pessoa"
-        class="tipo-filter__select"
-        [disabled]="tiposLoading()"
-        [attr.aria-busy]="tiposLoading()"
-        [attr.aria-describedby]="tiposErro() ? 'filtro-tipo-erro' : null"
-        (change)="onTipoChange($event)"
-      >
-        <option value="" [selected]="idTipoPessoa() === undefined">
-          {{ tiposLoading() ? 'Carregando tipos…' : 'Todos os tipos' }}
-        </option>
-        @for (t of tipos(); track t.id) {
-          <option [value]="t.id.toString()" [selected]="t.id === idTipoPessoa()">
-            {{ t.nome }}
-          </option>
-        }
-      </select>
-      @if (tiposErro()) {
-        <span id="filtro-tipo-erro" class="tipo-filter__error" role="alert">
-          Não foi possível carregar os tipos.
-          <button type="button" class="link-button" (click)="retryTipos()">Tentar novamente</button>
-        </span>
+    <div class="segmented" role="group" aria-label="Filtrar por vínculo">
+      @for (o of vinculos; track o.rotulo) {
+        <button
+          type="button"
+          class="segmented__item"
+          [class.is-active]="vinculo() === o.valor"
+          [attr.aria-pressed]="vinculo() === o.valor"
+          (click)="setVinculo(o.valor)"
+        >
+          {{ o.rotulo }}
+        </button>
       }
     </div>
   </div>
 
   @if (loading() && page()) {
-    <div class="loading-bar" role="progressbar" aria-label="Carregando pessoas"></div>
+    <div class="loading-bar" role="progressbar" aria-label="Carregando"></div>
   }
 
   @if (errorKind(); as kind) {
@@ -97,14 +58,14 @@
     <div class="state">
       <span class="state__icon"><app-icon name="inbox" /></span>
       @if (hasFilters()) {
-        <p class="state__title">Nenhuma pessoa encontrada</p>
-        <p class="state__text">Nenhuma pessoa foi encontrada para os critérios selecionados.</p>
+        <p class="state__title">Ninguém encontrado</p>
+        <p class="state__text">Nenhum {{ termos.membroMin }} ou dependente corresponde aos critérios.</p>
         <button type="button" class="btn btn--secondary" (click)="clearFilters()">
           Limpar filtros
         </button>
       } @else {
-        <p class="state__title">Nenhuma pessoa cadastrada</p>
-        <p class="state__text">Ainda não há pessoas cadastradas no sistema.</p>
+        <p class="state__title">Nenhum cadastro ainda</p>
+        <p class="state__text">Ainda não há {{ termos.membrosMin }} nem dependentes cadastrados.</p>
       }
     </div>
   } @else {
@@ -118,7 +79,7 @@
           <tr>
             <th scope="col">Nome</th>
             <th scope="col">CPF</th>
-            <th scope="col">Tipo</th>
+            <th scope="col">Vínculo</th>
             <th scope="col">Telefone principal</th>
             <th scope="col">Data de cadastro</th>
             <th scope="col">Status</th>
@@ -136,7 +97,7 @@
                   </a>
                 </td>
                 <td class="cell-mono">{{ p.cpf | cpf }}</td>
-                <td>{{ p.tipo | displayValue }}</td>
+                <td>{{ rotuloVinculo(p.tipo) | displayValue }}</td>
                 <td class="cell-mono">{{ p.telefonePrincipal | telefone }}</td>
                 <td class="cell-mono">
                   @if (p.dataCadastro) {
@@ -175,7 +136,7 @@
         [first]="pg.first"
         [last]="pg.last"
         [sizeOptions]="url.sizeOptions"
-        itemLabel="pessoas"
+        itemLabel="cadastros"
         (pageChange)="url.setPage($event)"
         (sizeChange)="url.setSize($event)"
       />
