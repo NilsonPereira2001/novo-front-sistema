@@ -1,0 +1,141 @@
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">Diretoria</p>
+    <h1 class="page-title">Diretores</h1>
+    <p class="page-subtitle">Histórico de nomeações e exonerações de todas as gestões.</p>
+  </div>
+</header>
+
+<app-diretoria-abas />
+
+@if (aviso(); as a) {
+  <div class="aviso" role="status"><app-icon name="check-circle" /> {{ a }} <button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
+}
+
+<section class="card table-card" aria-labelledby="t-hist">
+  <h2 id="t-hist" class="sr-only">Histórico de diretores</h2>
+  <div class="chips" role="group" aria-label="Situação">
+    @for (s of situacoes; track s.key) {
+      <button type="button" class="chip" [class.is-active]="status() === s.key" [attr.aria-pressed]="status() === s.key" (click)="setStatus(s.key)">{{ s.rotulo }}</button>
+    }
+  </div>
+  <div class="toolbar">
+    <app-search-field label="Pesquisar diretores" placeholder="Nome, CPF ou matrícula" [value]="url.searchText()" (valueChange)="url.search($event)" (clear)="url.clearSearch()" />
+    <label class="sr-only" for="h-pasta">Pasta</label>
+    <select id="h-pasta" class="field__input filtro" (change)="onSelect('pasta', $event)">
+      <option value="" [selected]="idPasta() === null">Todas as pastas</option>
+      @for (p of listaPastas(); track p.id) {
+        <option [value]="p.id" [selected]="idPasta() === p.id">{{ p.nome }}</option>
+      }
+    </select>
+    <label class="sr-only" for="h-gestao">Gestão</label>
+    <select id="h-gestao" class="field__input filtro" (change)="onSelect('gestao', $event)">
+      <option value="" [selected]="idGestao() === null">Todas as gestões</option>
+      @for (g of listaGestoes(); track g.id) {
+        <option [value]="g.id" [selected]="idGestao() === g.id">{{ g.nome }}</option>
+      }
+    </select>
+  </div>
+
+  @if (carregando() && pagina()) {
+    <div class="loading-bar" role="progressbar" aria-label="Carregando"></div>
+  }
+
+  @if (erro(); as kind) {
+    <app-load-error [kind]="kind" (retry)="recarregar()" />
+  } @else if (!carregando() && pagina()?.empty) {
+    <div class="state">
+      <span class="state__icon"><app-icon name="award" /></span>
+      <p class="state__title">Nenhum diretor encontrado</p>
+      @if (temFiltros()) { <button type="button" class="btn btn--secondary" (click)="limpar()">Limpar filtros</button> }
+    </div>
+  } @else if (pagina(); as pg) {
+    <div class="table-scroll">
+      <table class="data-table" [class.is-stale]="carregando()">
+        <thead>
+          <tr>
+            <th scope="col">Diretor(a)</th>
+            <th scope="col">Pasta</th>
+            <th scope="col">Gestão</th>
+            <th scope="col">Nomeação</th>
+            <th scope="col">Exoneração</th>
+            <th scope="col">Situação</th>
+            <th scope="col"><span class="sr-only">Ações</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (d of pg.content; track d.id) {
+            <tr>
+              <td>
+                @if (d.idPessoa) {
+                  <a class="nome" [routerLink]="['/pessoas', d.idPessoa]">{{ d.nome }}</a>
+                } @else {
+                  <span class="nome">{{ d.nome }}</span>
+                }
+                <span class="sub cell-mono">{{ d.cpf | cpf }}@if (d.matricula) { · mat. {{ d.matricula }} }</span>
+              </td>
+              <td>{{ d.pasta ?? '—' }}</td>
+              <td>{{ d.gestao ?? '—' }}</td>
+              <td>
+                {{ (d.dataNomeacao | date: 'dd/MM/yyyy') ?? '—' }}
+                @if (d.portaria) { <span class="sub">{{ d.portaria }}</span> }
+              </td>
+              <td>
+                {{ (d.dataExoneracao | date: 'dd/MM/yyyy') ?? '—' }}
+                @if (d.portariaExoneracao) { <span class="sub">{{ d.portariaExoneracao }}</span> }
+              </td>
+              <td><span class="situacao" [class.is-off]="d.status !== 'ATIVO'">{{ d.status === 'ATIVO' ? 'Em exercício' : 'Exonerado(a)' }}</span></td>
+              <td class="acoes-linha"><button type="button" class="btn btn--secondary btn--sm" (click)="corrigir(d)">Corrigir</button></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <app-pagination
+      [page]="pg.number"
+      [size]="pg.size"
+      [total]="pg.totalElements"
+      [totalPages]="pg.totalPages"
+      [first]="pg.first"
+      [last]="pg.last"
+      [sizeOptions]="url.sizeOptions"
+      itemLabel="diretores"
+      (pageChange)="url.setPage($event)"
+      (sizeChange)="url.setSize($event)"
+    />
+  } @else {
+    <div class="carregando"><span class="skeleton" style="width: 100%"></span><span class="skeleton" style="width: 80%"></span></div>
+  }
+</section>
+
+<app-dialog titulo="Corrigir nomeação" [open]="corrigindo() !== null" (closed)="corrigindo.set(null)">
+  <div class="dlg">
+    <p><strong>{{ corrigindo()?.nome }}</strong> · {{ corrigindo()?.pasta ?? 'sem pasta' }}</p>
+    <div class="grade">
+      <div class="field">
+        <label class="field__label" for="cr-data">Data da nomeação <span class="field__req" aria-hidden="true">*</span></label>
+        <input id="cr-data" class="field__input" type="date" [max]="corrigindo()?.dataExoneracao ?? ''" [value]="cData()" (input)="cData.set(valor($event))" />
+      </div>
+      <div class="field">
+        <label class="field__label" for="cr-portaria">Portaria / ato</label>
+        <input id="cr-portaria" class="field__input" type="text" maxlength="255" [value]="cPortaria()" (input)="cPortaria.set(valor($event))" />
+      </div>
+    </div>
+    <div class="field">
+      <label class="field__label" for="cr-gestao">Gestão</label>
+      <select id="cr-gestao" class="field__input" (change)="cGestao.set(numero($event))">
+        <option value="" [selected]="cGestao() === null">Sem gestão</option>
+        @for (g of listaGestoes(); track g.id) {
+          <option [value]="g.id" [selected]="cGestao() === g.id">{{ g.nome }}</option>
+        }
+      </select>
+    </div>
+    @if (erroAcao()) { <app-alert tone="danger">{{ erroAcao() }}</app-alert> }
+  </div>
+  <div dialog-actions class="acoes">
+    <button type="button" class="btn btn--secondary btn--sm" (click)="corrigindo.set(null)" [disabled]="enviando()">Cancelar</button>
+    <button type="button" class="btn btn--primary btn--sm" (click)="salvarCorrecao()" [disabled]="enviando()">
+      @if (enviando()) { <span class="spinner" aria-hidden="true"></span> Salvando… } @else { Salvar }
+    </button>
+  </div>
+</app-dialog>

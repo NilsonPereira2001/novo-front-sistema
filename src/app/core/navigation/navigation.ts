@@ -71,6 +71,13 @@ export const NAVIGATION: readonly NavGroup[] = [
         description: 'Cadastro único de todas as pessoas',
         available: true,
       },
+      {
+        label: 'Diretoria',
+        path: 'diretoria',
+        icon: 'award',
+        description: 'Pastas, diretores nomeados e gestões',
+        available: true,
+      },
     ],
   },
   {

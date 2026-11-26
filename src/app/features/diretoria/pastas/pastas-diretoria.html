@@ -1,0 +1,124 @@
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">Diretoria</p>
+    <h1 class="page-title">Pastas da diretoria</h1>
+    <p class="page-subtitle">Os cargos da diretoria (presidência, secretaria, tesouraria…). A ordem define a sequência na composição.</p>
+  </div>
+  <div class="page-header__actions">
+    <button type="button" class="btn btn--primary" (click)="abrir(null)"><app-icon name="plus" /> Nova pasta</button>
+  </div>
+</header>
+
+<app-diretoria-abas />
+
+@if (aviso(); as a) {
+  <div class="aviso" role="status"><app-icon name="check-circle" /> {{ a }} <button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
+}
+
+<section class="card table-card" aria-labelledby="t-pastas">
+  <h2 id="t-pastas" class="sr-only">Pastas cadastradas</h2>
+  @if (erroCarga(); as kind) {
+    <app-load-error [kind]="kind" (retry)="recarregar()" />
+  } @else if (pastas(); as lista) {
+    @if (lista.length === 0) {
+      <div class="state">
+        <span class="state__icon"><app-icon name="folder" /></span>
+        <p class="state__title">Nenhuma pasta cadastrada</p>
+        <button type="button" class="btn btn--primary" (click)="abrir(null)"><app-icon name="plus" /> Cadastrar a primeira</button>
+      </div>
+    } @else {
+      <p class="contagem">{{ ativas() }} {{ ativas() === 1 ? 'pasta ativa' : 'pastas ativas' }}@if (lista.length > ativas()) { · {{ lista.length - ativas() }} desativada(s) }</p>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th scope="col" class="num col-ordem">Ordem</th>
+              <th scope="col">Pasta</th>
+              <th scope="col" class="num">Remuneração</th>
+              <th scope="col" class="num">Diretores</th>
+              <th scope="col">Situação</th>
+              <th scope="col"><span class="sr-only">Ações</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of lista; track p.id) {
+              <tr [class.inativa]="!p.ativa">
+                <td class="num col-ordem">{{ p.ordem ?? '—' }}</td>
+                <td>
+                  <span class="nome">{{ p.nome }}</span>
+                  @if (p.descricao) { <span class="sub">{{ p.descricao }}</span> }
+                </td>
+                <td class="num">{{ p.remuneracao ? (p.remuneracao | currency: 'BRL') : '—' }}</td>
+                <td class="num">{{ p.diretoresNoHistorico }}</td>
+                <td><span class="situacao" [class.is-off]="!p.ativa">{{ p.ativa ? 'Ativa' : 'Desativada' }}</span></td>
+                <td class="acoes-linha">
+                  <button type="button" class="btn btn--secondary btn--sm" (click)="abrir(p)" [attr.aria-label]="'Editar ' + p.nome"><app-icon name="pencil" /></button>
+                  @if (p.ativa) {
+                    <button type="button" class="btn btn--secondary btn--sm" (click)="pedir('desativar', p)">Desativar</button>
+                  } @else {
+                    <button type="button" class="btn btn--secondary btn--sm" (click)="pedir('reativar', p)">Reativar</button>
+                  }
+                  @if (p.diretoresNoHistorico === 0) {
+                    <button type="button" class="btn btn--danger-outline btn--sm" (click)="pedir('excluir', p)" [attr.aria-label]="'Excluir ' + p.nome"><app-icon name="trash" /></button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  } @else {
+    <div class="carregando"><span class="skeleton" style="width: 100%"></span><span class="skeleton" style="width: 80%"></span></div>
+  }
+</section>
+
+<app-dialog [titulo]="editando() ? 'Editar pasta' : 'Nova pasta'" [open]="formAberto()" (closed)="formAberto.set(false)">
+  <div class="dlg">
+    <div class="field" [class.field--invalid]="tentou() && !valor().nome.trim()">
+      <label class="field__label" for="pd-nome">Nome da pasta <span class="field__req" aria-hidden="true">*</span></label>
+      <input id="pd-nome" class="field__input" type="text" maxlength="255" placeholder="Ex.: DIRETORIA DE ESPORTES" [value]="valor().nome" (input)="campo('nome', $event)" />
+    </div>
+    <div class="field">
+      <label class="field__label" for="pd-desc">Descrição</label>
+      <input id="pd-desc" class="field__input" type="text" maxlength="255" placeholder="Opcional: atribuições, subtítulo" [value]="valor().descricao" (input)="campo('descricao', $event)" />
+    </div>
+    <div class="grade">
+      <div class="field">
+        <label class="field__label" for="pd-rem">Remuneração</label>
+        <input id="pd-rem" class="field__input" type="text" inputmode="decimal" placeholder="0,00" [value]="valor().remuneracao" (input)="campo('remuneracao', $event)" />
+        <p class="field__hint">Opcional.</p>
+      </div>
+      <div class="field">
+        <label class="field__label" for="pd-ordem">Ordem</label>
+        <input id="pd-ordem" class="field__input" type="text" inputmode="numeric" maxlength="3" [value]="valor().ordem" (input)="campo('ordem', $event)" />
+        <p class="field__hint">Posição na composição (1 = primeira).</p>
+      </div>
+    </div>
+    @if (tentou() && problema(); as p) { <p class="field__error" role="alert">{{ p }}</p> }
+    @if (erro() && formAberto()) { <app-alert tone="danger">{{ erro() }}</app-alert> }
+  </div>
+  <div dialog-actions class="acoes">
+    <button type="button" class="btn btn--secondary btn--sm" (click)="formAberto.set(false)" [disabled]="enviando()">Cancelar</button>
+    <button type="button" class="btn btn--primary btn--sm" (click)="salvar()" [disabled]="enviando()">
+      @if (enviando()) { <span class="spinner" aria-hidden="true"></span> Salvando… } @else { Salvar }
+    </button>
+  </div>
+</app-dialog>
+
+<app-dialog [titulo]="acao()?.tipo === 'excluir' ? 'Excluir pasta' : acao()?.tipo === 'desativar' ? 'Desativar pasta' : 'Reativar pasta'" [open]="acao() !== null" (closed)="acao.set(null)">
+  <div class="dlg">
+    @switch (acao()?.tipo) {
+      @case ('excluir') { <p>Excluir a pasta <strong>{{ acao()?.pasta?.nome }}</strong>? Ela nunca teve diretor, então nada do histórico é perdido.</p> }
+      @case ('desativar') { <p>Desativar <strong>{{ acao()?.pasta?.nome }}</strong>? Ela sai da composição e não recebe nomeações; o histórico continua.</p> }
+      @default { <p>Reativar <strong>{{ acao()?.pasta?.nome }}</strong>? Ela volta para a composição como vaga.</p> }
+    }
+    @if (erro() && acao()) { <app-alert tone="danger">{{ erro() }}</app-alert> }
+  </div>
+  <div dialog-actions class="acoes">
+    <button type="button" class="btn btn--secondary btn--sm" (click)="acao.set(null)" [disabled]="enviando()">Cancelar</button>
+    <button type="button" class="btn btn--sm" [class.btn--danger]="acao()?.tipo !== 'reativar'" [class.btn--primary]="acao()?.tipo === 'reativar'" (click)="confirmar()" [disabled]="enviando()">
+      @if (enviando()) { <span class="spinner" aria-hidden="true"></span> Aguarde… } @else { Confirmar }
+    </button>
+  </div>
+</app-dialog>

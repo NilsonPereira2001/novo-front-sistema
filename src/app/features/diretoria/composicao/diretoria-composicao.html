@@ -1,0 +1,106 @@
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">Diretoria</p>
+    <h1 class="page-title">Composição da diretoria</h1>
+    <p class="page-subtitle">Quem ocupa cada pasta. Só {{ termos.membrosMin }} ativos podem ser nomeados, e cada um ocupa uma pasta por vez.</p>
+  </div>
+</header>
+
+<app-diretoria-abas />
+
+@if (aviso(); as a) {
+  <div class="aviso" role="status"><app-icon name="check-circle" /> {{ a }} <button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
+}
+
+@if (erro(); as kind) {
+  <section class="card"><app-load-error [kind]="kind" (retry)="recarregar()" /></section>
+} @else if (c(); as c) {
+  <section class="resumo card" aria-label="Resumo">
+    <div class="resumo__gestao">
+      <p class="resumo__rotulo">Gestão atual</p>
+      @if (c.gestaoAtual; as g) {
+        <p class="resumo__nome">{{ g.nome }}</p>
+        <p class="sub">
+          {{ g.inicio | date: 'dd/MM/yyyy' }}@if (g.fim) { a {{ g.fim | date: 'dd/MM/yyyy' }} }
+          @if (g.presidente) { · Presidente: {{ g.presidente }} }
+        </p>
+      } @else {
+        <p class="resumo__nome resumo__nome--vazio">Nenhuma gestão definida</p>
+        <a class="link-button" routerLink="/diretoria/gestoes">Cadastrar gestão</a>
+      }
+    </div>
+    <dl class="resumo__nums">
+      <div><dt>Pastas</dt><dd>{{ c.cadeiras.length }}</dd></div>
+      <div><dt>Ocupadas</dt><dd>{{ c.ocupadas }}</dd></div>
+      <div><dt>Vagas</dt><dd [class.destaque]="c.vagas > 0">{{ c.vagas }}</dd></div>
+    </dl>
+  </section>
+
+  @if (c.alertas > 0) {
+    <div class="alerta card" role="alert">
+      <app-icon name="alert-circle" />
+      <p>{{ c.alertas }} {{ c.alertas === 1 ? 'ponto precisa' : 'pontos precisam' }} de atenção: diretor que deixou de ser {{ termos.membroMin }} ativo ou pasta com mais de um diretor ativo. Confira os destacados abaixo e em <a routerLink="/diretoria/historico">Diretores</a>.</p>
+    </div>
+  }
+
+  @if (c.cadeiras.length === 0) {
+    <section class="card">
+      <div class="state">
+        <span class="state__icon"><app-icon name="award" /></span>
+        <p class="state__title">Nenhuma pasta cadastrada</p>
+        <p class="state__text">Cadastre as pastas (presidência, secretaria, tesouraria…) para nomear os diretores.</p>
+        <a class="btn btn--primary" routerLink="/diretoria/pastas"><app-icon name="plus" /> Cadastrar pastas</a>
+      </div>
+    </section>
+  } @else {
+    <ul class="cadeiras">
+      @for (cad of c.cadeiras; track cad.pasta.id) {
+        @let o = cad.ocupante;
+        <li class="cadeira card" [class.cadeira--vaga]="!o" [class.cadeira--alerta]="o && !o.associadoAtivo">
+          <p class="cadeira__pasta">{{ cad.pasta.nome }}</p>
+          @if (cad.pasta.descricao) { <p class="sub">{{ cad.pasta.descricao }}</p> }
+          @if (o) {
+            <div class="pessoa">
+              @if (o.foto) {
+                <img class="avatar" [src]="o.foto" [alt]="'Foto de ' + o.nome" />
+              } @else {
+                <span class="avatar avatar--iniciais" aria-hidden="true">{{ iniciais(o.nome) }}</span>
+              }
+              <div class="pessoa__info">
+                <a class="pessoa__nome" [routerLink]="['/pessoas', o.idPessoa]">{{ o.nome }}</a>
+                <p class="sub cell-mono">{{ o.cpf | cpf }}@if (o.matricula) { · mat. {{ o.matricula }} }</p>
+                <p class="sub">
+                  Desde {{ o.dataNomeacao | date: 'dd/MM/yyyy' }}@if (tempo(o.dataNomeacao); as t) { ({{ t }}) }
+                </p>
+                @if (o.portaria) { <p class="sub">Portaria: {{ o.portaria }}</p> }
+              </div>
+            </div>
+            @if (!o.associadoAtivo) {
+              <p class="cadeira__aviso"><app-icon name="alert-circle" /> {{ termos.membro }} está {{ (o.statusAssociado ?? 'sem situação') | lowercase }}: só {{ termos.membrosMin }} ativos podem ser diretores.</p>
+            }
+            <div class="cadeira__acoes">
+              <button type="button" class="btn btn--danger-outline btn--sm" (click)="exonerando.set(cad)">Exonerar</button>
+            </div>
+          } @else {
+            <div class="vaga">
+              <span class="avatar avatar--vaga" aria-hidden="true"><app-icon name="user-plus" /></span>
+              <p>Pasta vaga</p>
+            </div>
+            <div class="cadeira__acoes">
+              <button type="button" class="btn btn--primary btn--sm" (click)="nomeando.set(cad.pasta)"><app-icon name="user-plus" /> Nomear</button>
+            </div>
+          }
+        </li>
+      }
+    </ul>
+  }
+
+  <app-nomear-dialog [open]="nomeando() !== null" [pasta]="nomeando()" (salvo)="salvo($event)" (closed)="nomeando.set(null)" />
+  <app-exonerar-dialog [open]="exonerando() !== null" [cadeira]="exonerando()" (salvo)="salvo($event)" (closed)="exonerando.set(null)" />
+} @else {
+  <ul class="cadeiras" aria-busy="true">
+    @for (i of [0, 1, 2, 3]; track i) {
+      <li class="cadeira card"><span class="skeleton" style="width: 9rem"></span><span class="skeleton" style="width: 100%; height: 3rem"></span></li>
+    }
+  </ul>
+}

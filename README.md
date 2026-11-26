@@ -116,6 +116,16 @@ Código em `features/agenda/`. Compromissos **privados**: o back só devolve os 
 - Próximos compromissos na tela Início.
 - Estado na URL (`?mes=AAAA-MM&dia=AAAA-MM-DD`).
 
+### Diretoria (`/diretoria`)
+
+Código em `features/diretoria/`. Endpoints do `DiretoriaController` (PR #8). Permissões: `DIRETORIA_LISTAR` (ver), `DIRETORIA_NOMEAR` (nomear, pastas e gestões), `DIRETORIA_EXONERAR`.
+
+- **Regras (o back confere):** só associado **ativo** pode ser diretor, presidente ou vice; uma pasta tem no máximo um diretor em exercício; um associado ocupa uma pasta por vez.
+- **Composição:** cada pasta ativa com quem ocupa (foto, nomeação, tempo no cargo, portaria) ou vaga. Nomear (busca só associados ativos; quem já é diretor aparece bloqueado) e exonerar (data e ato; o acesso ao sistema é desligado só se a pessoa não tiver outro vínculo). Destaca diretor cujo associado deixou de estar ativo.
+- **Pastas:** cadastrar, editar (nome, descrição, remuneração, ordem), desativar/reativar; excluir só pasta que nunca teve diretor.
+- **Diretores:** histórico com filtros (situação, pasta, gestão, busca) e correção de data/portaria/gestão da nomeação.
+- **Gestões:** mandatos com presidente e vice; definir a gestão atual (a mesma dos dados da empresa).
+
 ### Administração › Dados da empresa (`/administracao/empresa`)
 
 Código em `features/empresa/`. Endpoints do `EmpresaDadosController` (PR #8), permissão `DADOS_EMPRESA`. Usa a empresa 3, a mesma que relatórios, e-mails e remessa já usam no back.

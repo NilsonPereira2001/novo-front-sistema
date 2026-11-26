@@ -105,6 +105,26 @@ export const routes: Routes = [
         loadComponent: () => import('./features/agenda/calendario/minha-agenda').then((m) => m.MinhaAgenda),
       },
       {
+        path: 'diretoria',
+        title: pageTitle('Diretoria'),
+        loadComponent: () => import('./features/diretoria/composicao/diretoria-composicao').then((m) => m.DiretoriaComposicao),
+      },
+      {
+        path: 'diretoria/pastas',
+        title: pageTitle('Pastas da diretoria'),
+        loadComponent: () => import('./features/diretoria/pastas/pastas-diretoria').then((m) => m.PastasDiretoria),
+      },
+      {
+        path: 'diretoria/historico',
+        title: pageTitle('Diretores'),
+        loadComponent: () => import('./features/diretoria/historico/diretores-historico').then((m) => m.DiretoresHistorico),
+      },
+      {
+        path: 'diretoria/gestoes',
+        title: pageTitle('Gestões'),
+        loadComponent: () => import('./features/diretoria/gestoes/gestoes-diretoria').then((m) => m.GestoesDiretoria),
+      },
+      {
         path: 'administracao/empresa',
         title: pageTitle('Dados da empresa'),
         loadComponent: () => import('./features/empresa/dados-empresa').then((m) => m.DadosEmpresaPage),

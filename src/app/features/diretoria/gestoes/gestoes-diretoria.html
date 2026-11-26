@@ -1,0 +1,110 @@
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">Diretoria</p>
+    <h1 class="page-title">Gestões</h1>
+    <p class="page-subtitle">Os mandatos da diretoria. A gestão atual aparece nos dados da empresa e é sugerida nas novas nomeações.</p>
+  </div>
+  <div class="page-header__actions">
+    <button type="button" class="btn btn--primary" (click)="abrir(null)"><app-icon name="plus" /> Nova gestão</button>
+  </div>
+</header>
+
+<app-diretoria-abas />
+
+@if (aviso(); as a) {
+  <div class="aviso" role="status"><app-icon name="check-circle" /> {{ a }} <button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
+}
+
+@if (erroCarga(); as kind) {
+  <section class="card"><app-load-error [kind]="kind" (retry)="recarregar()" /></section>
+} @else if (gestoes(); as lista) {
+  @if (lista.length === 0) {
+    <section class="card">
+      <div class="state">
+        <span class="state__icon"><app-icon name="calendar" /></span>
+        <p class="state__title">Nenhuma gestão cadastrada</p>
+        <p class="state__text">A primeira cadastrada vira a gestão atual.</p>
+        <button type="button" class="btn btn--primary" (click)="abrir(null)"><app-icon name="plus" /> Cadastrar gestão</button>
+      </div>
+    </section>
+  } @else {
+    <ul class="gestoes">
+      @for (g of lista; track g.id) {
+        <li class="gestao card" [class.gestao--atual]="g.atual">
+          <div class="gestao__cab">
+            <div>
+              @if (g.atual) { <p class="gestao__selo">Gestão atual</p> }
+              <p class="gestao__nome">{{ g.nome }}</p>
+              <p class="sub">{{ (g.inicio | date: 'dd/MM/yyyy') ?? '—' }} a {{ (g.fim | date: 'dd/MM/yyyy') ?? 'em aberto' }}</p>
+            </div>
+            <div class="gestao__acoes">
+              <button type="button" class="btn btn--secondary btn--sm" (click)="abrir(g)" [attr.aria-label]="'Editar ' + g.nome"><app-icon name="pencil" /></button>
+              @if (!g.atual) {
+                <button type="button" class="btn btn--secondary btn--sm" (click)="confirmandoAtual.set(g)">Tornar atual</button>
+              }
+            </div>
+          </div>
+          <dl class="dados">
+            <div><dt>Presidente</dt><dd>{{ g.presidente ?? '—' }}</dd></div>
+            <div><dt>Vice-presidente</dt><dd>{{ g.vicePresidente ?? '—' }}</dd></div>
+            <div>
+              <dt>Diretores nomeados</dt>
+              <dd>
+                @if (g.diretores > 0) {
+                  <a [routerLink]="['/diretoria/historico']" [queryParams]="{ gestao: g.id }">{{ g.diretores }}</a>
+                } @else { 0 }
+              </dd>
+            </div>
+          </dl>
+        </li>
+      }
+    </ul>
+  }
+} @else {
+  <section class="card"><span class="skeleton" style="width: 100%; height: 4rem"></span></section>
+}
+
+<app-dialog [titulo]="editando() ? 'Editar gestão' : 'Nova gestão'" size="wide" [open]="aberto()" (closed)="aberto.set(false)">
+  <div class="dlg">
+    <div class="field" [class.field--invalid]="tentou() && !valor().nome.trim()">
+      <label class="field__label" for="gs-nome">Nome <span class="field__req" aria-hidden="true">*</span></label>
+      <input id="gs-nome" class="field__input" type="text" maxlength="255" placeholder="Ex.: GESTÃO 2025-2028 · UNIÃO E TRABALHO" [value]="valor().nome" (input)="campo('nome', $event)" />
+    </div>
+    <div class="grade">
+      <div class="field" [class.field--invalid]="tentou() && !valor().inicio">
+        <label class="field__label" for="gs-inicio">Início do mandato <span class="field__req" aria-hidden="true">*</span></label>
+        <input id="gs-inicio" class="field__input" type="date" [value]="valor().inicio" (input)="campo('inicio', $event)" />
+      </div>
+      <div class="field">
+        <label class="field__label" for="gs-fim">Fim do mandato</label>
+        <input id="gs-fim" class="field__input" type="date" [min]="valor().inicio" [value]="valor().fim" (input)="campo('fim', $event)" />
+      </div>
+    </div>
+    <div class="grade">
+      <app-associado-picker rotulo="Presidente" [selecionado]="valor().presidente" (escolhido)="pessoa('presidente', $event)" />
+      <app-associado-picker rotulo="Vice-presidente" [selecionado]="valor().vice" (escolhido)="pessoa('vice', $event)" />
+    </div>
+    <p class="nota">Presidente e vice precisam ser {{ termos.membrosMin }} ativos. Eles não ocupam uma pasta automaticamente: se houver pasta de presidência, nomeie na composição.</p>
+    @if (tentou() && problema(); as p) { <p class="field__error" role="alert">{{ p }}</p> }
+    @if (erro() && aberto()) { <app-alert tone="danger">{{ erro() }}</app-alert> }
+  </div>
+  <div dialog-actions class="acoes">
+    <button type="button" class="btn btn--secondary btn--sm" (click)="aberto.set(false)" [disabled]="enviando()">Cancelar</button>
+    <button type="button" class="btn btn--primary btn--sm" (click)="salvar()" [disabled]="enviando()">
+      @if (enviando()) { <span class="spinner" aria-hidden="true"></span> Salvando… } @else { Salvar }
+    </button>
+  </div>
+</app-dialog>
+
+<app-dialog titulo="Trocar a gestão atual" [open]="confirmandoAtual() !== null" (closed)="confirmandoAtual.set(null)">
+  <div class="dlg">
+    <p>Tornar <strong>{{ confirmandoAtual()?.nome }}</strong> a gestão atual? Ela passa a aparecer nos dados da empresa e é sugerida nas próximas nomeações. Os diretores em exercício continuam nas pastas.</p>
+    @if (erro() && confirmandoAtual()) { <app-alert tone="danger">{{ erro() }}</app-alert> }
+  </div>
+  <div dialog-actions class="acoes">
+    <button type="button" class="btn btn--secondary btn--sm" (click)="confirmandoAtual.set(null)" [disabled]="enviando()">Cancelar</button>
+    <button type="button" class="btn btn--primary btn--sm" (click)="tornarAtual()" [disabled]="enviando()">
+      @if (enviando()) { <span class="spinner" aria-hidden="true"></span> Aguarde… } @else { Tornar atual }
+    </button>
+  </div>
+</app-dialog>
