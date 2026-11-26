@@ -1,0 +1,134 @@
+<a class="back-link" routerLink="/saude/agenda"><app-icon name="arrow-left" /> Agenda do dia</a>
+
+@if (erro(); as kind) {
+  <section class="card"><app-load-error [kind]="kind" (retry)="recarregar()" /></section>
+} @else if (d(); as d) {
+  @let a = d.agendamento;
+  <header class="cabecalho card">
+    <div>
+      <p class="page-eyebrow">Saúde › {{ a.categoria === 'EXAME' ? 'Exame' : 'Consulta' }}</p>
+      <h1 class="page-title">{{ a.paciente }}</h1>
+      <p class="cabecalho__meta">
+        <app-status-selo [status]="a.status" />
+        <span>{{ a.servico }} · {{ a.profissional }}</span>
+        <span>{{ a.dataHora | date: 'dd/MM/yyyy' }} · {{ hora(a) }}</span>
+        @if (a.telefone) { <span>{{ a.telefone | telefone }}</span> }
+      </p>
+      @if (a.observacao) { <p class="cabecalho__meta">Obs.: {{ a.observacao }}</p> }
+      @if (a.motivo) { <p class="cabecalho__meta">Motivo: {{ a.motivo }}</p> }
+    </div>
+    <div class="cabecalho__acoes">
+      @if (a.idPessoa) { <a class="btn btn--secondary" [routerLink]="['/saude/pacientes', a.idPessoa]">Ficha do paciente</a> }
+      @if (a.status === 'AGENDADO' && (a.dataHora ?? '').slice(0, 10) <= hoje) {
+        <button type="button" class="btn btn--secondary" (click)="chegou(d)" [disabled]="processando()">Chegou</button>
+      }
+      @if (emAberto(a.status)) {
+        @if (a.status === 'AGENDADO') { <button type="button" class="btn btn--secondary" (click)="acao.set('reagendar')">Remarcar</button> }
+        @if ((a.dataHora ?? '').slice(0, 10) <= hoje) { <button type="button" class="btn btn--secondary" (click)="acao.set('falta')">Faltou</button> }
+        <button type="button" class="btn btn--danger-outline" (click)="acao.set('cancelar')">Cancelar</button>
+      }
+    </div>
+  </header>
+
+  @if (alergias().length) {
+    <div class="alergias" role="alert"><app-icon name="alert-circle" /> <strong>Alergias:</strong> {{ alergias().join(', ') }}</div>
+  }
+  @if (aviso(); as m) {
+    <div class="aviso" role="status"><app-icon name="check-circle" /> {{ m }} <button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
+  }
+  @if (d.orientacoes) { <div class="orientacoes"><strong>Orientações do serviço:</strong> {{ d.orientacoes }}</div> }
+  @if (erroAcao(); as e) { <app-alert tone="danger">{{ e }}</app-alert> }
+
+  @if (podeAtender()) {
+    <section class="card bloco" aria-labelledby="t-reg">
+      <h2 class="bloco__titulo" id="t-reg">Registro do atendimento</h2>
+      <div class="field">
+        <label class="field__label" for="at-queixa">Queixa principal</label>
+        <input id="at-queixa" class="field__input" type="text" maxlength="255" [value]="queixa()" (input)="queixa.set(valor($event))" />
+      </div>
+      <fieldset class="sinais">
+        <legend class="field__label">Sinais vitais (opcional)</legend>
+        <app-sinais-campos [(valor)]="sinais" />
+      </fieldset>
+      <div class="field" [class.field--invalid]="tentou() && a.categoria !== 'EXAME' && !evolucao().trim()">
+        <label class="field__label" for="at-evo">Evolução clínica @if (a.categoria !== 'EXAME') { <span class="field__req" aria-hidden="true">*</span> }</label>
+        <textarea id="at-evo" class="field__input area" rows="6" maxlength="20000" [value]="evolucao()" (input)="evolucao.set(valor($event))"></textarea>
+        @if (tentou() && a.categoria !== 'EXAME' && !evolucao().trim()) { <p class="field__error">Descreva a evolução clínica.</p> }
+      </div>
+      <div class="grade2">
+        <div class="field">
+          <label class="field__label" for="at-diag">Diagnóstico / hipótese</label>
+          <textarea id="at-diag" class="field__input area" rows="3" maxlength="5000" [value]="diagnostico()" (input)="diagnostico.set(valor($event))"></textarea>
+        </div>
+        <div class="field" [class.field--invalid]="tentou() && problemaCid()">
+          <label class="field__label" for="at-cid">CID-10</label>
+          <input id="at-cid" class="field__input cid" type="text" maxlength="6" placeholder="J06.9" [value]="cid()" (input)="cid.set(valor($event))" />
+          @if (tentou() && problemaCid(); as p) { <p class="field__error">{{ p }}</p> }
+        </div>
+      </div>
+      <div class="field">
+        <label class="field__label" for="at-cond">Conduta (prescrição, encaminhamento, exames pedidos)</label>
+        <textarea id="at-cond" class="field__input area" rows="4" maxlength="10000" [value]="conduta()" (input)="conduta.set(valor($event))"></textarea>
+      </div>
+      <div class="field">
+        <label class="field__label" for="at-obs">Observação</label>
+        <textarea id="at-obs" class="field__input area" rows="2" maxlength="10000" [value]="observacao()" (input)="observacao.set(valor($event))"></textarea>
+      </div>
+      <div class="acoes">
+        <button type="button" class="btn btn--primary" (click)="finalizar(d)" [disabled]="enviando()">
+          @if (enviando()) { <span class="spinner" aria-hidden="true"></span> Salvando… } @else { <app-icon name="check-circle" /> Finalizar atendimento }
+        </button>
+      </div>
+    </section>
+  } @else if (d.registro; as r) {
+    <section class="card bloco" aria-labelledby="t-reg2">
+      <h2 class="bloco__titulo" id="t-reg2">Registro do atendimento</h2>
+      <p class="sub">Atendido em {{ r.data | date: 'dd/MM/yyyy HH:mm' }} por {{ r.profissional }}</p>
+      <dl class="registro">
+        @if (r.queixaPrincipal) { <div><dt>Queixa principal</dt><dd>{{ r.queixaPrincipal }}</dd></div> }
+        @if (r.evolucaoClinica) { <div><dt>Evolução</dt><dd>{{ r.evolucaoClinica }}</dd></div> }
+        @if (r.diagnostico) { <div><dt>Diagnóstico</dt><dd>{{ r.diagnostico }}</dd></div> }
+        @if (r.cid) { <div><dt>CID</dt><dd>{{ r.cid }}</dd></div> }
+        @if (r.conduta) { <div><dt>Conduta</dt><dd>{{ r.conduta }}</dd></div> }
+        @if (r.observacao) { <div><dt>Observação</dt><dd>{{ r.observacao }}</dd></div> }
+      </dl>
+    </section>
+  } @else if (!d.clinico) {
+    <app-alert tone="info">O registro clínico só aparece para quem tem a permissão de prontuário.</app-alert>
+  } @else if (emAberto(a.status)) {
+    <app-alert tone="info">O registro do atendimento fica disponível a partir do dia agendado.</app-alert>
+  }
+
+  @if (d.clinico) {
+    <section class="card bloco" aria-labelledby="t-anx">
+      <header class="bloco__cab">
+        <h2 class="bloco__titulo" id="t-anx">Arquivos (resultados, laudos, receitas)</h2>
+        <label class="btn btn--secondary btn--sm" [class.is-disabled]="enviandoAnexo()">
+          @if (enviandoAnexo()) { <span class="spinner" aria-hidden="true"></span> Enviando… } @else { <app-icon name="upload" /> Anexar }
+          <input type="file" class="sr-only" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" [disabled]="enviandoAnexo()" (change)="anexar(d, $event)" />
+        </label>
+      </header>
+      @if (d.anexos.length === 0) {
+        <p class="sub">Nenhum arquivo. PDF, imagem ou Word, até 10 MB.</p>
+      } @else {
+        <ul class="arquivos">
+          @for (x of d.anexos; track x.id) {
+            <li>
+              <app-icon name="file-text" />
+              <div class="arquivos__info"><span class="arquivos__nome">{{ x.nome }}</span><span class="sub">{{ x.data | date: 'dd/MM/yyyy HH:mm' }} · {{ tamanho(x.tamanho) }}</span></div>
+              <button type="button" class="btn btn--secondary btn--sm" (click)="abrir(d, x.id, x.nome)" [disabled]="abrindo() !== null">@if (abrindo() === x.id) { <span class="spinner" aria-hidden="true"></span> } @else { Abrir }</button>
+              <button type="button" class="btn btn--danger-outline btn--sm" (click)="remover(d, x.id)" [attr.aria-label]="'Remover ' + x.nome"><app-icon name="trash" /></button>
+            </li>
+          }
+        </ul>
+      }
+      @if (erroAnexo(); as e) { <app-alert tone="danger">{{ e }}</app-alert> }
+    </section>
+  }
+
+  <p class="sub rodape">Marcado por {{ d.registradoPor ?? '—' }} em {{ d.registradoEm | date: 'dd/MM/yyyy HH:mm' }} · protocolo {{ a.id }}@if (a.cpf) { · CPF {{ a.cpf | cpf }} }</p>
+
+  <app-acao-agendamento-dialog [open]="acao() !== null" [acao]="acao() ?? 'cancelar'" [agendamento]="a" (salvo)="acaoSalva($event)" (closed)="acao.set(null)" />
+} @else {
+  <section class="cabecalho card" aria-busy="true"><span class="skeleton" style="width: 16rem; height: 1.75rem"></span></section>
+}

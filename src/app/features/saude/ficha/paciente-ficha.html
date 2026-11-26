@@ -1,0 +1,220 @@
+<a class="back-link" routerLink="/saude/pacientes"><app-icon name="arrow-left" /> Pacientes</a>
+
+@if (erro(); as kind) {
+  <section class="card"><app-load-error [kind]="kind" (retry)="recarregar()" /></section>
+} @else if (f(); as f) {
+  <header class="cabecalho card">
+    <div class="cabecalho__info">
+      <p class="page-eyebrow">Saúde › Paciente</p>
+      <h1 class="page-title">{{ f.nome }}</h1>
+      <p class="cabecalho__meta">
+        <span class="direito" [attr.data-direito]="f.direito">{{ rotuloDireito[f.direito] }}</span>
+        <span class="cell-mono">{{ f.cpf | cpf }}</span>
+        @if (f.idade !== null) { <span>{{ f.idade }} anos</span> }
+        @if (f.sexo) { <span>{{ f.sexo | lowercase }}</span> }
+        @if (f.matricula) { <span>mat. {{ f.matricula }}</span> }
+      </p>
+      @if (f.titular) {
+        <p class="cabecalho__meta">Dependente de <a [routerLink]="['/saude/pacientes', f.idTitular]">{{ f.titular }}</a>@if (f.parentesco) { &nbsp;({{ f.parentesco | lowercase }}) }</p>
+      }
+      @if (f.telefones.length) {
+        <p class="cabecalho__meta"><app-icon name="phone" /> @for (t of f.telefones; track t; let last = $last) { {{ t | telefone }}@if (!last) { · } }</p>
+      }
+    </div>
+    <div class="cabecalho__acoes">
+      <a class="btn btn--primary" routerLink="/saude/central"><app-icon name="plus" /> Marcar</a>
+      <a class="btn btn--secondary" [routerLink]="['/pessoas', f.idPessoa]">Cadastro</a>
+    </div>
+  </header>
+
+  @if (f.direito === 'SEM_DIREITO') { <app-alert tone="danger">{{ f.motivoSemDireito }}</app-alert> }
+  @if (f.alergias.length) {
+    <div class="alergias" role="alert"><app-icon name="alert-circle" /> <strong>Alergias:</strong> {{ f.alergias.join(', ') }}</div>
+  }
+  @if (aviso(); as a) {
+    <div class="aviso" role="status"><app-icon name="check-circle" /> {{ a }} <button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
+  }
+
+  <section class="tiles" aria-label="Resumo">
+    <article class="tile card"><p class="tile__rotulo">Agendados</p><p class="tile__valor">{{ f.contagem.agendados }}</p></article>
+    <article class="tile card"><p class="tile__rotulo">Atendidos</p><p class="tile__valor">{{ f.contagem.atendidos }}</p></article>
+    <article class="tile card"><p class="tile__rotulo">Faltas</p><p class="tile__valor" [class.tile__valor--alerta]="f.contagem.faltas > 0">{{ f.contagem.faltas }}</p></article>
+    <article class="tile card"><p class="tile__rotulo">Cancelados</p><p class="tile__valor">{{ f.contagem.cancelados }}</p></article>
+  </section>
+
+  <div class="abas" role="tablist" aria-label="Ficha do paciente">
+    <button type="button" role="tab" class="abas__item" [class.is-active]="aba() === 'agendamentos'" [attr.aria-selected]="aba() === 'agendamentos'" (click)="abrirAba('agendamentos', f)">Agendamentos</button>
+    <button type="button" role="tab" class="abas__item" [class.is-active]="aba() === 'prontuario'" [attr.aria-selected]="aba() === 'prontuario'" (click)="abrirAba('prontuario', f)">
+      <app-icon name="lock" /> Prontuário
+    </button>
+  </div>
+
+  @if (aba() === 'agendamentos') {
+    <section class="card bloco" aria-label="Agendamentos">
+      @if (paginaH(); as pg) {
+        @if (pg.content.length === 0) {
+          <p class="vazio">Nenhum agendamento ainda.</p>
+        } @else {
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead><tr><th scope="col">Data</th><th scope="col">Serviço</th><th scope="col">Situação</th><th scope="col"><span class="sr-only">Ações</span></th></tr></thead>
+              <tbody>
+                @for (a of pg.content; track a.id) {
+                  <tr>
+                    <td><strong>{{ a.dataHora | date: 'dd/MM/yyyy' }}</strong><span class="sub">{{ hora(a) }}</span></td>
+                    <td>{{ a.servico }}<span class="sub">{{ a.profissional }}</span></td>
+                    <td><app-status-selo [status]="a.status" />@if (a.motivo) { <span class="sub">{{ a.motivo }}</span> }</td>
+                    <td class="acoes-linha">
+                      <a class="btn btn--secondary btn--sm" [routerLink]="['/saude/atendimentos', a.id]">Abrir</a>
+                      @if (a.status === 'AGENDADO') {
+                        <button type="button" class="btn btn--secondary btn--sm" (click)="acao.set({ tipo: 'reagendar', agendamento: a })">Remarcar</button>
+                      }
+                      @if (emAberto(a.status)) {
+                        <button type="button" class="btn btn--danger-outline btn--sm" (click)="acao.set({ tipo: 'cancelar', agendamento: a })">Cancelar</button>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          @if (pg.totalPages > 1) {
+            <app-pagination [page]="pg.number" [size]="pg.size" [total]="pg.totalElements" [totalPages]="pg.totalPages" [first]="pg.first" [last]="pg.last" [sizeOptions]="[15]" itemLabel="agendamentos" (pageChange)="paginaHist.set($event)" />
+          }
+        }
+      } @else if (historico().status === 'error') {
+        <p class="vazio">Não foi possível carregar os agendamentos.</p>
+      } @else {
+        <span class="skeleton" style="width: 100%"></span>
+      }
+    </section>
+  } @else {
+    @if (!f.podeVerProntuario) {
+      <section class="card bloco"><app-alert tone="info">O prontuário tem dados de saúde protegidos. Só quem tem a permissão de prontuário (SAUDE_PRONTUARIO) pode ver.</app-alert></section>
+    } @else if (erroProntuario(); as e) {
+      <section class="card bloco"><app-alert tone="danger">{{ e }}</app-alert></section>
+    } @else if (prontuario(); as p) {
+      <div class="grade">
+        <section class="card bloco" aria-labelledby="t-anam">
+          <header class="bloco__cab">
+            <h2 class="bloco__titulo" id="t-anam">Anamnese</h2>
+            <button type="button" class="btn btn--secondary btn--sm" (click)="editandoPr.set(true)"><app-icon name="pencil" /> {{ p.existe ? 'Editar' : 'Preencher' }}</button>
+          </header>
+          @if (!p.existe) {
+            <p class="vazio">Prontuário ainda não preenchido.</p>
+          } @else {
+            @if (p.doencaAtual) { <p class="texto">{{ p.doencaAtual }}</p> }
+            <dl class="dados">
+              <div><dt>Tabagismo</dt><dd>{{ p.tabagismo ? 'Sim' + (p.frequenciaTabagismo ? ' · ' + p.frequenciaTabagismo : '') : 'Não' }}</dd></div>
+              <div><dt>Etilismo</dt><dd>{{ p.etilismo ? 'Sim' + (p.frequenciaEtilismo ? ' · ' + p.frequenciaEtilismo : '') : 'Não' }}</dd></div>
+              <div><dt>Atividade física</dt><dd>{{ p.atividadeFisica ? 'Sim' + (p.frequenciaAtividade ? ' · ' + p.frequenciaAtividade : '') : 'Não' }}</dd></div>
+              <div><dt>Alergias</dt><dd [class.alerta]="p.alergias.length">{{ p.alergias.length ? p.alergias.join(', ') : 'Nenhuma informada' }}</dd></div>
+              <div><dt>Comorbidades</dt><dd>{{ p.antecedentesPessoais.length ? p.antecedentesPessoais.join(', ') : '—' }}</dd></div>
+              <div><dt>Medicamentos em uso</dt><dd>{{ p.medicamentos.length ? p.medicamentos.join(', ') : '—' }}</dd></div>
+              <div class="dados__largo">
+                <dt>Antecedentes familiares</dt>
+                <dd>@for (a of p.antecedentesFamiliares; track $index; let last = $last) { {{ a.comorbidade }}@if (a.parentesco) { ({{ a.parentesco | lowercase }}) }@if (!last) { , } } @empty { — }</dd>
+              </div>
+            </dl>
+            @if (p.atualizadoEm) { <p class="sub">Atualizado em {{ p.atualizadoEm | date: 'dd/MM/yyyy HH:mm' }}@if (p.atualizadoPor) { por {{ p.atualizadoPor }} }</p> }
+          }
+        </section>
+
+        <section class="card bloco" aria-labelledby="t-sv">
+          <header class="bloco__cab">
+            <h2 class="bloco__titulo" id="t-sv">Sinais vitais</h2>
+            <button type="button" class="btn btn--secondary btn--sm" (click)="abrirSinais()"><app-icon name="plus" /> Registrar</button>
+          </header>
+          @if (p.sinaisVitais.length === 0) {
+            <p class="vazio">Nenhum registro.</p>
+          } @else {
+            <div class="table-scroll">
+              <table class="data-table compacta">
+                <thead><tr><th scope="col">Data</th><th scope="col">PA</th><th scope="col">FC</th><th scope="col">T</th><th scope="col">Sat.</th><th scope="col">Peso</th><th scope="col">IMC</th></tr></thead>
+                <tbody>
+                  @for (s of p.sinaisVitais.slice(0, 10); track s.id) {
+                    <tr>
+                      <td>{{ s.data | date: 'dd/MM/yy' }}</td>
+                      <td>{{ s.pressaoArterial ?? '—' }}</td>
+                      <td>{{ s.frequenciaCardiaca ?? '—' }}</td>
+                      <td>{{ s.temperatura ?? '—' }}</td>
+                      <td>{{ s.saturacao ?? '—' }}</td>
+                      <td>{{ s.peso !== null ? (s.peso | number: '1.0-1') + ' kg' : '—' }}</td>
+                      <td>{{ s.imc !== null ? (s.imc | number: '1.1-1') : '—' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+      </div>
+
+      <section class="card bloco" aria-labelledby="t-evo">
+        <h2 class="bloco__titulo" id="t-evo">Evolução (atendimentos realizados)</h2>
+        @if (p.evolucoes.length === 0) {
+          <p class="vazio">Nenhum atendimento realizado ainda.</p>
+        } @else {
+          <ol class="linha-tempo">
+            @for (e of p.evolucoes; track e.id) {
+              <li class="evento">
+                <button type="button" class="evento__cab" [attr.aria-expanded]="evolucaoAberta() === e.id" (click)="evolucaoAberta.set(evolucaoAberta() === e.id ? null : e.id)">
+                  <span><strong>{{ e.data | date: 'dd/MM/yyyy' }}</strong> · {{ e.servico }}@if (e.categoria === 'EXAME') { (exame) }</span>
+                  <span class="sub">{{ e.profissional }}@if (e.cid) { · CID {{ e.cid }} }</span>
+                </button>
+                @if (evolucaoAberta() === e.id) {
+                  <dl class="evento__corpo">
+                    @if (e.queixaPrincipal) { <div><dt>Queixa principal</dt><dd>{{ e.queixaPrincipal }}</dd></div> }
+                    @if (e.evolucaoClinica) { <div><dt>Evolução</dt><dd>{{ e.evolucaoClinica }}</dd></div> }
+                    @if (e.diagnostico) { <div><dt>Diagnóstico</dt><dd>{{ e.diagnostico }}</dd></div> }
+                    @if (e.conduta) { <div><dt>Conduta</dt><dd>{{ e.conduta }}</dd></div> }
+                    @if (e.observacao) { <div><dt>Observação</dt><dd>{{ e.observacao }}</dd></div> }
+                  </dl>
+                }
+              </li>
+            }
+          </ol>
+        }
+      </section>
+
+      <section class="card bloco" aria-labelledby="t-res">
+        <h2 class="bloco__titulo" id="t-res">Resultados e laudos</h2>
+        @if (p.resultados.length === 0) {
+          <p class="vazio">Nenhum arquivo anexado nos atendimentos.</p>
+        } @else {
+          <ul class="arquivos">
+            @for (a of p.resultados; track a.id) {
+              <li>
+                <app-icon name="file-text" />
+                <div class="arquivos__info"><span class="arquivos__nome">{{ a.nome }}</span><span class="sub">{{ a.servico }} · {{ a.data | date: 'dd/MM/yyyy' }}</span></div>
+                <button type="button" class="btn btn--secondary btn--sm" (click)="abrirResultado(a.idAtendimento, a.id, a.nome)" [disabled]="abrindo() !== null">
+                  @if (abrindo() === a.id) { <span class="spinner" aria-hidden="true"></span> } @else { Abrir }
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+
+      <app-prontuario-dialog [open]="editandoPr()" [idPessoa]="f.idPessoa" [prontuario]="p" (salvo)="prontuarioSalvo($event)" (closed)="editandoPr.set(false)" />
+      <app-dialog titulo="Registrar sinais vitais" [open]="sinaisAberto()" (closed)="sinaisAberto.set(false)">
+        <div class="dlg">
+          <app-sinais-campos [(valor)]="sinais" />
+          @if (erroSinais()) { <app-alert tone="danger">{{ erroSinais() }}</app-alert> }
+        </div>
+        <div dialog-actions class="acoes">
+          <button type="button" class="btn btn--secondary btn--sm" (click)="sinaisAberto.set(false)" [disabled]="salvandoSinais()">Cancelar</button>
+          <button type="button" class="btn btn--primary btn--sm" (click)="salvarSinais(f)" [disabled]="salvandoSinais()">
+            @if (salvandoSinais()) { <span class="spinner" aria-hidden="true"></span> Salvando… } @else { Registrar }
+          </button>
+        </div>
+      </app-dialog>
+    } @else if (carregandoPr()) {
+      <section class="card bloco"><span class="skeleton" style="width: 100%; height: 6rem"></span></section>
+    }
+  }
+
+  <app-acao-agendamento-dialog [open]="acao() !== null" [acao]="acao()?.tipo ?? 'cancelar'" [agendamento]="acao()?.agendamento ?? null" (salvo)="acaoSalva($event)" (closed)="acao.set(null)" />
+} @else {
+  <section class="cabecalho card" aria-busy="true"><span class="skeleton" style="width: 16rem; height: 1.75rem"></span></section>
+}

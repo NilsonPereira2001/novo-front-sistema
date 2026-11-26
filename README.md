@@ -116,6 +116,21 @@ Código em `features/agenda/`. Compromissos **privados**: o back só devolve os 
 - Próximos compromissos na tela Início.
 - Estado na URL (`?mes=AAAA-MM&dia=AAAA-MM-DD`).
 
+### Saúde (`/saude`)
+
+Código em `features/saude/`. Endpoints do `SaudeAdminController` (PR #8). Permissões (criadas na subida do back): `SAUDE_MARCACAO` (central e recepção), `SAUDE_PRONTUARIO` (dados clínicos), `SAUDE_GERENCIAR` (agendas, serviços e profissionais).
+
+- **Quem pode ser atendido:** associado ativo (titular) ou dependente ativo de associado ativo. Sem direito → a marcação é recusada com o motivo.
+- **Agenda por dia:** cada profissional/serviço/dia tem N vagas; a hora é opcional (em branco = ordem de chegada). A ocupação conta os agendamentos não cancelados, e o back trava o dia na marcação (dois atendentes não pegam a última vaga). Não deixa marcar o mesmo serviço duas vezes no mesmo dia para o paciente.
+- **Situações:** agendado → chegou → atendido; faltou; cancelado (libera a vaga).
+- **Painel:** hoje (aguardando, na recepção, atendidos, faltas), próximos 7 dias, vagas livres, taxa de faltas e ocupação por serviço.
+- **Central de marcação:** busca o paciente (mostra direito, telefones e próximos agendamentos com remarcar/cancelar), escolhe consulta ou exame, profissional (ou qualquer um) e um dia com vaga; confirma com hora opcional, telefone e observação; comprovante para imprimir com as orientações de preparo.
+- **Agenda do dia:** por data, serviço, profissional, situação e busca; chegada, falta, remarcar, cancelar e abrir o atendimento.
+- **Pacientes / ficha:** dados, direito, titular, alergias em destaque, contagem de atendimentos/faltas, histórico de agendamentos e a aba **Prontuário** (só com `SAUDE_PRONTUARIO`): anamnese (doença atual, hábitos, alergias, comorbidades, medicamentos, antecedentes familiares), sinais vitais com IMC, evolução dos atendimentos e resultados/laudos.
+- **Atendimento:** registro clínico (queixa, sinais vitais, evolução, diagnóstico, CID-10, conduta, observação) e anexos (PDF, imagem, Word até 10 MB).
+- **Agendas:** calendário do mês para liberar dias (clique no dia ou em "todas as terças"), com vagas por dia; ajustar vagas (não abaixo do ocupado) e bloquear dia (só sem agendamentos).
+- **Serviços e profissionais:** especialidades e exames com orientações ao paciente; vincular funcionários ativos aos serviços que atendem.
+
 ### Diretoria (`/diretoria`)
 
 Código em `features/diretoria/`. Endpoints do `DiretoriaController` (PR #8). Permissões: `DIRETORIA_LISTAR` (ver), `DIRETORIA_NOMEAR` (nomear, pastas e gestões), `DIRETORIA_EXONERAR`.

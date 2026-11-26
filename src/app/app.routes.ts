@@ -105,6 +105,46 @@ export const routes: Routes = [
         loadComponent: () => import('./features/agenda/calendario/minha-agenda').then((m) => m.MinhaAgenda),
       },
       {
+        path: 'saude',
+        title: pageTitle('Saúde'),
+        loadComponent: () => import('./features/saude/painel/saude-painel').then((m) => m.SaudePainel),
+      },
+      {
+        path: 'saude/central',
+        title: pageTitle('Central de marcação'),
+        loadComponent: () => import('./features/saude/central/central-marcacao').then((m) => m.CentralMarcacao),
+      },
+      {
+        path: 'saude/agenda',
+        title: pageTitle('Agenda do dia'),
+        loadComponent: () => import('./features/saude/agenda/agenda-dia').then((m) => m.AgendaDia),
+      },
+      {
+        path: 'saude/pacientes',
+        title: pageTitle('Pacientes'),
+        loadComponent: () => import('./features/saude/pacientes/pacientes-saude').then((m) => m.PacientesSaude),
+      },
+      {
+        path: 'saude/pacientes/:id',
+        title: pageTitle('Paciente'),
+        loadComponent: () => import('./features/saude/ficha/paciente-ficha').then((m) => m.PacienteFicha),
+      },
+      {
+        path: 'saude/atendimentos/:id',
+        title: pageTitle('Atendimento'),
+        loadComponent: () => import('./features/saude/atendimento/atendimento-saude').then((m) => m.AtendimentoSaude),
+      },
+      {
+        path: 'saude/agendas',
+        title: pageTitle('Agendas da saúde'),
+        loadComponent: () => import('./features/saude/agendas/agendas-saude').then((m) => m.AgendasSaude),
+      },
+      {
+        path: 'saude/cadastros',
+        title: pageTitle('Serviços e profissionais'),
+        loadComponent: () => import('./features/saude/cadastros/cadastros-saude').then((m) => m.CadastrosSaude),
+      },
+      {
         path: 'diretoria',
         title: pageTitle('Diretoria'),
         loadComponent: () => import('./features/diretoria/composicao/diretoria-composicao').then((m) => m.DiretoriaComposicao),

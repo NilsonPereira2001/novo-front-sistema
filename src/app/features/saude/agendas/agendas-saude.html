@@ -1,0 +1,128 @@
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">Saúde</p>
+    <h1 class="page-title">Agendas</h1>
+    <p class="page-subtitle">Libere os dias em que cada profissional atende e quantas vagas tem por dia. A central só marca em dias liberados.</p>
+  </div>
+</header>
+
+<app-saude-abas />
+
+@if (aviso(); as a) {
+  <div class="aviso" role="status"><app-icon name="check-circle" /> {{ a }} <button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
+}
+
+<section class="card bloco" aria-labelledby="t-lib">
+  <h2 class="bloco__titulo" id="t-lib">Profissional e serviço</h2>
+  @if (profissionais().status === 'ready' && listaProfissionais().length === 0) {
+    <app-alert tone="warning">Nenhum profissional com serviço vinculado. Cadastre em <a routerLink="/saude/cadastros">Serviços e profissionais</a>.</app-alert>
+  }
+  <div class="filtros">
+    <div class="field">
+      <label class="field__label" for="ag-prof">Profissional</label>
+      <select id="ag-prof" class="field__input" (change)="onProfissional($event)">
+        <option value="" [selected]="idProfissional() === null">Escolha…</option>
+        @for (p of listaProfissionais(); track p.idFuncionario) { <option [value]="p.idFuncionario" [selected]="idProfissional() === p.idFuncionario">{{ p.nome }}</option> }
+      </select>
+    </div>
+    <div class="field">
+      <label class="field__label" for="ag-serv">Serviço</label>
+      <select id="ag-serv" class="field__input" (change)="onServico($event)" [disabled]="!profissional()">
+        <option value="" [selected]="idServico() === null">Escolha…</option>
+        @for (s of profissional()?.servicos ?? []; track s.id) { <option [value]="s.id" [selected]="idServico() === s.id">{{ s.nome }}</option> }
+      </select>
+    </div>
+    <div class="field">
+      <label class="field__label" for="ag-vagas">Vagas por dia</label>
+      <input id="ag-vagas" class="field__input" type="number" min="1" max="200" [value]="vagas()" (input)="onVagas($event)" />
+    </div>
+  </div>
+
+  @if (idProfissional() && idServico()) {
+    <div class="calendario">
+      <div class="calendario__cab">
+        <button type="button" class="btn btn--secondary btn--sm" (click)="mudarMes(-1)" aria-label="Mês anterior"><app-icon name="chevron-left" /></button>
+        <p class="calendario__mes">{{ nomeMes() }}</p>
+        <button type="button" class="btn btn--secondary btn--sm" (click)="mudarMes(1)" aria-label="Próximo mês"><app-icon name="chevron-right" /></button>
+      </div>
+      <div class="grade-mes" role="grid" [attr.aria-busy]="carregando()">
+        @for (w of semana; track $index; let i = $index) {
+          <button type="button" class="grade-mes__semana" (click)="marcarSemana(i)" [title]="'Marcar todas as ' + w">{{ w }}</button>
+        }
+        @for (v of vazios(); track v) { <span></span> }
+        @for (data of diasMes(); track data) {
+          @let existente = porData().get(data);
+          <button
+            type="button"
+            class="dia"
+            [class.dia--passado]="data < hoje"
+            [class.dia--fim]="!diaUtil(data)"
+            [class.dia--sel]="selecionados().has(data)"
+            [class.dia--liberado]="!!existente && existente.ativo"
+            [class.dia--bloqueado]="!!existente && !existente.ativo"
+            [disabled]="data < hoje || !!existente"
+            [attr.aria-pressed]="selecionados().has(data)"
+            (click)="alternar(data)"
+          >
+            <span class="dia__n">{{ numDia(data) }}</span>
+            @if (existente) { <span class="dia__info">{{ existente.ocupadas }}/{{ existente.vagas }}</span> }
+          </button>
+        }
+      </div>
+      <p class="legenda">
+        <span><i class="l l--sel"></i> selecionado</span><span><i class="l l--lib"></i> já liberado (ocupadas/vagas)</span><span><i class="l l--blq"></i> bloqueado</span>
+        · Clique no nome do dia da semana para marcar todos do mês.
+      </p>
+    </div>
+    @if (erro()) { <app-alert tone="danger">{{ erro() }}</app-alert> }
+    <div class="acoes">
+      <button type="button" class="btn btn--primary" (click)="liberar()" [disabled]="enviando() || selecionados().size === 0">
+        @if (enviando()) { <span class="spinner" aria-hidden="true"></span> Liberando… } @else { Liberar {{ selecionados().size }} {{ selecionados().size === 1 ? 'dia' : 'dias' }} com {{ vagas() }} vagas }
+      </button>
+    </div>
+  }
+</section>
+
+@if (idProfissional()) {
+  <section class="card table-card" aria-labelledby="t-dias">
+    <h2 id="t-dias" class="bloco__titulo cab-tabela">Dias liberados em {{ nomeMes() }}</h2>
+    @if (dias().length === 0) {
+      <p class="vazio">Nenhum dia liberado neste mês para este profissional.</p>
+    } @else {
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead><tr><th scope="col">Dia</th><th scope="col">Serviço</th><th scope="col" class="num">Vagas</th><th scope="col" class="num">Ocupadas</th><th scope="col" class="num">Livres</th><th scope="col">Situação</th><th scope="col"><span class="sr-only">Ações</span></th></tr></thead>
+          <tbody>
+            @for (d of dias(); track d.id) {
+              <tr [class.inativo]="!d.ativo">
+                <td>{{ d.data | date: 'EEE, dd/MM' }}</td>
+                <td>{{ d.servico }}</td>
+                <td class="num">
+                  @if (editando() === d.id) {
+                    <input class="field__input vagas-input" type="number" [min]="d.ocupadas || 1" max="200" [value]="vagasEdit()" (input)="vagasEdit.set(valorNum($event))" [attr.aria-label]="'Vagas em ' + d.data" />
+                  } @else { {{ d.vagas }} }
+                </td>
+                <td class="num">{{ d.ocupadas }}</td>
+                <td class="num">{{ d.livres }}</td>
+                <td><span class="situacao" [class.is-off]="!d.ativo">{{ d.ativo ? 'Aberto' : 'Bloqueado' }}</span></td>
+                <td class="acoes-linha">
+                  @if (editando() === d.id) {
+                    <button type="button" class="btn btn--primary btn--sm" (click)="salvarVagas(d)" [disabled]="enviando()">Salvar</button>
+                    <button type="button" class="btn btn--secondary btn--sm" (click)="editando.set(null)">Cancelar</button>
+                  } @else if (d.data >= hoje) {
+                    <button type="button" class="btn btn--secondary btn--sm" (click)="editar(d)">Vagas</button>
+                    @if (d.ativo) {
+                      <button type="button" class="btn btn--secondary btn--sm" (click)="bloquear(d, false)" [disabled]="enviando() || d.ocupadas > 0" [title]="d.ocupadas > 0 ? 'Há agendamentos: cancele ou remarque antes' : ''">Bloquear</button>
+                    } @else {
+                      <button type="button" class="btn btn--secondary btn--sm" (click)="bloquear(d, true)" [disabled]="enviando()">Desbloquear</button>
+                    }
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+}

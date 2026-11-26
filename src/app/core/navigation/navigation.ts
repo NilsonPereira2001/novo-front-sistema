@@ -168,6 +168,53 @@ export const NAVIGATION: readonly NavGroup[] = [
     ],
   },
   {
+    label: 'Saúde',
+    items: [
+      {
+        label: 'Painel da saúde',
+        path: 'saude',
+        icon: 'bar-chart',
+        description: 'Hoje, próximos dias e ocupação',
+        available: true,
+      },
+      {
+        label: 'Central de marcação',
+        path: 'saude/central',
+        icon: 'phone',
+        description: 'Marcar consultas e exames (call center)',
+        available: true,
+      },
+      {
+        label: 'Agenda do dia',
+        path: 'saude/agenda',
+        icon: 'calendar',
+        description: 'Recepção: chegada, falta e atendimento',
+        available: true,
+      },
+      {
+        label: 'Pacientes',
+        path: 'saude/pacientes',
+        icon: 'users',
+        description: 'Ficha e prontuário',
+        available: true,
+      },
+      {
+        label: 'Agendas',
+        path: 'saude/agendas',
+        icon: 'clock',
+        description: 'Dias e vagas dos profissionais',
+        available: true,
+      },
+      {
+        label: 'Serviços e profissionais',
+        path: 'saude/cadastros',
+        icon: 'sliders',
+        description: 'Especialidades, exames e quem atende',
+        available: true,
+      },
+    ],
+  },
+  {
     label: 'Complementares',
     items: [
       {

@@ -1,0 +1,124 @@
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">Saúde</p>
+    <h1 class="page-title">Agenda do dia</h1>
+    <p class="page-subtitle">Recepção e atendimento: registre a chegada, a falta ou abra o atendimento.</p>
+  </div>
+  <div class="page-header__actions">
+    <a class="btn btn--primary" routerLink="/saude/central"><app-icon name="plus" /> Marcar</a>
+  </div>
+</header>
+
+<app-saude-abas />
+
+@if (aviso(); as a) {
+  <div class="aviso" role="status"><app-icon name="check-circle" /> {{ a }} <button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
+}
+@if (erroAcao(); as e) { <app-alert tone="danger">{{ e }}</app-alert> }
+
+<section class="card table-card" aria-labelledby="t-agenda">
+  <div class="dia">
+    <div class="dia__nav">
+      <button type="button" class="btn btn--secondary btn--sm" (click)="irPara(-1)" aria-label="Dia anterior"><app-icon name="chevron-left" /></button>
+      <h2 id="t-agenda" class="dia__titulo">{{ data() | date: "EEEE, dd 'de' MMMM" }}</h2>
+      <button type="button" class="btn btn--secondary btn--sm" (click)="irPara(1)" aria-label="Próximo dia"><app-icon name="chevron-right" /></button>
+      @if (data() !== hoje) { <button type="button" class="link-button" (click)="hojeIr()">Hoje</button> }
+    </div>
+    <label class="sr-only" for="ag-data">Data</label>
+    <input id="ag-data" class="field__input dia__data" type="date" [value]="data()" (change)="onData($event)" />
+  </div>
+
+  <div class="chips" role="group" aria-label="Situação">
+    <button type="button" class="chip" [class.is-active]="status() === ''" (click)="setStatus('')">Todos</button>
+    @for (s of statusLista; track s.key) {
+      <button type="button" class="chip" [class.is-active]="status() === s.key" (click)="setStatus(s.key)">{{ s.rotulo }}@if (!status() && contagem()[s.key]) { <span class="chip__n">{{ contagem()[s.key] }}</span> }</button>
+    }
+  </div>
+  <div class="toolbar">
+    <app-search-field label="Pesquisar paciente" placeholder="Nome ou CPF" [value]="url.searchText()" (valueChange)="url.search($event)" (clear)="url.clearSearch()" />
+    <label class="sr-only" for="ag-servico">Serviço</label>
+    <select id="ag-servico" class="field__input filtro" (change)="onSelect('servico', $event)">
+      <option value="" [selected]="idServico() === null">Todos os serviços</option>
+      @for (s of listaServicos(); track s.id) { <option [value]="s.id" [selected]="idServico() === s.id">{{ s.nome }}</option> }
+    </select>
+    <label class="sr-only" for="ag-prof">Profissional</label>
+    <select id="ag-prof" class="field__input filtro" (change)="onSelect('profissional', $event)">
+      <option value="" [selected]="idProfissional() === null">Todos os profissionais</option>
+      @for (p of listaProfissionais(); track p.idFuncionario) { <option [value]="p.idFuncionario" [selected]="idProfissional() === p.idFuncionario">{{ p.nome }}</option> }
+    </select>
+  </div>
+
+  @if (carregando() && pagina()) { <div class="loading-bar" role="progressbar" aria-label="Carregando"></div> }
+
+  @if (erro(); as kind) {
+    <app-load-error [kind]="kind" (retry)="recarregar()" />
+  } @else if (!carregando() && pagina()?.empty) {
+    <div class="state">
+      <span class="state__icon"><app-icon name="calendar" /></span>
+      <p class="state__title">Ninguém marcado neste dia</p>
+    </div>
+  } @else if (pagina(); as pg) {
+    <div class="table-scroll">
+      <table class="data-table" [class.is-stale]="carregando()">
+        <thead>
+          <tr>
+            <th scope="col">Horário</th>
+            <th scope="col">Paciente</th>
+            <th scope="col">Serviço</th>
+            <th scope="col">Situação</th>
+            <th scope="col"><span class="sr-only">Ações</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (a of pg.content; track a.id) {
+            <tr [class.encerrado]="!emAberto(a.status)">
+              <td class="hora">{{ hora(a) }}</td>
+              <td>
+                @if (a.idPessoa) { <a class="nome" [routerLink]="['/saude/pacientes', a.idPessoa]">{{ a.paciente }}</a> } @else { {{ a.paciente }} }
+                @if (a.telefone) { <span class="sub">{{ a.telefone | telefone }}</span> }
+                @if (a.observacao) { <span class="sub">{{ a.observacao }}</span> }
+              </td>
+              <td>
+                {{ a.servico }}@if (a.categoria === 'EXAME') { <span class="tag">exame</span> }
+                <span class="sub">{{ a.profissional }}</span>
+              </td>
+              <td>
+                <app-status-selo [status]="a.status" />
+                @if (a.motivo) { <span class="sub">{{ a.motivo }}</span> }
+              </td>
+              <td class="acoes-linha">
+                @if (a.status === 'AGENDADO' && ehPassadoOuHoje()) {
+                  <button type="button" class="btn btn--secondary btn--sm" (click)="chegou(a)" [disabled]="processando() !== null">
+                    @if (processando() === a.id) { <span class="spinner" aria-hidden="true"></span> } Chegou
+                  </button>
+                }
+                @if (emAberto(a.status) && ehPassadoOuHoje()) {
+                  <a class="btn btn--primary btn--sm" [routerLink]="['/saude/atendimentos', a.id]">Atender</a>
+                } @else {
+                  <a class="btn btn--secondary btn--sm" [routerLink]="['/saude/atendimentos', a.id]">Abrir</a>
+                }
+                @if (emAberto(a.status)) {
+                  <details class="mais">
+                    <summary class="btn btn--secondary btn--sm" aria-label="Mais ações"><app-icon name="more-horizontal" /></summary>
+                    <div class="mais__menu">
+                      @if (a.status === 'AGENDADO') { <button type="button" (click)="acao.set({ tipo: 'reagendar', agendamento: a })">Remarcar</button> }
+                      @if (ehPassadoOuHoje()) { <button type="button" (click)="acao.set({ tipo: 'falta', agendamento: a })">Registrar falta</button> }
+                      <button type="button" class="perigo" (click)="acao.set({ tipo: 'cancelar', agendamento: a })">Cancelar</button>
+                    </div>
+                  </details>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (pg.totalPages > 1) {
+      <app-pagination [page]="pg.number" [size]="pg.size" [total]="pg.totalElements" [totalPages]="pg.totalPages" [first]="pg.first" [last]="pg.last" [sizeOptions]="url.sizeOptions" itemLabel="agendamentos" (pageChange)="url.setPage($event)" (sizeChange)="url.setSize($event)" />
+    }
+  } @else {
+    <div class="carregando"><span class="skeleton" style="width: 100%"></span><span class="skeleton" style="width: 80%"></span></div>
+  }
+</section>
+
+<app-acao-agendamento-dialog [open]="acao() !== null" [acao]="acao()?.tipo ?? 'cancelar'" [agendamento]="acao()?.agendamento ?? null" (salvo)="acaoSalva($event)" (closed)="acao.set(null)" />

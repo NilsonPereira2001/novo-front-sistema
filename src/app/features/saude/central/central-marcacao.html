@@ -1,0 +1,197 @@
+<header class="page-header nao-imprimir">
+  <div class="page-header__text">
+    <p class="page-eyebrow">Saúde</p>
+    <h1 class="page-title">Central de marcação</h1>
+    <p class="page-subtitle">Busque o paciente, escolha a consulta ou o exame e um dia com vaga. Na mesma tela dá para remarcar ou cancelar o que ele já tem.</p>
+  </div>
+</header>
+
+<app-saude-abas class="nao-imprimir" />
+
+@if (aviso(); as a) {
+  <div class="aviso nao-imprimir" role="status"><app-icon name="check-circle" /> {{ a }} <button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
+}
+
+<div class="grade">
+  <!-- 1. Paciente -->
+  <section class="card bloco nao-imprimir" aria-labelledby="t-pac">
+    <h2 class="bloco__titulo" id="t-pac"><span class="passo">1</span> Paciente</h2>
+    @if (paciente(); as p) {
+      <div class="paciente">
+        <div class="paciente__cab">
+          <div>
+            <p class="paciente__nome">{{ p.nome }}</p>
+            <p class="sub cell-mono">{{ p.cpf | cpf }}@if (p.matricula) { · mat. {{ p.matricula }} }@if (p.idade !== null) { · {{ p.idade }} anos }</p>
+          </div>
+          <span class="direito" [attr.data-direito]="p.direito">{{ rotuloDireito[p.direito] }}</span>
+        </div>
+        @if (ficha(); as f) {
+          @if (f.titular) { <p class="sub">Dependente de {{ f.titular }}@if (f.parentesco) { ({{ f.parentesco | lowercase }}) }</p> }
+          @if (f.telefones.length) {
+            <p class="sub"><app-icon name="phone" /> @for (t of f.telefones; track t; let last = $last) { {{ t | telefone }}@if (!last) { · } }</p>
+          }
+          @if (f.direito === 'SEM_DIREITO') {
+            <app-alert tone="danger">{{ f.motivoSemDireito ?? 'Sem direito à saúde.' }}</app-alert>
+          }
+          <div class="proximos">
+            <p class="proximos__titulo">Próximos agendamentos</p>
+            @if (f.proximos.length === 0) {
+              <p class="sub">Nenhum.</p>
+            } @else {
+              <ul>
+                @for (a of f.proximos; track a.id) {
+                  <li>
+                    <div>
+                      <p class="proximos__linha"><strong>{{ a.dataHora | date: 'dd/MM' }}</strong> · {{ hora(a) }} · {{ a.servico }}</p>
+                      <p class="sub">{{ a.profissional }} <app-status-selo [status]="a.status" /></p>
+                    </div>
+                    @if (a.status === 'AGENDADO') {
+                      <div class="proximos__acoes">
+                        <button type="button" class="link-button" (click)="acao.set({ tipo: 'reagendar', agendamento: a })">Remarcar</button>
+                        <button type="button" class="link-button link-button--perigo" (click)="acao.set({ tipo: 'cancelar', agendamento: a })">Cancelar</button>
+                      </div>
+                    }
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        } @else if (erroFicha()) {
+          <app-alert tone="danger">{{ erroFicha() }}</app-alert>
+        } @else {
+          <span class="skeleton" style="width: 100%"></span>
+        }
+        <div class="paciente__acoes">
+          <button type="button" class="btn btn--secondary btn--sm" (click)="trocarPaciente()">Trocar paciente</button>
+          <a class="btn btn--secondary btn--sm" [routerLink]="['/saude/pacientes', p.idPessoa]">Ficha</a>
+        </div>
+      </div>
+    } @else {
+      <app-paciente-busca (escolhido)="escolherPaciente($event)" />
+    }
+  </section>
+
+  <!-- 2. Marcar -->
+  <section class="card bloco" aria-labelledby="t-marcar">
+    @if (marcado(); as m) {
+      <div class="comprovante">
+        <p class="comprovante__ok nao-imprimir"><app-icon name="check-circle" /> Marcado!</p>
+        <h2 class="comprovante__titulo">Comprovante de agendamento</h2>
+        <dl class="comprovante__dados">
+          <div><dt>Paciente</dt><dd>{{ m.agendamento.paciente }}</dd></div>
+          <div><dt>{{ m.agendamento.categoria === 'EXAME' ? 'Exame' : 'Consulta' }}</dt><dd>{{ m.agendamento.servico }}</dd></div>
+          <div><dt>Profissional</dt><dd>{{ m.agendamento.profissional }}</dd></div>
+          <div><dt>Data</dt><dd>{{ m.agendamento.dataHora | date: "EEEE, dd/MM/yyyy" }}</dd></div>
+          <div><dt>Horário</dt><dd>{{ hora(m.agendamento) }}</dd></div>
+          <div><dt>Protocolo</dt><dd class="cell-mono">{{ m.agendamento.id }}</dd></div>
+        </dl>
+        @if (m.orientacoes) {
+          <div class="orientacoes"><strong>Orientações:</strong> {{ m.orientacoes }}</div>
+        }
+        <p class="sub">Leve documento com foto. Em caso de falta, avise com antecedência para liberar a vaga.</p>
+        <div class="acoes nao-imprimir">
+          <button type="button" class="btn btn--secondary btn--sm" (click)="imprimir()"><app-icon name="printer" /> Imprimir</button>
+          <button type="button" class="btn btn--primary btn--sm" (click)="novaMarcacao()">Marcar outro para este paciente</button>
+          <button type="button" class="btn btn--secondary btn--sm" (click)="trocarPaciente()">Outro paciente</button>
+        </div>
+      </div>
+    } @else {
+      <h2 class="bloco__titulo nao-imprimir" id="t-marcar"><span class="passo">2</span> Consulta ou exame</h2>
+      <div class="filtros nao-imprimir">
+        <div class="segmented" role="group" aria-label="Tipo">
+          <button type="button" class="segmented__item" [class.is-active]="categoria() === 'CONSULTA'" (click)="setCategoria('CONSULTA')">Consultas</button>
+          <button type="button" class="segmented__item" [class.is-active]="categoria() === 'EXAME'" (click)="setCategoria('EXAME')">Exames</button>
+        </div>
+        <div class="field">
+          <label class="field__label" for="cm-servico">{{ categoria() === 'EXAME' ? 'Exame' : 'Especialidade' }}</label>
+          <select id="cm-servico" class="field__input" (change)="onServico($event)">
+            <option value="" [selected]="idServico() === null">Escolha…</option>
+            @for (s of listaServicos(); track s.id) {
+              <option [value]="s.id" [selected]="idServico() === s.id">{{ s.nome }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label class="field__label" for="cm-prof">Profissional</label>
+          <select id="cm-prof" class="field__input" (change)="onProfissional($event)" [disabled]="!idServico()">
+            <option value="" [selected]="idProfissional() === null">Qualquer um</option>
+            @for (p of listaProfissionais(); track p.idFuncionario) {
+              <option [value]="p.idFuncionario" [selected]="idProfissional() === p.idFuncionario">{{ p.nome }}</option>
+            }
+          </select>
+        </div>
+      </div>
+      @if (servico()?.orientacoes; as o) {
+        <div class="orientacoes nao-imprimir"><strong>Orientações para o paciente:</strong> {{ o }}</div>
+      }
+
+      @if (idServico()) {
+        <h3 class="bloco__sub nao-imprimir"><span class="passo">3</span> Dia com vaga</h3>
+        @if (carregandoDias()) {
+          <span class="skeleton" style="width: 100%; height: 4rem"></span>
+        } @else if (erroDias()) {
+          <app-alert tone="danger">Não foi possível buscar a agenda.</app-alert>
+        } @else if (grupos().length === 0) {
+          <app-alert tone="warning">Sem vagas nos próximos {{ janela() }} dias.@if (janela() < 90) { <button type="button" class="link-button" (click)="janela.set(90)">Procurar até 90 dias</button> }</app-alert>
+        } @else {
+          <div class="dias nao-imprimir" role="radiogroup" aria-label="Dia e profissional">
+            @for (g of grupos(); track g.data) {
+              <fieldset class="dia">
+                <legend>{{ g.data | date: "EEE, dd/MM" }}</legend>
+                @for (d of g.dias; track d.id) {
+                  <label class="opcao" [class.is-escolhida]="escolhido()?.id === d.id">
+                    <input type="radio" name="dia-vaga" class="sr-only" [checked]="escolhido()?.id === d.id" (change)="escolhido.set(d)" />
+                    <span class="opcao__prof">{{ d.profissional }}</span>
+                    <span class="opcao__vagas">{{ d.livres }} {{ d.livres === 1 ? 'vaga' : 'vagas' }}</span>
+                  </label>
+                }
+              </fieldset>
+            }
+          </div>
+          @if (janela() < 90) { <button type="button" class="link-button nao-imprimir" (click)="janela.set(90)">Ver mais dias</button> }
+        }
+
+        @if (escolhido(); as d) {
+          <div class="confirmar nao-imprimir">
+            <h3 class="bloco__sub"><span class="passo">4</span> Confirmar</h3>
+            <p class="confirmar__resumo">{{ d.servico }} com <strong>{{ d.profissional }}</strong> em <strong>{{ d.data | date: "EEEE, dd/MM/yyyy" }}</strong></p>
+            <div class="confirmar__campos">
+              <div class="field">
+                <label class="field__label" for="cm-hora">Horário</label>
+                <input id="cm-hora" class="field__input" type="time" [value]="horaMarcada()" (input)="horaMarcada.set(valor($event))" />
+                <p class="field__hint">Em branco = ordem de chegada.</p>
+              </div>
+              <div class="field">
+                <label class="field__label" for="cm-tel">Telefone de contato</label>
+                <input id="cm-tel" class="field__input" type="tel" maxlength="20" [value]="telefone()" (input)="telefone.set(valor($event))" />
+              </div>
+              <div class="field confirmar__obs">
+                <label class="field__label" for="cm-obs">Observação</label>
+                <input id="cm-obs" class="field__input" type="text" maxlength="1000" placeholder="Opcional (ex.: retorno, primeira consulta)" [value]="observacao()" (input)="observacao.set(valor($event))" />
+              </div>
+            </div>
+            @if (!paciente()) {
+              <app-alert tone="info">Escolha o paciente no passo 1.</app-alert>
+            } @else if (ficha()?.direito === 'SEM_DIREITO') {
+              <app-alert tone="danger">Este paciente não pode ser agendado: {{ ficha()?.motivoSemDireito }}</app-alert>
+            }
+            @if (erro()) { <app-alert tone="danger">{{ erro() }}</app-alert> }
+            <div class="acoes">
+              <button type="button" class="btn btn--primary" (click)="confirmar()" [disabled]="enviando() || !paciente() || ficha()?.direito === 'SEM_DIREITO'">
+                @if (enviando()) { <span class="spinner" aria-hidden="true"></span> Marcando… } @else { <app-icon name="check-circle" /> Confirmar marcação }
+              </button>
+            </div>
+          </div>
+        }
+      }
+    }
+  </section>
+</div>
+
+<app-acao-agendamento-dialog
+  [open]="acao() !== null"
+  [acao]="acao()?.tipo ?? 'cancelar'"
+  [agendamento]="acao()?.agendamento ?? null"
+  (salvo)="acaoSalva($event)"
+  (closed)="acao.set(null)"
+/>

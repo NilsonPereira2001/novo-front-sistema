@@ -1,0 +1,149 @@
+<header class="page-header">
+  <div class="page-header__text">
+    <p class="page-eyebrow">Saúde</p>
+    <h1 class="page-title">Serviços e profissionais</h1>
+    <p class="page-subtitle">Especialidades e exames oferecidos, com as orientações de preparo, e quais funcionários atendem cada um.</p>
+  </div>
+</header>
+
+<app-saude-abas />
+
+@if (aviso(); as a) {
+  <div class="aviso" role="status"><app-icon name="check-circle" /> {{ a }} <button type="button" class="link-button" (click)="aviso.set(null)">Dispensar</button></div>
+}
+@if (erro() && !servicoAberto() && !profAberto()) { <app-alert tone="danger">{{ erro() }}</app-alert> }
+
+@if (erroCarga(); as kind) {
+  <section class="card"><app-load-error [kind]="kind" (retry)="recarregar()" /></section>
+} @else {
+  <div class="grade">
+    <section class="card bloco" aria-labelledby="t-serv">
+      <header class="bloco__cab">
+        <h2 class="bloco__titulo" id="t-serv">Serviços</h2>
+        <button type="button" class="btn btn--primary btn--sm" (click)="abrirServico(null)"><app-icon name="plus" /> Novo serviço</button>
+      </header>
+      @if (servicos(); as lista) {
+        @if (lista.length === 0) {
+          <p class="vazio">Nenhum serviço cadastrado. Comece pelas especialidades (CLÍNICO GERAL, PEDIATRIA…) e exames.</p>
+        } @else {
+          <ul class="lista">
+            @for (s of lista; track s.id) {
+              <li class="item" [class.item--off]="!s.ativo">
+                <div class="item__info">
+                  <p class="item__nome">{{ s.nome }} <span class="tag" [attr.data-cat]="s.categoria">{{ s.categoria === 'EXAME' ? 'Exame' : 'Consulta' }}</span>@if (!s.ativo) { <span class="tag">desativado</span> }</p>
+                  <p class="sub">{{ s.profissionais }} {{ s.profissionais === 1 ? 'profissional' : 'profissionais' }}@if (s.orientacoes) { · {{ s.orientacoes }} }</p>
+                </div>
+                <div class="item__acoes">
+                  <button type="button" class="btn btn--secondary btn--sm" (click)="abrirServico(s)" [attr.aria-label]="'Editar ' + s.nome"><app-icon name="pencil" /></button>
+                  @if (s.ativo) {
+                    <button type="button" class="btn btn--secondary btn--sm" (click)="ativar(s, false)" [disabled]="enviando()">Desativar</button>
+                  } @else {
+                    <button type="button" class="btn btn--secondary btn--sm" (click)="ativar(s, true)" [disabled]="enviando()">Reativar</button>
+                  }
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      } @else {
+        <span class="skeleton" style="width: 100%; height: 4rem"></span>
+      }
+    </section>
+
+    <section class="card bloco" aria-labelledby="t-prof">
+      <header class="bloco__cab">
+        <h2 class="bloco__titulo" id="t-prof">Profissionais</h2>
+        <button type="button" class="btn btn--primary btn--sm" (click)="abrirProfissional(null)" [disabled]="servicosAtivos().length === 0"><app-icon name="user-plus" /> Adicionar</button>
+      </header>
+      @if (profissionais(); as lista) {
+        @if (lista.length === 0) {
+          <p class="vazio">Nenhum profissional. Adicione um funcionário ativo e escolha o que ele atende.</p>
+        } @else {
+          <ul class="lista">
+            @for (p of lista; track p.idFuncionario) {
+              <li class="item">
+                <div class="item__info">
+                  <p class="item__nome">{{ p.nome }}</p>
+                  <p class="sub">{{ p.cargo ?? 'Sem cargo' }}@if (p.departamento) { · {{ p.departamento }} }</p>
+                  @if (p.servicos.length) {
+                    <ul class="chips">@for (s of p.servicos; track s.id) { <li>{{ s.nome }}</li> }</ul>
+                  } @else {
+                    <p class="sub alerta">Nenhum serviço vinculado: não aparece na marcação.</p>
+                  }
+                </div>
+                <div class="item__acoes">
+                  <button type="button" class="btn btn--secondary btn--sm" (click)="abrirProfissional(p)">Serviços</button>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      } @else {
+        <span class="skeleton" style="width: 100%; height: 4rem"></span>
+      }
+    </section>
+  </div>
+}
+
+<app-dialog [titulo]="servicoEditado() ? 'Editar serviço' : 'Novo serviço'" [open]="servicoAberto()" (closed)="servicoAberto.set(false)">
+  <div class="dlg">
+    <fieldset class="categorias">
+      <legend class="field__label">Tipo</legend>
+      <label class="check"><input type="radio" name="sv-cat" [checked]="sCategoria() === 'CONSULTA'" (change)="sCategoria.set('CONSULTA')" /> Consulta (especialidade)</label>
+      <label class="check"><input type="radio" name="sv-cat" [checked]="sCategoria() === 'EXAME'" (change)="sCategoria.set('EXAME')" /> Exame</label>
+    </fieldset>
+    <div class="field">
+      <label class="field__label" for="sv-nome">Nome <span class="field__req" aria-hidden="true">*</span></label>
+      <input id="sv-nome" class="field__input" type="text" maxlength="255" [placeholder]="sCategoria() === 'EXAME' ? 'Ex.: ULTRASSONOGRAFIA ABDOMINAL' : 'Ex.: CARDIOLOGIA'" [value]="sNome()" (input)="sNome.set(valor($event))" />
+    </div>
+    <div class="field">
+      <label class="field__label" for="sv-ori">Orientações ao paciente</label>
+      <textarea id="sv-ori" class="field__input area" rows="3" maxlength="1000" placeholder="Ex.: jejum de 8 horas; trazer exames anteriores" [value]="sOrientacoes()" (input)="sOrientacoes.set(valor($event))"></textarea>
+      <p class="field__hint">Aparecem para a central na hora de marcar e no comprovante.</p>
+    </div>
+    @if (erro() && servicoAberto()) { <app-alert tone="danger">{{ erro() }}</app-alert> }
+  </div>
+  <div dialog-actions class="acoes">
+    <button type="button" class="btn btn--secondary btn--sm" (click)="servicoAberto.set(false)" [disabled]="enviando()">Cancelar</button>
+    <button type="button" class="btn btn--primary btn--sm" (click)="salvarServico()" [disabled]="enviando()">
+      @if (enviando()) { <span class="spinner" aria-hidden="true"></span> Salvando… } @else { Salvar }
+    </button>
+  </div>
+</app-dialog>
+
+<app-dialog [titulo]="profEditado() ? 'Serviços de ' + profEditado()?.nome : 'Adicionar profissional'" [open]="profAberto()" (closed)="profAberto.set(false)">
+  <div class="dlg">
+    @if (!profEditado()) {
+      <div class="field">
+        <label class="field__label" for="pf-busca">Funcionário ativo</label>
+        <input id="pf-busca" class="field__input" type="search" placeholder="Nome ou CPF" autocomplete="off" (input)="buscar($event)" />
+      </div>
+      @if (buscando()) {
+        <p class="sub">Buscando…</p>
+      } @else if (busca().length >= 3 && resultados().length === 0) {
+        <p class="sub">Nenhum funcionário ativo encontrado.</p>
+      } @else {
+        <ul class="resultados">
+          @for (f of resultados(); track f.idFuncionario) {
+            <li><button type="button" class="opcao" (click)="escolherFuncionario(f)"><span class="item__nome">{{ f.nome }}</span><span class="sub"><span class="cell-mono">{{ f.cpf | cpf }}</span> · {{ f.cargo ?? 'sem cargo' }}@if (f.departamento) { · {{ f.departamento }} }</span></button></li>
+          }
+        </ul>
+      }
+    } @else {
+      <fieldset class="servicos">
+        <legend class="field__label">O que atende</legend>
+        @for (s of servicosAtivos(); track s.id) {
+          <label class="check"><input type="checkbox" [checked]="escolhidos().has(s.id)" (change)="alternarServico(s.id)" /> {{ s.nome }} <span class="sub">({{ s.categoria === 'EXAME' ? 'exame' : 'consulta' }})</span></label>
+        }
+      </fieldset>
+      <p class="sub">Desmarcar tudo tira o profissional da saúde. Agendas já liberadas continuam até serem bloqueadas.</p>
+    }
+    @if (erro() && profAberto()) { <app-alert tone="danger">{{ erro() }}</app-alert> }
+  </div>
+  <div dialog-actions class="acoes">
+    <button type="button" class="btn btn--secondary btn--sm" (click)="profAberto.set(false)" [disabled]="enviando()">Cancelar</button>
+    <button type="button" class="btn btn--primary btn--sm" (click)="salvarProfissional()" [disabled]="enviando() || !profEditado()">
+      @if (enviando()) { <span class="spinner" aria-hidden="true"></span> Salvando… } @else { Salvar }
+    </button>
+  </div>
+</app-dialog>
