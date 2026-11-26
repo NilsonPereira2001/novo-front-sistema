@@ -17,7 +17,6 @@ import { TelefonePipe } from '../../../shared/pipes/telefone.pipe';
 import { erroUsuarios } from '../../usuarios/data/usuarios.service';
 import { AcaoAgendamentoDialog, AcaoDialogo } from '../components/acao-agendamento-dialog';
 import { ProntuarioDialog } from '../components/prontuario-dialog';
-import { SaudeAbas } from '../components/saude-abas';
 import { SinaisCampos } from '../components/sinais-campos';
 import { StatusSelo } from '../components/status-selo';
 import { Agendamento, Detalhe, Ficha, Prontuario, ROTULO_DIREITO, SINAIS_VAZIO, SinaisFormValor, emAberto, horaTexto, temSinais } from '../data/saude-api';
@@ -33,7 +32,7 @@ type Aba = 'agendamentos' | 'prontuario';
   selector: 'app-paciente-ficha',
   imports: [
     DatePipe, DecimalPipe, LowerCasePipe, RouterLink, Alert, Dialog, Icon, LoadError, Pagination, CpfPipe, TelefonePipe,
-    AcaoAgendamentoDialog, ProntuarioDialog, SaudeAbas, SinaisCampos, StatusSelo,
+    AcaoAgendamentoDialog, ProntuarioDialog, SinaisCampos, StatusSelo,
   ],
   templateUrl: './paciente-ficha.html',
   styleUrl: './paciente-ficha.scss',
